@@ -84,7 +84,7 @@ These strings are produced by the SDK's `Expression.toString()`. The UI shows th
 | Entity page | `getEntity(key)` |
 | Live feed | `watchEntityEvents` over WebSocket (`wss://…`) collects `EntityCreated` keys; every 10 s one query `… AND ($key = key(0x…) OR …)` (≤ 25 keys) returns only the Nexora experiments among them. Events carry no attributes (friction F3), and this replaces one `getEntity` per chain event. |
 
-Results are paged with the SDK cursor (200 per page, up to 600 per view). Arkiv has no server-side ordering, so sorting and the recommendation statistics (median and quartiles of ROI, distinct `$creator` count) run on the client, in [`ledger/src/insights.ts`](../ledger/src/insights.ts).
+Results are paged with the SDK cursor (200 per page): Explore reads one page, What to try up to 400 rows, the CLI up to 600. The web app also caches identical reads for 30 s, because each visitor IP has a small anonymous query budget (friction F9). Arkiv has no server-side ordering, so sorting and the recommendation statistics (median and quartiles of ROI, distinct `$creator` count) run on the client, in [`ledger/src/insights.ts`](../ledger/src/insights.ts).
 
 ## Mutations
 
