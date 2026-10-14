@@ -1,5 +1,7 @@
 # Nexora Ledger
 
+[![ci](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml/badge.svg)](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE) [![Data on Arkiv](https://img.shields.io/badge/data-Arkiv%20Tiramisu-ff8424.svg)](arkiv/schema.md) [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 **What delivery and ride work in India really pays — reported by workers, owned by no company.** Nexora is an open ledger where gig workers (food and grocery delivery riders, cab and bike-taxi drivers) log what a day actually paid after fuel and costs, and report what happened to them at work: ID blocks, pay cuts, unexplained penalties. It is stored on [Arkiv](https://arkiv.network). Anyone can read it, nobody can quietly rewrite it, no platform can take it down, and no worker has to give their name.
 
 - **Live app:** https://nexora-pi-snowy.vercel.app
@@ -100,6 +102,29 @@ Import the repository in Vercel and keep **Root Directory = repository root**. [
 7. Open the sealed demo day (its key is in `arkiv/evidence.json` under `sealed_payload`) and unlock it with the public demo passphrase `nexora-demo-2026`. On the explorer, the payload is only ciphertext.
 8. Open *Proof*: each claimed feature (batches, incident follow-ups, sealed payload, trust-list patch, non-owner extension, refused readonly patch, owner delete) links to its transaction, and *verify on chain* re-reads it.
 9. Download `nexora.html` from the latest CI run's artifacts, double-click it, and the same data loads with no website involved.
+
+## Build on the data
+
+The ledger is public and the contract is documented in [`arkiv/schema.md`](arkiv/schema.md), so a union, researcher or journalist does not need Nexora's code or permission:
+
+```js
+import { createPublicClient } from "@arkiv-network/sdk";
+import { i32, str } from "@arkiv-network/sdk/attr";
+import { tiramisu } from "@arkiv-network/sdk/chains";
+import { and, eq } from "@arkiv-network/sdk/query";
+import { http } from "viem";
+
+const client = createPublicClient({ chain: tiramisu, transport: http() });
+const page = await client.select("*")
+  .where(and([eq("app", str("nexora")), eq("kind", str("shift")), eq("v", i32(1)), eq("city", str("bengaluru"))]))
+  .limit(200).fetch();
+```
+
+The full version, grouping by app and counting distinct workers, is [`examples/read-without-nexora.mjs`](examples/read-without-nexora.mjs). [`@nexora/ledger`](ledger) is the same contract as a typed library: codecs, sealing, queries and the confirmation rules.
+
+## Contributing
+
+Issues and pull requests are welcome, especially new cities, platforms and Indian languages. Start with [CONTRIBUTING.md](CONTRIBUTING.md); security and privacy reports go to [SECURITY.md](SECURITY.md). Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Safety
 

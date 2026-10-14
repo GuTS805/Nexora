@@ -1,0 +1,23 @@
+name: Add a city, platform, kind of work or incident type
+description: Ask for something workers need that the fixed lists do not have yet.
+labels: [vocabulary, good first issue]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What to add
+      options: [City, Platform, Kind of work, Incident type, Language]
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: Name
+      description: "As workers say it, plus the Hindi or local-language name if you know it"
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Who needs it
+      description: Which workers would use it, and roughly how many.

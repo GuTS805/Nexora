@@ -15,6 +15,8 @@ export const STRINGS = {
   navProof: ["Proof", "सबूत"],
   navAbout: ["How it works", "यह कैसे काम करता है"],
   switchLang: ["हिंदी", "English"],
+  openSource: ["Open source", "ओपन सोर्स"],
+  openSourceTitle: ["Source code on GitHub (MIT)", "GitHub पर सोर्स कोड (MIT)"],
   themeLight: ["Switch to light mode", "लाइट मोड चालू करें"],
   themeDark: ["Switch to dark mode", "डार्क मोड चालू करें"],
   footer: ["Data lives on Arkiv Tiramisu testnet · MIT · entries are self-reported by workers; synthetic demo entries are labelled and say nothing about any real company", "डेटा Arkiv Tiramisu टेस्टनेट पर है · MIT · एंट्री वर्कर्स खुद दर्ज करते हैं; डेमो (कृत्रिम) एंट्री पर निशान है और वे किसी असली कंपनी के बारे में कुछ नहीं कहतीं"],

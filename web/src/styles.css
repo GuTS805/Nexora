@@ -390,3 +390,20 @@ main { max-width: 1360px; padding: 0 20px 50px; }
 /* Native dropdown lists keep the OS background on Windows; give options the theme colours explicitly. */
 select option, select optgroup { background-color: var(--surface); color: var(--text); }
 select option:checked { background-color: var(--accent); color: var(--accent-ink); }
+
+/* Open source */
+.gh-link { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); text-decoration: none; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.gh-link:hover { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 760px) { .gh-link span { display: none; } .gh-link { padding: 6px 8px; } }
+.about-open { margin: 0 0 16px; padding: 20px 22px; border: 1px solid var(--accent); border-radius: 14px; background: linear-gradient(135deg, color-mix(in srgb, var(--accent), var(--surface) 88%), var(--surface)); }
+.about-open-head { display: grid; grid-template-columns: 62px 1fr auto; gap: 20px; align-items: center; }
+.about-open-head h3 { margin: 0 0 4px; font-size: 18px; }
+.about-open-head p { margin: 0; font-size: 14px; color: color-mix(in srgb, var(--text), var(--muted) 35%); }
+.about-open-ways { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0 10px; }
+.about-open-ways div { padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--bg), transparent 30%); }
+.about-open-ways b { display: block; margin-bottom: 4px; color: var(--accent); font-size: 14px; }
+.about-open-ways p { margin: 0; font-size: 13px; }
+.about-open-ways code { word-break: normal; overflow-wrap: anywhere; }
+.about-open > p { margin: 0; }
+@media (max-width: 1100px) { .about-open-ways { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .about-open-head { grid-template-columns: 1fr; }.about-open-head .about-icon { display: none; }.about-open-ways { grid-template-columns: 1fr; } }

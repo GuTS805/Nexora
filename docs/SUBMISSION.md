@@ -97,6 +97,9 @@ The full threat model, with residual risks, is in [`THREAT_MODEL.md`](THREAT_MOD
 - **Permissionless writes and reads:** any app can publish compatible entries from its own wallet, and they show up in Nexora automatically. Any app can read Nexora's data the same way. Examples: a union's WhatsApp bot that logs members' days, a researcher's dashboard, a state welfare board's monitoring page, a journalist's notebook.
 - **Versioning:** `v = 1` is part of every predicate, so a v2 can coexist.
 - **Tests:** `npm test` runs the contract tests: codec round trip, rejection of malformed entities, sealing, query rendering against the node's measured limits, Sybil dampening, month-on-month confirmation, CSV parsing, the read fallback, and every write shape through the real SDK up to signing.
+- **Checked in public:** [GitHub Actions](../.github/workflows/ci.yml) runs typecheck, tests, the build, a headless-Chrome UI test, the single-file build and `npm audit` on every push and pull request.
+- **Ready for contributors:** [`CONTRIBUTING.md`](../CONTRIBUTING.md) explains setup, how to add a city, platform, kind of work or language, and the rules that keep the data trustworthy (no personal data on chain, fixed lists, versioned contract). There are issue templates for bugs and new vocabulary, a pull-request checklist, a [security policy](../SECURITY.md) for private privacy reports, and a [code of conduct](../CODE_OF_CONDUCT.md).
+- **Visible in the app:** the header links to the repository, and *How it works* has an "Open source: build on it" section with the CLI command, the data contract, the library and the CI.
 
 ## How we use each Arkiv feature
 
