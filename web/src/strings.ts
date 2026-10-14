@@ -52,6 +52,7 @@ export const STRINGS = {
   explorer: ["explorer ↗", "एक्सप्लोरर ↗"],
   synthetic: ["synthetic", "डेमो"],
   sealedBadge: ["🔒 sealed", "🔒 बंद"],
+  expiresTitle: ["Disappears from Arkiv automatically after this; the seller chose the lifetime", "इसके बाद यह Arkiv से अपने-आप हट जाएगा; मियाद विक्रेता ने चुनी है"],
   sealedTitle: ["Exact figures are encrypted; only the seller can open them", "असली आँकड़े एन्क्रिप्टेड हैं; सिर्फ़ विक्रेता खोल सकता है"],
   queryTitle: ["Exact Arkiv query", "Arkiv की असली क्वेरी"],
   queryBlock: [" · block {n}", " · ब्लॉक {n}"],

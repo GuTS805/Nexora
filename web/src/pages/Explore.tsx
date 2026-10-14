@@ -212,7 +212,7 @@ export function Explore() {
           <QueryBox query={result.data.query} block={result.data.blockNumber} cli={cliFor("query", filters, source)} rejected={result.data.rejected} />
           {sorted.length === 0 && <p className="muted">{t("empty")}</p>}
           <div className="grid">
-            {sorted.map((e) => <ExperimentCard key={e.key} e={e} trusted={source.kind === "list" ? true : undefined} />)}
+            {sorted.map((e) => <ExperimentCard key={e.key} e={e} trusted={source.kind === "list" ? true : undefined} block={result.data?.blockNumber} />)}
           </div>
         </>
       )}

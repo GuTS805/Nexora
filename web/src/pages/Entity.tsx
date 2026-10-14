@@ -125,7 +125,7 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
 
       <h3>{t("variantsTitle", { n: children.length })}</h3>
       <p className="small muted mono">{data.data.childQuery}</p>
-      <div className="grid">{children.map((c) => <ExperimentCard key={c.key} e={c} />)}</div>
+      <div className="grid">{children.map((c) => <ExperimentCard key={c.key} e={c} block={block} />)}</div>
     </section>
   );
 }

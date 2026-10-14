@@ -53,7 +53,7 @@ export function Mine() {
           <QueryBox query={result.data.query} block={result.data.blockNumber} cli={`npx tsx ledger/cli.ts query --demo --creator ${wallet?.address}`} />
           {oneOffs.length > 0 && <p className="small muted">{t("oneOffCount", { n: oneOffs.length })}</p>}
           {result.data.items.length === 0 && <p className="muted">{t("mineEmpty")} <a href="#/log">{t("navLog")}</a></p>}
-          <div className="grid">{result.data.items.map((e) => <ExperimentCard key={e.key} e={e} />)}</div>
+          <div className="grid">{result.data.items.map((e) => <ExperimentCard key={e.key} e={e} block={result.data?.blockNumber} />)}</div>
         </>
       )}
       {(wallet?.mode === "burner" || oneOffs.length > 0) && (

@@ -93,8 +93,10 @@ export function QueryBox({ query, block, cli, rejected }: { query: string; block
   );
 }
 
-export function ExperimentCard({ e, trusted }: { e: Experiment; trusted?: boolean | undefined }) {
+export function ExperimentCard({ e, trusted, block }: { e: Experiment; trusted?: boolean | undefined; block?: bigint | undefined }) {
   const { t, v } = useI18n();
+  // Arkiv's nominal block time is 2 s, so 43,200 blocks ≈ one day.
+  const daysLeft = block !== undefined ? Math.max(0, Math.round(Number(e.expiresAt - block) / 43_200)) : undefined;
   return (
     <article className="card experiment">
       <header>
@@ -107,6 +109,7 @@ export function ExperimentCard({ e, trusted }: { e: Experiment; trusted?: boolea
         <span>{SPEND_BAND_LABELS[e.spendBand]}</span><span>{t("daysShort", { n: e.days })}</span>
         {e.demo && <span className="badge">{t("synthetic")}</span>}
         {e.sealed && <span className="badge" title={t("sealedTitle")}>{t("sealedBadge")}</span>}
+        {daysLeft !== undefined && <span className="badge" title={t("expiresTitle")}>⏳ {t("daysShort", { n: daysLeft })}</span>}
       </p>
       <footer>
         <Addr address={e.creator} trusted={trusted} />
