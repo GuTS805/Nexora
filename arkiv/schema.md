@@ -76,13 +76,13 @@ These strings are produced by the SDK's `Expression.toString()`. The UI shows th
 | --- | --- |
 | Explore (no filters) | `app = str('nexora') AND kind = str('experiment') AND v = i32(1)` |
 | Explore, filtered, demo hidden | `… AND category = str('tea_coffee') AND tier = str('tier2') AND demo = false` |
-| What to try (budget band 2) | `… AND category = str('tea_coffee') AND spend_band >= i32(1) AND spend_band <= i32(3)` |
+| What to try (budget band 2) | `… AND category = str('tea_coffee') AND spend_band >= i32(1) AND spend_band <= i32(3)`. With *All sellers*, rows from everyone are used, but only creators on the recommended trust list count toward "proven". |
 | Any view with a trust list | `… AND ($creator = addr(0xA…) OR $creator = addr(0xB…) OR …)` |
-| My data | `… AND $creator = addr(<my wallet>)` |
+| My data | `… AND ($creator = addr(<test wallet>) OR $creator = addr(<one-time wallet>) OR …)` (up to 25) |
 | Variants of an experiment | `… AND parent = key(0x…)` |
 | Trust lists | `app = str('nexora') AND kind = str('trust_list') AND v = i32(1)` |
 | Entity page | `getEntity(key)` |
-| Live feed | `watchEntityEvents` over WebSocket (`wss://…`), then `getEntity` on each `EntityCreated` and decode |
+| Live feed | `watchEntityEvents` over WebSocket (`wss://…`) collects `EntityCreated` keys; every 10 s one query `… AND ($key = key(0x…) OR …)` (≤ 25 keys) returns only the Nexora experiments among them. Events carry no attributes (friction F3), and this replaces one `getEntity` per chain event. |
 
 Results are paged with the SDK cursor (200 per page, up to 600 per view). Arkiv has no server-side ordering, so sorting and the recommendation statistics (median and quartiles of ROI, distinct `$creator` count) run on the client, in [`ledger/src/insights.ts`](../ledger/src/insights.ts).
 
@@ -95,11 +95,16 @@ Results are paged with the SDK cursor (200 per page, up to 600 per view). Arkiv 
 | Seed demo data | `scripts/seed.ts` | `executeBatch({ creates })` |
 | Keep alive | Entity page, any wallet | `extendEntity({ entityKey, expires: atBlock(…) })` |
 | Delete | Entity page, owner only | `deleteEntity({ entityKey })` |
-| Create or edit a trust list | Trust lists | `createEntity` / `patchEntity` |
+| Create or edit a trust list | Trust lists | `createEntity` / `patchEntity({ entityKey, payload, set: attributes })`. Arkiv patches are mutations, so every attribute is re-set. |
+| Publish from a one-time wallet | Log a result (option) | `createEntity` from a freshly generated key, so the result is unlinkable by `$creator`; the key stays in the browser for later extend or delete |
 
 ## What is deliberately not on Arkiv
 
 Seller names, phone numbers, shop names, product names, images, ad copy, customer data, exact rupee amounts (unless sealed), passphrases and wallet keys. There is no Nexora database. The burner wallet key and UI preferences stay in the visitor's `localStorage`, and the optional gas sponsor stores nothing.
+
+## Recorded evidence
+
+`npm run seed` performs one transaction per feature above and records its hash and entity keys in [`evidence.json`](evidence.json): batch creates, lineage, sealed payload, trust list create and patch, permissionless extension by a non-owner, a refused patch on a readonly entity, and an owner delete. The recommended trust list is pinned there **by entity key**. `npm run e2e` writes measured gas, latency and limits to [`e2e-report.md`](e2e-report.md).
 
 ## Wallets that create entities
 
