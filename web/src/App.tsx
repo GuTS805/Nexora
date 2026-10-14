@@ -39,6 +39,12 @@ export function App() {
   useEffect(() => {
     document.querySelector(".top nav a.active")?.scrollIntoView({ block: "nearest", inline: "center" });
   }, [route]);
+  // A shared link opened in this tab may carry the sender's language (?ui=hi).
+  useEffect(() => {
+    const ui = new URLSearchParams(query).get("ui");
+    if ((ui === "hi" || ui === "en") && ui !== lang) setLang(ui);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
   return (
     <>
