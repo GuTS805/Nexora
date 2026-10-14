@@ -81,9 +81,11 @@ Nexora is a shared, worker-written record of pay and incidents. Every entry is s
   - Keys exist only in the gitignored `.env.local` and the deployment's secrets.
   - The sponsor validates input and enforces per-address, per-IP, global and sponsor-floor limits.
   - Strict security headers and a CSP are set in `vercel.json`.
-  - `npm audit` reports 0 vulnerabilities.
+  - `npm audit` reports 0 vulnerabilities, [CodeQL](../.github/workflows/codeql.yml) scans every push with the `security-extended` queries, and Dependabot proposes dependency updates weekly.
+  - The sponsor's limits are in [`api/_limits.ts`](../api/_limits.ts) with their own tests: a wallet is refused while its first request is still in flight, expired entries are dropped, and the caller's address comes from the platform's own header.
+  - The functions in `api/` are type-checked in strict mode as part of `npm run typecheck`.
 
-The full threat model, with residual risks, is in [`THREAT_MODEL.md`](THREAT_MODEL.md).
+The full threat model, with residual risks and a plain list of known limitations, is in [`THREAT_MODEL.md`](THREAT_MODEL.md#known-limitations).
 
 ## Open Source: can another team build on it without asking?
 

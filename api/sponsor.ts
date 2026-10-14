@@ -12,18 +12,13 @@
 import { tiramisu } from "@arkiv-network/sdk/chains";
 import { createPublicClient, createWalletClient, getAddress, http, isAddress, parseEther, type Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { clientIp, createLimiter } from "./_limits.ts";
 
 const DRIP = parseEther(process.env.SPONSOR_DRIP_GLM ?? "0.01");
 const ALREADY_FUNDED = parseEther("0.001");
 const SPONSOR_FLOOR = parseEther("0.05");
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
-const PER_IP_DAILY = 3;
-const GLOBAL_HOURLY = 200;
 
-const byAddress = new Map<string, number>();
-const byIp = new Map<string, number[]>();
-let global: number[] = [];
+const limiter = createLimiter();
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -42,13 +37,18 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const now = Date.now();
-  const ip = (request.headers.get("x-forwarded-for") ?? "local").split(",")[0]!.trim();
-  global = global.filter((t) => now - t < HOUR);
-  const ipHits = (byIp.get(ip) ?? []).filter((t) => now - t < DAY);
-  if (now - (byAddress.get(address) ?? 0) < HOUR) return json(429, { error: "This wallet was funded less than an hour ago." });
-  if (ipHits.length >= PER_IP_DAILY) return json(429, { error: "This network already received its free gas today." });
-  if (global.length >= GLOBAL_HOURLY) return json(429, { error: "Hourly sponsor budget used up." });
+  const ip = clientIp(request.headers);
+  const refusal = limiter.admit(ip, address, now);
+  if (refusal) return json(refusal.status, { error: refusal.error });
 
+  try {
+    return await drip(key, address, ip, now);
+  } finally {
+    limiter.release(address);
+  }
+}
+
+async function drip(key: string, address: Address, ip: string, now: number): Promise<Response> {
   // ARKIV_RPC_URL may carry a Hub access key; it stays server-side, never in the browser bundle.
   const rpc = http(process.env.ARKIV_RPC_URL || tiramisu.rpcUrls.default.http[0], { retryCount: 1, timeout: 20_000 });
   const reader = createPublicClient({ chain: tiramisu, transport: rpc });
@@ -60,10 +60,9 @@ export async function POST(request: Request): Promise<Response> {
   if (balance >= ALREADY_FUNDED) return json(200, { funded: false, reason: "Wallet already has gas." });
   if (sponsorBalance - DRIP < SPONSOR_FLOOR) return json(503, { error: "Sponsor wallet is low." });
 
-  byAddress.set(address, now);
-  byIp.set(ip, [...ipHits, now]);
-  global.push(now);
   const wallet = createWalletClient({ chain: tiramisu, transport: rpc, account: sponsor });
-  const txHash = await wallet.sendTransaction({ to: address, value: DRIP });
+  // Counted before sending so a burst of requests cannot slip past the limits while this one is in flight.
+  limiter.commit(ip, address, now);
+  const txHash = await wallet.sendTransaction({ to: address, value: DRIP, account: sponsor, chain: tiramisu });
   return json(200, { funded: true, txHash });
 }

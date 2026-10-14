@@ -123,9 +123,12 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
 
 - **Mitigations:** the sponsor:
   - funds only wallets with less than 0.001 GLM;
-  - allows one drip per address per hour, 3 per IP per day, and a global hourly cap;
+  - allows one drip per address per hour (and refuses a second request for an address while the first is still being sent), 3 per IP per day, and a global hourly cap;
+  - reads the caller's address from `x-vercel-forwarded-for`, which the platform sets itself, rather than a header a client can send;
+  - forgets expired entries so a long-lived instance cannot be grown without bound;
   - stops below a 0.05 GLM floor;
   - validates input, never writes entities and stores nothing.
+- **Code and tests:** [`api/_limits.ts`](../api/_limits.ts), [`web/api/limits.test.ts`](../web/api/limits.test.ts).
 - **Residual:** the limits live in memory per serverless instance; distributed abuse can still empty a testnet faucet. The impact is limited to visitors having to use the public faucet.
 
 ### T13. Burner key theft
@@ -143,6 +146,17 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
   - Dependencies are pinned in `package-lock.json`, and `npm audit` reports 0 known vulnerabilities.
   - The SDK version is pinned (`0.8.1`).
   - Private keys exist only in the gitignored `.env.local` and deployment secrets. `npm run check:secrets` fails if any of those values appears in a tracked or staged file; it runs as a pre-commit hook (`.githooks/pre-commit`; enable with `git config core.hooksPath .githooks`).
+
+## Known limitations
+
+Stated plainly, so nobody has to find them:
+
+1. **Confirmation is only as honest as the trust list you pick.** A curator who adds the wrong wallets can make a figure look confirmed. Lists are public, anyone can publish a competing one, and the reader chooses; there is no central authority to fix this and none is planned.
+2. **Entries are claims, not verified payslips.** Nothing proves a worker earned what they say. Independent agreement between trusted workers is the only evidence the app offers, and the UI says so.
+3. **The test-wallet key sits in the browser's local storage** (T13). A malicious extension on the same browser could read it.
+4. **Sponsor limits are per serverless instance** (T12), a speed bump rather than a guarantee.
+5. **Timing and wallet correlation.** Reports go out from a one-time wallet, but a very small group of workers publishing at the same moment could be correlated by someone watching the chain (T9).
+6. **Testnet only.** Nothing here has been audited by an outside party; the checks are our own tests, `npm audit`, CodeQL and review.
 
 ## Out of scope
 

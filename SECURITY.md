@@ -22,4 +22,6 @@ You can expect a reply within a week. Once a fix is out, the advisory is publish
 - That entries are self-reported claims. This is by design, and the app says so; see [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
 - Testnet GLM having no value.
 
+Automated checks on every push: typecheck, tests, `npm audit` and [CodeQL](.github/workflows/codeql.yml); Dependabot proposes dependency updates weekly. A secret scan runs as a local pre-commit hook. Known limitations are listed in [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md#known-limitations).
+
 Nexora runs on the Tiramisu testnet. Do not use real money or real personal data with it.
