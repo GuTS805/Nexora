@@ -9,7 +9,7 @@ import { Log } from "./pages/Log.tsx";
 import { Mine } from "./pages/Mine.tsx";
 import { Trust } from "./pages/Trust.tsx";
 
-/** Hash routing, so the static build works from any host, an IPFS gateway, or a local folder. */
+/** Hash routing, so the static build works from any host, an IPFS gateway, or the portable single file. */
 function useRoute() {
   const read = () => location.hash.replace(/^#/, "");
   const [hash, setRoute] = useState(read);

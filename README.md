@@ -70,6 +70,8 @@ npm run seed                   # ~110 synthetic experiments, variants, and a tru
 
 Vercel project rooted at `web/`, with build `npm run build` and output `dist`. Set `NEXORA_SPONSOR_KEY` as a secret if you want the gas sponsor; without it, visitors fund their own wallet from the faucet. The `dist/` folder also works on any static host or IPFS gateway.
 
+**Portable single file:** `npm run build:portable -w web` writes `web/dist-portable/nexora.html`, the whole app in one file (JS and CSS inlined). It opens from disk, an email attachment or a WhatsApp/Telegram file share, and reads Arkiv directly. If every website hosting Nexora disappeared, this file would still work.
+
 ## Judge reproduction
 
 1. Open the live app. No signup is needed. Explore shows synthetic demo data (labelled).

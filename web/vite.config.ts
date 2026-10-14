@@ -41,9 +41,47 @@ function devApi(): Plugin {
   };
 }
 
-export default defineConfig({
-  plugins: [react(), devApi()],
-  // Relative asset paths: the build runs from any static host, IPFS gateway or a local folder.
-  base: "./",
-  build: { target: "es2022" },
+/**
+ * `vite build --mode portable` → dist-portable/nexora.html: one self-contained file with the JS and
+ * CSS inlined. Browsers refuse to load `<script type="module" src>` from file://, so the normal build
+ * needs a web server; this one opens straight from disk, an email attachment or a WhatsApp/Telegram
+ * file share, and still reads Arkiv directly.
+ */
+function inlineEverything(): Plugin {
+  return {
+    name: "nexora-inline-everything",
+    enforce: "post",
+    generateBundle(_, bundle) {
+      const html = Object.values(bundle).find((f) => f.type === "asset" && f.fileName.endsWith(".html"));
+      if (!html || html.type !== "asset") return;
+      let source = String(html.source);
+      for (const [name, file] of Object.entries(bundle)) {
+        if (file.type === "chunk" && file.isEntry) {
+          const tag = new RegExp(`<script[^>]*src="[^"]*${file.fileName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*></script>`);
+          source = source.replace(tag, () => `<script type="module">${file.code.replace(/<\/script/gi, "<\\/script")}</script>`);
+          delete bundle[name];
+        } else if (file.type === "asset" && file.fileName.endsWith(".css")) {
+          const tag = new RegExp(`<link[^>]*href="[^"]*${file.fileName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*>`);
+          source = source.replace(tag, () => `<style>${String(file.source)}</style>`);
+          delete bundle[name];
+        }
+      }
+      html.source = source;
+      html.fileName = "nexora.html";
+    },
+  };
+}
+
+export default defineConfig(({ mode }) => {
+  const portable = mode === "portable";
+  return {
+    plugins: [react(), devApi(), ...(portable ? [inlineEverything()] : [])],
+    // Relative asset paths: the build runs from any static host or IPFS gateway.
+    base: "./",
+    build: {
+      target: "es2022",
+      outDir: portable ? "dist-portable" : "dist",
+      ...(portable ? { rolldownOptions: { output: { codeSplitting: false } }, assetsInlineLimit: Number.MAX_SAFE_INTEGER } : {}),
+    },
+  };
 });

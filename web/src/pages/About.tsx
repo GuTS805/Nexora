@@ -26,7 +26,7 @@ function English() {
         <li>There is no Nexora database. The only server code is an optional helper that sends a few test GLM to new wallets.</li>
       </ul>
       <h3>If this website disappears</h3>
-      <p>The data does not. Clone the MIT-licensed repository and run <code>npx tsx ledger/cli.ts query --demo</code>, or build this site and open it from any static host, IPFS gateway or your laptop. It talks to Arkiv directly.</p>
+      <p>The data does not. Clone the MIT-licensed repository and run <code>npx tsx ledger/cli.ts query --demo</code>, or build the portable single-file version (<code>npm run build:portable -w web</code>) and open <code>nexora.html</code> straight from your phone or laptop. It talks to Arkiv directly.</p>
       <h3 id="network">Network</h3>
     </>
   );
@@ -55,7 +55,7 @@ function Hindi() {
         <li>Nexora का कोई डेटाबेस नहीं है। सर्वर पर सिर्फ़ एक वैकल्पिक मददगार चलता है जो नए वॉलेट को थोड़े टेस्ट GLM भेजता है।</li>
       </ul>
       <h3>अगर यह वेबसाइट बंद हो जाए</h3>
-      <p>तो भी डेटा रहेगा। MIT लाइसेंस वाला कोड लेकर <code>npx tsx ledger/cli.ts query --demo</code> चलाइए, या यह साइट बनाकर किसी भी स्टैटिक होस्ट, IPFS गेटवे या अपने लैपटॉप से खोलिए। यह सीधे Arkiv से बात करती है।</p>
+      <p>तो भी डेटा रहेगा। MIT लाइसेंस वाला कोड लेकर <code>npx tsx ledger/cli.ts query --demo</code> चलाइए, या एक-फ़ाइल वाला वर्ज़न (<code>npm run build:portable -w web</code>) बनाकर <code>nexora.html</code> सीधे अपने फ़ोन या लैपटॉप से खोलिए। यह सीधे Arkiv से बात करती है।</p>
       <h3 id="network">नेटवर्क</h3>
     </>
   );

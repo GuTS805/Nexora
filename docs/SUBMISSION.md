@@ -36,8 +36,9 @@ Nexora is a shared, permanent-unless-you-choose-otherwise notebook of ad experim
   - The web app is a static bundle that reads Tiramisu straight from the browser (`ledger/src/queries.ts`, `readClient`). There is **no Nexora backend or database to take down**; the only server code is an optional gas sponsor.
   - With Nexora's website gone, anyone can run `npx tsx ledger/cli.ts query --demo` or paste the exact query shown in the UI into any Arkiv client.
   - The RPC endpoint is user-configurable (`About → Network`, `--rpc` on the CLI), so blocking one endpoint does not block readers.
-  - The build uses relative paths and hash routing, so it runs from IPFS or a local folder.
-- **Proof for judges:** run the CLI from a fresh clone with only the public RPC. Then build the site (`npm run build -w web`), open `web/dist/index.html` locally, and the same data loads.
+  - The build uses relative paths and hash routing, so it runs from any static host or IPFS gateway.
+  - `npm run build:portable -w web` produces **one self-contained `nexora.html`** (JS and CSS inlined) that opens straight from disk. A seller can receive the whole app as a WhatsApp or Telegram file and use it without any website. Browsers block module scripts from `file://`, which is why the normal build cannot do this.
+- **Proof for judges:** run the CLI from a fresh clone with only the public RPC. Then build the portable file, double-click `web/dist-portable/nexora.html`, and the same data loads with no server involved.
 
 ## Open Source: can another team build on it without asking?
 
