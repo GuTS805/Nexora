@@ -3,7 +3,7 @@ import { getAddress, type Hex } from "viem";
 import {
   bestTraits, comboStats, confidence, decodeExperiment, decodeTrustList, experimentCreate, experimentPredicate,
   parseExperimentsCsv, CSV_TEMPLATE, PLATFORM_FORMATS, queryText, roiPct, seal, spendBand, suggest, trustListCreate,
-  fetchExperiment, getEntityOrNull, trustListPatch, unseal, type ExperimentInput, type RawEntity,
+  fetchExperiment, fetchExperiments, getEntityOrNull, MAX_OR_BRANCHES, trustListPatch, unseal, type ExperimentInput, type RawEntity,
 } from "../src/index.ts";
 
 const ALICE = getAddress("0x1111111111111111111111111111111111111111");
@@ -103,6 +103,43 @@ describe("queries", () => {
 
   it("includes demo rows when asked", () => {
     expect(queryText(experimentPredicate({ includeDemo: true }))).not.toContain("demo");
+  });
+
+  // Limits measured on Tiramisu (friction F4): > 64 predicates or > 8192 bytes is refused.
+  it("keeps the heaviest filter inside the node's predicate and length limits", () => {
+    const many = Array.from({ length: MAX_OR_BRANCHES }, (_, i) => getAddress(`0x${(i + 1).toString(16).padStart(40, "f")}`));
+    const text = queryText(experimentPredicate({
+      category: "tea_coffee", platform: "instagram", format: "reel", lang: "hinglish", tier: "tier2", season: "diwali",
+      minBand: 1, maxBand: 3, minRoi: 0, parent: KEY, creators: many,
+    }));
+    expect(text.match(/\s(?:=|>=|<=)\s/g)?.length ?? 0).toBeLessThanOrEqual(64);
+    expect(new TextEncoder().encode(text).length).toBeLessThanOrEqual(8192);
+    expect(() => experimentPredicate({ creators: [...many, ALICE] })).toThrow(/At most/);
+  });
+
+  it("splits a long creator list into several queries and merges the results", async () => {
+    const creators = Array.from({ length: 60 }, (_, i) => getAddress(`0x${(i + 1).toString(16).padStart(40, "0")}`));
+    const seenQueries: string[] = [];
+    const client = {
+      select: () => ({
+        where: (expression: { toString(): string }) => ({
+          limit: () => ({
+            fetch: async () => {
+              seenQueries.push(expression.toString());
+              const n = seenQueries.length;
+              const entity = asStored(experimentCreate(input), creators[n - 1], `0x${String(n).padStart(64, "0")}` as Hex);
+              return { entities: [entity], blockNumber: BigInt(100 + n), hasNextPage: () => false };
+            },
+          }),
+        }),
+      }),
+    } as unknown as Parameters<typeof fetchExperiments>[0];
+    const result = await fetchExperiments(client, { creators, includeDemo: true });
+    expect(seenQueries).toHaveLength(3);
+    expect(seenQueries.every((q) => (q.match(/\$creator/g)?.length ?? 0) <= MAX_OR_BRANCHES)).toBe(true);
+    expect(result.items).toHaveLength(3);
+    expect(result.blockNumber).toBe(103n);
+    expect(result.query.split("\n")).toHaveLength(3);
   });
 });
 

@@ -9,8 +9,8 @@ export function Mine() {
   const { reader, wallet, revision, connectBurner, oneOffWallets } = useArkiv();
   const { t } = useI18n();
   const oneOffs = oneOffWallets().map((w) => w.address);
-  // One $creator OR query covers the main wallet and up to 24 one-time wallets.
-  const creators = [...(wallet ? [wallet.address] : []), ...oneOffs].slice(0, 25);
+  // $creator OR over the main wallet and every one-time wallet; fetchExperiments splits long lists.
+  const creators = [...(wallet ? [wallet.address] : []), ...oneOffs];
   const result = useAsync(async () => (creators.length ? readExperiments(reader, { creators, includeDemo: true }) : null), [reader, creators.join(","), revision]);
   const [showKey, setShowKey] = useState(false);
   const [importKey, setImportKey] = useState("");

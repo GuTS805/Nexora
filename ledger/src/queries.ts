@@ -109,6 +109,15 @@ export type ExperimentFilters = {
   keys?: readonly Hex[] | undefined;
 };
 
+/**
+ * Most `OR` branches one predicate carries. The Tiramisu node rejects a query with more than 64
+ * predicates ("query has too many predicates") or longer than 8192 bytes ("query is too long");
+ * neither limit is documented (friction F4). A full experiment filter uses at most 14 predicates,
+ * so 25 `$creator`/`$key` branches (about 1.6 KB) stay well inside both. Longer lists are split
+ * into several queries by `fetchExperiments`.
+ */
+export const MAX_OR_BRANCHES = 25;
+
 const base = (kind: string) => [eq("app", str(APP)), eq("kind", str(kind)), eq("v", i32(SCHEMA_VERSION))];
 
 /**
@@ -133,10 +142,12 @@ export function experimentPredicate(filters: ExperimentFilters = {}): Expression
   if (filters.parent) clauses.push(eq("parent", keyAttr(filters.parent)));
   if (filters.keys) {
     if (filters.keys.length === 0) throw new Error("Key filter is empty.");
+    if (filters.keys.length > MAX_OR_BRANCHES) throw new Error(`At most ${MAX_OR_BRANCHES} keys per query.`);
     clauses.push(or(filters.keys.map((k) => eq("$key", keyAttr(k)))));
   }
   if (filters.creators) {
     if (filters.creators.length === 0) throw new Error("Creator filter is empty.");
+    if (filters.creators.length > MAX_OR_BRANCHES) throw new Error(`At most ${MAX_OR_BRANCHES} creators per query.`);
     clauses.push(or(filters.creators.map((creator) => eq("$creator", addr(creator)))));
   }
   return and(clauses);
@@ -172,21 +183,51 @@ async function collect(client: PublicArkivClient, expression: Expression, maxIte
   return { raw: raw.slice(0, maxItems), blockNumber, truncated: page.hasNextPage() || raw.length > maxItems };
 }
 
+function chunks<T>(list: readonly T[] | undefined): (readonly T[] | undefined)[] {
+  if (!list || list.length <= MAX_OR_BRANCHES) return [list];
+  const out: T[][] = [];
+  for (let i = 0; i < list.length; i += MAX_OR_BRANCHES) out.push(list.slice(i, i + MAX_OR_BRANCHES));
+  return out;
+}
+
+/**
+ * Reads experiments matching the filters. Creator or key lists longer than `MAX_OR_BRANCHES` are
+ * queried in slices, one after another, and merged; `query` then holds one line per slice.
+ */
 export async function fetchExperiments(
   client: PublicArkivClient,
   filters: ExperimentFilters = {},
   maxItems = 600,
 ): Promise<QueryOutcome<Experiment>> {
-  const expression = experimentPredicate(filters);
-  const { raw, blockNumber, truncated } = await collect(client, expression, maxItems);
   const items: Experiment[] = [];
   const rejected: { key: string; reason: string }[] = [];
-  for (const entity of raw) {
-    const decoded = decodeExperiment(entity);
-    if (decoded.ok) items.push(decoded.value);
-    else rejected.push({ key: decoded.key, reason: decoded.reason });
+  const queries: string[] = [];
+  const seen = new Set<string>();
+  let blockNumber = 0n;
+  let truncated = false;
+  for (const creators of chunks(filters.creators)) {
+    for (const keys of chunks(filters.keys)) {
+      const room = maxItems - items.length - rejected.length;
+      if (room <= 0) {
+        truncated = true;
+        break;
+      }
+      const expression = experimentPredicate({ ...filters, creators, keys });
+      queries.push(queryText(expression));
+      const page = await collect(client, expression, room);
+      if (page.blockNumber > blockNumber) blockNumber = page.blockNumber;
+      truncated ||= page.truncated;
+      for (const entity of page.raw) {
+        const key = entity.key ?? "";
+        if (key && seen.has(key)) continue;
+        seen.add(key);
+        const decoded = decodeExperiment(entity);
+        if (decoded.ok) items.push(decoded.value);
+        else rejected.push({ key: decoded.key, reason: decoded.reason });
+      }
+    }
   }
-  return { items, rejected, query: queryText(expression), blockNumber, truncated };
+  return { items, rejected, query: queries.join("\n"), blockNumber, truncated };
 }
 
 export async function fetchTrustLists(client: PublicArkivClient, curator?: Address): Promise<QueryOutcome<TrustList>> {
