@@ -1,6 +1,6 @@
 import {
   CATEGORIES, CSV_TEMPLATE, CTAS, EXPIRY_CHOICES_DAYS, FORMATS, LANGUAGES, MAX_BATCH, MIN_PASSPHRASE_LENGTH,
-  OFFERS, PLATFORMS, SEASONS, SPEND_BAND_LABELS, TIERS, TONES, experimentCreate, isOneOf, parseExperimentsCsv,
+  OFFERS, PLATFORM_FORMATS, PLATFORMS, SEASONS, SPEND_BAND_LABELS, TIERS, TONES, experimentCreate, isOneOf, parseExperimentsCsv,
   roiPct, seal, spendBand, type ExperimentInput,
 } from "@nexora/ledger";
 import { useMemo, useState } from "react";
@@ -37,10 +37,12 @@ export function Log() {
     const value = params.get(name);
     return isOneOf(list, value) ? value : fallback;
   };
+  const initialPlatform = fromParam(PLATFORMS, "platform", "instagram");
+  const initialFormat = fromParam(FORMATS, "format", "reel");
   const [form, setForm] = useState({
     category: fromParam(CATEGORIES, "category", "tea_coffee"),
-    platform: fromParam(PLATFORMS, "platform", "instagram"),
-    format: fromParam(FORMATS, "format", "reel"),
+    platform: initialPlatform,
+    format: PLATFORM_FORMATS[initialPlatform].includes(initialFormat) ? initialFormat : PLATFORM_FORMATS[initialPlatform][0]!,
     lang: "hinglish" as (typeof LANGUAGES)[number],
     tier: "tier2" as (typeof TIERS)[number],
     season: "none" as (typeof SEASONS)[number],
@@ -102,8 +104,18 @@ export function Log() {
       {parent && <p className="card">{t("variantOf").split("{key}")[0]}<EntityLink entityKey={parent} />{t("variantOf").split("{key}")[1]}</p>}
       <div className="form-grid">
         <Field label="category"><VocabSelect list={CATEGORIES} value={form.category} onChange={(x) => x && set("category")(x)} /></Field>
-        <Field label="platform"><VocabSelect list={PLATFORMS} value={form.platform} onChange={(x) => x && set("platform")(x)} /></Field>
-        <Field label="format"><VocabSelect list={FORMATS} value={form.format} onChange={(x) => x && set("format")(x)} /></Field>
+        <Field label="platform">
+          <VocabSelect
+            list={PLATFORMS}
+            value={form.platform}
+            onChange={(x) => {
+              if (!x) return;
+              // Keep the format if the new platform sells it, otherwise switch to its first format.
+              setForm((f) => ({ ...f, platform: x, format: PLATFORM_FORMATS[x].includes(f.format) ? f.format : PLATFORM_FORMATS[x][0]! }));
+            }}
+          />
+        </Field>
+        <Field label="format"><VocabSelect list={PLATFORM_FORMATS[form.platform]} value={form.format} onChange={(x) => x && set("format")(x)} /></Field>
         <Field label="lang"><VocabSelect list={LANGUAGES} value={form.lang} onChange={(x) => x && set("lang")(x)} /></Field>
         <Field label="tier"><VocabSelect list={TIERS} value={form.tier} onChange={(x) => x && set("tier")(x)} /></Field>
         <Field label="season"><VocabSelect list={SEASONS} value={form.season} onChange={(x) => x && set("season")(x)} /></Field>
