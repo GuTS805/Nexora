@@ -249,3 +249,62 @@ main { max-width: 1360px; padding: 0 20px 50px; }
 @media (max-width: 480px) { .explore-panel .filters { grid-template-columns: 1fr; }.explore-panel .stats div { width: 100%; }.lead { font-size: 26px; } }
 .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
 .tabs button { flex: 0 1 auto; }
+
+/* Proof page */
+.proof-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto 240px; align-items: center; gap: 28px; padding: 26px 32px 18px; }
+.proof-copy h2 { margin: 0 0 12px; font-size: clamp(26px, 2.6vw, 38px); line-height: 1.1; font-weight: 800; letter-spacing: -.025em; }
+.proof-copy h2 em { color: var(--accent); font-style: normal; }
+.proof-copy p { margin: 0; max-width: 680px; font-size: 15px; color: var(--muted); }
+.proof-badge { display: flex; gap: 14px; align-items: center; padding: 14px 20px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--surface), transparent 20%); }
+.proof-badge .dot { width: 12px; height: 12px; flex: 0 0 12px; }
+.proof-badge b { display: block; color: var(--up); font-weight: 600; font-size: 13px; }
+.proof-badge span:not(.dot) { font-size: 13px; color: var(--muted); }
+.proof-art { width: 240px; height: auto; filter: drop-shadow(0 10px 24px #ff630f40); }
+.cube-top { fill: #ffb055; stroke: #ffd29a; stroke-width: .8; }
+.cube-left { fill: #b4501b; stroke: #ff9a45; stroke-width: .8; }
+.cube-right { fill: #6a2a0e; stroke: #ff8a35; stroke-width: .8; }
+.cube-grid { fill: none; stroke: #ff7a24; stroke-opacity: .35; stroke-width: 1; }
+.proof-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 0 0 22px; }
+.proof-stats > div { display: grid; grid-template-columns: 56px 1fr; grid-template-rows: auto auto auto; column-gap: 16px; align-items: center; padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(135deg, color-mix(in srgb, var(--accent), var(--surface) 88%), var(--surface)); }
+.proof-stats > div > svg { grid-row: 1 / 4; width: 56px; height: 56px; padding: 15px; border: 1px solid color-mix(in srgb, var(--accent), transparent 60%); border-radius: 12px; color: var(--accent); background: color-mix(in srgb, var(--accent), transparent 88%); }
+.proof-stats span { font-size: 13px; color: var(--text); }
+.proof-stats b { font-size: 24px; line-height: 1.2; }
+.proof-stats small { font-size: 12.5px; color: var(--muted); }
+.proof-stats .good b { color: var(--up); }
+.proof-stats .bad b { color: var(--down); }
+.proof-table { padding: 6px 14px; border: 1px solid color-mix(in srgb, var(--accent), var(--line) 60%); border-radius: 16px; background: color-mix(in srgb, var(--surface), transparent 15%); overflow-x: auto; }
+.proof-table table { font-size: 13px; }
+.proof-table th { padding: 14px 12px; font-weight: 600; color: var(--text); }
+.proof-table td { padding: 10px 12px; vertical-align: middle; border-bottom-color: color-mix(in srgb, var(--line), transparent 30%); }
+.proof-table tr:last-child td { border-bottom: 0; }
+.proof-table .feature { white-space: nowrap; }
+.proof-table .feature b { color: var(--accent); font-weight: 600; }
+.proof-icon { display: inline-grid; place-items: center; width: 36px; height: 36px; margin-right: 14px; vertical-align: middle; border: 1px solid var(--line); border-radius: 9px; color: var(--accent); background: color-mix(in srgb, var(--accent), transparent 90%); }
+.proof-icon svg { width: 19px; height: 19px; }
+.proof-table .why { min-width: 260px; max-width: 440px; color: var(--text); }
+.proof-table .chips { white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; gap: 5px; margin: 2px 6px 2px 0; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; font: 12px ui-monospace, "Cascadia Code", Menlo, monospace; color: var(--accent); text-decoration: none; background: var(--code); }
+.chip:hover { border-color: var(--accent); }
+.chip.refused { color: var(--warn-ink); background: var(--warn-bg); border-color: transparent; cursor: help; }
+.more { font-size: 12px; color: var(--muted); }
+.proof-table .verify { min-width: 170px; }
+.proof-table .verify button { display: block; width: 100%; padding: 8px 14px; font-size: 13px; white-space: nowrap; }
+.proof-table .verify button.ok { border-color: var(--up); color: var(--up); }
+.proof-table .verify button.fail { border-color: var(--down); color: var(--down); }
+.proof-table .verify small { display: block; margin-top: 4px; font-size: 11.5px; color: var(--muted); }
+.proof-table .verify small.fail { color: var(--down); }
+.foot { max-width: 1320px; margin: 0 auto 20px; border: 1px solid var(--line); border-radius: 12px; }
+@media (max-width: 1100px) { .proof-hero { grid-template-columns: 1fr auto; }.proof-art { display: none; }.proof-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .proof-hero { display: block; padding: 22px 2px 14px; }
+  .proof-badge { margin-top: 14px; }
+  .proof-stats { gap: 10px; }
+  .proof-stats > div { grid-template-columns: 1fr; padding: 14px; }
+  .proof-stats > div > svg { display: none; }
+  .proof-table { padding: 0; border: 0; background: none; }
+  .proof-table thead { display: none; }
+  .proof-table tr { display: grid; gap: 8px; margin-bottom: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  .proof-table td, .proof-table td.chips, .proof-table td.feature { display: block; padding: 0; border: 0; min-width: 0; max-width: none; white-space: normal; }
+  .foot { margin: 0 16px 16px; }
+}
+@media (max-width: 420px) { .proof-stats { grid-template-columns: 1fr; } }
