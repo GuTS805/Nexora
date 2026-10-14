@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getAddress, type Hex } from "viem";
 import {
-  comboStats, confidence, decodeExperiment, decodeTrustList, experimentCreate, experimentPredicate,
+  bestTraits, comboStats, confidence, decodeExperiment, decodeTrustList, experimentCreate, experimentPredicate,
   parseExperimentsCsv, CSV_TEMPLATE, PLATFORM_FORMATS, queryText, roiPct, seal, spendBand, suggest, trustListCreate,
   fetchExperiment, getEntityOrNull, trustListPatch, unseal, type ExperimentInput, type RawEntity,
 } from "../src/index.ts";
@@ -137,6 +137,19 @@ describe("insights", () => {
     expect(proven.map((s) => s.kind === "proven" && s.combo.platform)).toEqual(["instagram"]);
     const mojStats = comboStats([...fake, ...honest], { trusted }).find((c) => c.platform === "moj");
     expect(mojStats).toMatchObject({ publishers: 5, trustedPublishers: 0, score: 0 });
+  });
+
+  it("finds what works best inside a combo, ignoring one-off values", () => {
+    const hindiCod = (i: number) => {
+      const params = experimentCreate({ ...input, platform: "whatsapp", format: "status", lang: "hi", offer: "cod", spendInr: 1_000, revenueInr: 3_000 });
+      const d = decodeExperiment(asStored(params, i % 2 ? ALICE : BOB, `0x${(500 + i).toString(16).padStart(64, "0")}` as Hex));
+      if (!d.ok) throw new Error(d.reason);
+      return d.value;
+    };
+    const englishOnce = make(ALICE, "whatsapp", 900, 600);
+    const traits = bestTraits([hindiCod(1), hindiCod(2), hindiCod(3), { ...englishOnce, format: "status" }], "whatsapp", "status");
+    expect(traits.find((t) => t.dimension === "lang")).toMatchObject({ value: "hi", runs: 3, medianRoi: 200 });
+    expect(traits.find((t) => t.dimension === "offer")).toMatchObject({ value: "cod" });
   });
 
   it("only explores formats the platform actually sells", () => {

@@ -100,6 +100,7 @@ export const STRINGS = {
   notEnoughEnd: ["— you will be the evidence for the next seller.", "— अगले विक्रेता के लिए आप ही सबूत बनेंगे।"],
   tryCombo: ["Try {combo}", "आज़माएँ: {combo}"],
   provenReason: ["{p} independent sellers, typical ROI {r}%, {w}% of runs made a profit.", "{p} अलग विक्रेता, आम तौर पर {r}% मुनाफ़ा, {w}% बार फ़ायदा हुआ।"],
+  worksBest: ["Worked best with:", "सबसे अच्छा चला:"],
   evidence: ["Evidence:", "सबूत:"],
   more: ["+{n} more", "+{n} और"],
   exploreCombo: ["Explore: {combo}", "नया आज़माएँ: {combo}"],

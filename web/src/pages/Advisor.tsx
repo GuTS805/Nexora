@@ -1,5 +1,5 @@
 import { readExperiments } from "../cache.ts";
-import { CATEGORIES, LANGUAGES, SPEND_BAND_LABELS, TIERS, isOneOf, suggest, type Category, type ExperimentFilters, type Language, type Suggestion, type Tier } from "@nexora/ledger";
+import { CATEGORIES, LANGUAGES, SPEND_BAND_LABELS, TIERS, bestTraits, isOneOf, suggest, type Category, type ExperimentFilters, type Language, type Suggestion, type Tier } from "@nexora/ledger";
 import { useMemo, useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
 import { EntityLink, ErrorNote, Field, QueryBox, Roi, VocabSelect, WhatsAppButton, useAsync, useSource } from "../components.tsx";
@@ -95,6 +95,10 @@ export function Advisor() {
               s.kind === "proven" ? (
                 <li key={i} className="card">
                   <h3>{t("tryCombo", { combo: combo(s.combo.platform, s.combo.format) })} <Roi value={Math.round(s.combo.medianRoi)} /></h3>
+                  {(() => {
+                    const traits = bestTraits(result.data?.outcome.items ?? [], s.combo.platform, s.combo.format);
+                    return traits.length > 0 && <p className="tags"><b>{t("worksBest")}</b> {traits.map((tr) => <span key={tr.dimension}>{v(tr.value)}</span>)}</p>;
+                  })()}
                   <p>{t("provenReason", { p: s.combo.trustedPublishers, r: Math.round(s.combo.medianRoi), w: Math.round(s.combo.winRate * 100) })}</p>
                   <p className="small muted">
                     {t("evidence")} {s.combo.evidence.slice(0, 6).map((key) => <span key={key}><EntityLink entityKey={key} /> </span>)}

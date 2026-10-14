@@ -117,6 +117,34 @@ export function suggest(experiments: readonly Experiment[], take = 3, options: I
   return suggestions;
 }
 
+export type Trait = { dimension: "lang" | "season" | "offer" | "tone" | "cta"; value: string; medianRoi: number; runs: number };
+
+/**
+ * Within one platform·format combo, which language, season, offer, tone and CTA did best. A value
+ * needs at least `minRuns` runs to count, so one lucky row cannot define "what works". Payload-only
+ * fields (offer, tone, CTA) are aggregated client-side: they are shown, never filtered on.
+ */
+export function bestTraits(experiments: readonly Experiment[], platform: Platform, format: Format, minRuns = 2): Trait[] {
+  const rows = experiments.filter((e) => e.platform === platform && e.format === format);
+  const traits: Trait[] = [];
+  for (const dimension of ["lang", "season", "offer", "tone", "cta"] as const) {
+    const byValue = new Map<string, number[]>();
+    for (const row of rows) {
+      const value = row[dimension];
+      if (value === "none") continue;
+      byValue.set(value, [...(byValue.get(value) ?? []), row.roiPct]);
+    }
+    let best: Trait | undefined;
+    for (const [value, rois] of byValue) {
+      if (rois.length < minRuns) continue;
+      const medianRoi = quantile([...rois].sort((a, b) => a - b), 0.5);
+      if (!best || medianRoi > best.medianRoi) best = { dimension, value, medianRoi, runs: rois.length };
+    }
+    if (best && best.medianRoi > 0) traits.push(best);
+  }
+  return traits;
+}
+
 export function summarise(experiments: readonly Experiment[]) {
   const publishers = new Set(experiments.map((e) => e.creator)).size;
   const profitable = experiments.filter((e) => e.roiPct > 0).length;
