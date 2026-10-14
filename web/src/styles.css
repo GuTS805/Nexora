@@ -386,3 +386,7 @@ main { max-width: 1360px; padding: 0 20px 50px; }
 .entry header .with-logo { gap: 8px; }
 .entry header .logo { width: 20px; height: 20px; }
 @media (max-width: 760px) { .explore-panel td.group { min-width: 240px; }.explore-panel .stats { grid-template-columns: 1fr; } }
+
+/* Native dropdown lists keep the OS background on Windows; give options the theme colours explicitly. */
+select option, select optgroup { background-color: var(--surface); color: var(--text); }
+select option:checked { background-color: var(--accent); color: var(--accent-ink); }
