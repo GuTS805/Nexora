@@ -6,11 +6,41 @@ import { useI18n } from "../i18n.tsx";
 import { store } from "../storage.ts";
 
 export function Mine() {
-  const { reader, wallet, revision, connectBurner } = useArkiv();
+  const { reader, wallet, revision, connectBurner, oneOffWallets } = useArkiv();
   const { t } = useI18n();
-  const result = useAsync(async () => (wallet ? fetchExperiments(reader, { creators: [wallet.address], includeDemo: true }) : null), [reader, wallet?.address, revision]);
+  const oneOffs = oneOffWallets().map((w) => w.address);
+  // One $creator OR query covers the main wallet and up to 24 one-time wallets.
+  const creators = [...(wallet ? [wallet.address] : []), ...oneOffs].slice(0, 25);
+  const result = useAsync(async () => (creators.length ? fetchExperiments(reader, { creators, includeDemo: true }) : null), [reader, creators.join(","), revision]);
   const [showKey, setShowKey] = useState(false);
   const [importKey, setImportKey] = useState("");
+
+  // Backup format: one key per line, "main 0x…" for the test wallet and "one-time 0x…" for the rest.
+  // A single bare key restores as the main test wallet.
+  const oneOffKeys = (): string[] => {
+    try {
+      return JSON.parse(store.get("oneoff") ?? "[]") as string[];
+    } catch {
+      return [];
+    }
+  };
+  const backupText = () =>
+    [store.get("burner") ? `main ${store.get("burner")}` : "", ...oneOffKeys().map((k) => `one-time ${k}`)].filter(Boolean).join("\n");
+  const parseBackup = (text: string) => {
+    const lines = [...text.matchAll(/(main|one-time)?\s*(0x[0-9a-fA-F]{64})/g)];
+    return lines.map((m) => ({ main: m[1] === "main" || (lines.length === 1 && !m[1]), key: m[2]! }));
+  };
+  function restore() {
+    const keys = parseBackup(importKey);
+    const main = keys.find((k) => k.main);
+    const extra = keys.filter((k) => !k.main).map((k) => k.key);
+    if (extra.length) store.set("oneoff", JSON.stringify([...new Set([...oneOffKeys(), ...extra])]));
+    if (main) {
+      store.set("burner", main.key);
+      connectBurner();
+    }
+    setImportKey("");
+  }
 
   return (
     <section>
@@ -21,29 +51,18 @@ export function Mine() {
       {result.data && (
         <>
           <QueryBox query={result.data.query} block={result.data.blockNumber} cli={`npx tsx ledger/cli.ts query --demo --creator ${wallet?.address}`} />
+          {oneOffs.length > 0 && <p className="small muted">{t("oneOffCount", { n: oneOffs.length })}</p>}
           {result.data.items.length === 0 && <p className="muted">{t("mineEmpty")} <a href="#/log">{t("navLog")}</a></p>}
           <div className="grid">{result.data.items.map((e) => <ExperimentCard key={e.key} e={e} />)}</div>
         </>
       )}
-      {wallet?.mode === "burner" && (
+      {(wallet?.mode === "burner" || oneOffs.length > 0) && (
         <details className="card">
           <summary>{t("backupTitle")}</summary>
           <p className="small">{t("backupDesc")}</p>
-          {showKey ? <pre className="mono small">{store.get("burner")}</pre> : <button className="secondary" onClick={() => setShowKey(true)}>{t("revealKey")}</button>}
-          <div className="row">
-            <input placeholder={t("restorePh")} value={importKey} onChange={(e) => setImportKey(e.target.value.trim())} />
-            <button
-              className="secondary"
-              disabled={!/^0x[0-9a-fA-F]{64}$/.test(importKey)}
-              onClick={() => {
-                store.set("burner", importKey);
-                connectBurner();
-                setImportKey("");
-              }}
-            >
-              {t("restore")}
-            </button>
-          </div>
+          {showKey ? <pre className="mono small">{backupText()}</pre> : <button className="secondary" onClick={() => setShowKey(true)}>{t("revealKey")}</button>}
+          <textarea rows={3} placeholder={t("restorePh")} value={importKey} onChange={(e) => setImportKey(e.target.value)} />
+          <button className="secondary" disabled={parseBackup(importKey).length === 0} onClick={restore}>{t("restore")}</button>
         </details>
       )}
     </section>

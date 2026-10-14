@@ -92,7 +92,7 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
 
 - **Fact:** every experiment from one wallet shares a `$creator`, so a reader can see that "this wallet ran 12 tests in tier-3 sarees".
 - **Trade-off:** the same link gives a seller a reputation, and lets trust lists work.
-- **Mitigation available:** the burner wallet is not tied to any identity, and a seller who wants unlinkable results can use a fresh test wallet per result (restore and backup are in *My data*).
+- **Mitigation available:** the burner wallet is not tied to any identity. On *Log a result*, "Publish from a fresh one-time wallet" uses a new key for that one result, so it cannot be linked to the seller's other results by `$creator`. The keys stay in the browser, so *My data* still lists, extends and deletes those results, and can back the keys up and restore them (`createOneOff` / `walletFor` in [`web/src/arkiv.tsx`](../web/src/arkiv.tsx)).
 - **Residual:** timing and gas funding (the sponsor's transfers) are public and can correlate wallets.
 
 ### T10. Censorship and takedown

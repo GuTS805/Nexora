@@ -13,7 +13,7 @@ import { appUrl } from "../share.ts";
 const BLOCKS_PER_DAY = 86_400 / 2;
 
 export function Entity({ entityKey }: { entityKey: Hex }) {
-  const { reader, wallet, revision, bump, ensureGas } = useArkiv();
+  const { reader, wallet, revision, bump, ensureGas, walletFor } = useArkiv();
   const { t, v, lang } = useI18n();
   const data = useAsync(async () => {
     const [decoded, block] = await Promise.all([fetchExperiment(reader, entityKey), reader.getBlockNumber()]);
@@ -31,11 +31,11 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
   const [pass, setPass] = useState("");
   const [figures, setFigures] = useState<PrivateFigures | null>(null);
 
-  async function act(label: string, run: () => Promise<{ txHash: Hex }>) {
+  async function act(label: string, run: () => Promise<{ txHash: Hex }>, payer?: `0x${string}`) {
     setBusy(label);
     setError(null);
     try {
-      await ensureGas();
+      await ensureGas(payer);
       const result = await run();
       setTx(result.txHash);
       bump();
@@ -64,7 +64,8 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
   }
 
   const { e, block, children } = data.data;
-  const isOwner = wallet?.address.toLowerCase() === e.owner.toLowerCase();
+  // The owner may be the connected wallet, the burner, or a one-time wallet kept in this browser.
+  const ownerWallet = walletFor(e.owner);
   const expires = blockToDate(e.expiresAt, block);
   const locale = lang === "hi" ? "hi-IN" : "en-IN";
   const combo = `${v(e.platform)} · ${v(e.format)}`;
@@ -96,8 +97,8 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
         )}
         <a className="button secondary" href={`#/log?parent=${e.key}&category=${e.category}&platform=${e.platform}&format=${e.format}`}>{t("ranVariant")}</a>
         <WhatsAppButton text={shareText} />
-        {isOwner && (
-          <button className="danger" disabled={busy !== null} onClick={() => confirm(t("deleteConfirm")) && act("delete", () => wallet!.client.deleteEntity({ entityKey: e.key }))}>
+        {ownerWallet && (
+          <button className="danger" disabled={busy !== null} onClick={() => confirm(t("deleteConfirm")) && act("delete", () => ownerWallet.client.deleteEntity({ entityKey: e.key }), ownerWallet.address)}>
             {busy === "delete" ? t("deleting") : t("delete")}
           </button>
         )}

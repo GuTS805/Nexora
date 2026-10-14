@@ -29,9 +29,10 @@ function PublishResult({ receipt, error }: { receipt: Receipt | null; error: str
 }
 
 export function Log() {
-  const { wallet, ensureGas, bump } = useArkiv();
+  const { wallet, ensureGas, bump, createOneOff } = useArkiv();
   const { t, v } = useI18n();
   const params = useQueryParams();
+  const [oneOff, setOneOff] = useState(false);
   const fromParam = <T extends string>(list: readonly T[], name: string, fallback: T): T => {
     const value = params.get(name);
     return isOneOf(list, value) ? value : fallback;
@@ -70,7 +71,7 @@ export function Log() {
     setError(null);
     setReceipt(null);
     try {
-      if (!wallet) throw new Error(t("connectFirst"));
+      if (!wallet && !oneOff) throw new Error(t("connectFirst"));
       if (sealing && form.passphrase.length < MIN_PASSPHRASE_LENGTH) throw new Error(t("passTooShort", { n: MIN_PASSPHRASE_LENGTH }));
       const input: ExperimentInput = {
         category: form.category, platform: form.platform, format: form.format, lang: form.lang, tier: form.tier,
@@ -80,8 +81,10 @@ export function Log() {
         sealed: sealing ? await seal({ spendInr: spend, revenueInr: revenue, orders: form.orders ? Number(form.orders) : undefined, note: form.note || undefined }, form.passphrase) : undefined,
       };
       const params = experimentCreate(input);
-      await ensureGas();
-      const result = await wallet.client.createEntity(params);
+      // A one-time wallet is created only now, after validation, so failed forms leave no stray keys.
+      const publisher = oneOff ? createOneOff() : wallet!;
+      await ensureGas(publisher.address);
+      const result = await publisher.client.createEntity(params);
       setReceipt({ txHash: result.txHash, keys: [result.entityKey] });
       setForm((f) => ({ ...f, passphrase: "" }));
       bump();
@@ -141,7 +144,11 @@ export function Log() {
         <p className="small muted">{t("expiryNote")}</p>
       </fieldset>
 
-      <button disabled={!wallet || !valid || busy} onClick={publish}>{busy ? t("publishing") : t("publish")}</button>
+      <label className="check">
+        <input type="checkbox" checked={oneOff} onChange={(e) => setOneOff(e.target.checked)} /> {t("oneOffLabel")}
+      </label>
+      {oneOff && <p className="small muted">{t("oneOffHelp")}</p>}
+      <button disabled={(!wallet && !oneOff) || !valid || busy} onClick={publish}>{busy ? t("publishing") : t("publish")}</button>
       <PublishResult receipt={receipt} error={error} />
       <CsvImport />
     </section>

@@ -124,6 +124,9 @@ export const STRINGS = {
   passTooShort: ["Passphrase must be at least {n} characters, or leave it empty to skip sealing.", "पासफ़्रेज़ कम से कम {n} अक्षर का हो, या खाली छोड़ दें।"],
   neverTitle: ["📱 Never leaves this device", "📱 इस डिवाइस से बाहर नहीं जाता"],
   neverDesc: ["Your passphrase. Without a passphrase, the exact rupee figures are thrown away after working out the band and ROI.", "आपका पासफ़्रेज़। पासफ़्रेज़ न हो तो रेंज और मुनाफ़ा निकालने के बाद असली रकम मिटा दी जाती है।"],
+  oneOffLabel: ["Publish from a fresh one-time wallet", "नए, एक-बार वाले वॉलेट से दर्ज करें"],
+  oneOffHelp: ["This result will not be linkable to your other results by wallet address. Its key stays in this browser (see “My data”) so you can still extend or delete it.", "यह नतीजा वॉलेट पते से आपके बाकी नतीजों से जुड़ा नहीं दिखेगा। इसकी key इसी ब्राउज़र में रहती है (“मेरा डेटा” देखें) ताकि आप बाद में इसे बढ़ा या हटा सकें।"],
+  oneOffCount: ["Also showing {n} result(s) from one-time wallets kept in this browser.", "इस ब्राउज़र में रखे एक-बार वाले वॉलेट के {n} नतीजे भी दिखाए जा रहे हैं।"],
   expiryNote: ["After this it disappears from Arkiv automatically. You can delete it earlier from “My data”. Others may extend a result they find useful, but nobody — including you — can edit it once published.", "इसके बाद यह Arkiv से अपने-आप हट जाएगा। “मेरा डेटा” से पहले भी हटा सकते हैं। काम का लगे तो दूसरे इसकी मियाद बढ़ा सकते हैं, पर दर्ज होने के बाद कोई भी — आप भी — इसे बदल नहीं सकता।"],
   published: ["Published {n} entries on Tiramisu. Transaction", "Tiramisu पर {n} एंट्री दर्ज हुईं। ट्रांज़ैक्शन"],
   publishedNote: ["Anyone can now read this with the CLI or any Arkiv client, even if this website goes offline.", "अब कोई भी इसे CLI या किसी भी Arkiv ऐप से पढ़ सकता है, यह वेबसाइट बंद हो जाए तब भी।"],
@@ -173,9 +176,9 @@ export const STRINGS = {
   mineIntro: ["Everything here is found by asking Arkiv for entries whose $creator is your wallet. Open one to extend or delete it, or to unlock its sealed figures.", "यहाँ वो सब है जिसका $creator आपका वॉलेट है — सीधे Arkiv से। किसी एंट्री को खोलकर मियाद बढ़ाएँ, हटाएँ या बंद आँकड़े खोलें।"],
   mineEmpty: ["You have not published anything from this wallet yet.", "इस वॉलेट से अभी कुछ दर्ज नहीं हुआ।"],
   backupTitle: ["Test wallet backup", "टेस्ट वॉलेट का बैकअप"],
-  backupDesc: ["This throwaway Tiramisu key lives only in this browser. Copy it to keep control of what you published (to delete it later) on another device. Testnet only — never put real money on it.", "यह अस्थायी Tiramisu key सिर्फ़ इसी ब्राउज़र में है। दूसरे डिवाइस से अपनी एंट्री सँभालने (जैसे बाद में हटाने) के लिए इसे कॉपी कर लें। सिर्फ़ टेस्टनेट — इस पर असली पैसा कभी न रखें।"],
-  revealKey: ["Reveal key", "key दिखाएँ"],
-  restorePh: ["Paste a backed-up test key (0x…)", "बैकअप की हुई टेस्ट key चिपकाएँ (0x…)"],
+  backupDesc: ["These throwaway Tiramisu keys (your test wallet and any one-time wallets) live only in this browser. Copy them to keep control of what you published, for example to delete it later from another device. Testnet only — never put real money on them.", "ये अस्थायी Tiramisu keys (आपका टेस्ट वॉलेट और एक-बार वाले वॉलेट) सिर्फ़ इसी ब्राउज़र में हैं। अपनी एंट्री सँभालने के लिए, जैसे बाद में किसी दूसरे डिवाइस से हटाने के लिए, इन्हें कॉपी कर लें। सिर्फ़ टेस्टनेट — इन पर असली पैसा कभी न रखें।"],
+  revealKey: ["Reveal keys", "keys दिखाएँ"],
+  restorePh: ["Paste a backup (one key per line, or a single 0x… key)", "बैकअप चिपकाएँ (हर लाइन में एक key, या एक 0x… key)"],
   restore: ["Restore", "वापस लाएँ"],
 
   // trust
