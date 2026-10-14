@@ -12,7 +12,7 @@
 import { tiramisu } from "@arkiv-network/sdk/chains";
 import { createPublicClient, createWalletClient, getAddress, http, isAddress, parseEther, type Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { clientIp, createLimiter } from "./_limits.ts";
+import { clientIp, createLimiter } from "./_limits.js";
 
 const DRIP = parseEther(process.env.SPONSOR_DRIP_GLM ?? "0.01");
 const ALREADY_FUNDED = parseEther("0.001");
@@ -63,6 +63,8 @@ async function drip(key: string, address: Address, ip: string, now: number): Pro
   const wallet = createWalletClient({ chain: tiramisu, transport: rpc, account: sponsor });
   // Counted before sending so a burst of requests cannot slip past the limits while this one is in flight.
   limiter.commit(ip, address, now);
-  const txHash = await wallet.sendTransaction({ to: address, value: DRIP, account: sponsor, chain: tiramisu });
+  // Vercel type-checks this file with its own settings, where the SDK's chain type asks for a `kzg`
+  // field that a plain transfer never uses; the cast keeps the build output free of that noise.
+  const txHash = await wallet.sendTransaction({ to: address, value: DRIP } as unknown as Parameters<typeof wallet.sendTransaction>[0]);
   return json(200, { funded: true, txHash });
 }

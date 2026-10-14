@@ -13,7 +13,7 @@
     "dev": "npm run dev -w web",
     "build": "npm run build -w web",
     "test": "npm run test -w @nexora/ledger && npm run test -w web",
-    "typecheck": "npm run typecheck -w @nexora/ledger && npm run typecheck -w web && tsc --noEmit -p scripts && tsc --noEmit -p api",
+    "typecheck": "npm run typecheck -w @nexora/ledger && npm run typecheck -w web && tsc --noEmit -p scripts && tsc --noEmit -p tsconfig.api.json",
     "cli": "npm run cli -w @nexora/ledger --",
     "seed": "tsx scripts/seed.ts",
     "e2e": "tsx scripts/e2e.ts",
