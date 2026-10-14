@@ -108,3 +108,5 @@ Testnet only. Demo data is synthetic, calibrated to ranges in public surveys, an
 ## License
 
 [MIT](LICENSE)
+
+Platform logos are bundled from [Simple Icons](https://simpleicons.org) (CC0) where it has one; other platforms get a letter tile in their brand colour. The names and logos are trademarks of their owners and are shown only to say which app an entry is about. No platform endorses or is affiliated with Nexora.

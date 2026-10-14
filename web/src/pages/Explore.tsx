@@ -5,7 +5,9 @@ import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
 import { ErrorNote, Field, Hourly, QueryBox, ShiftCard, VocabSelect, useAsync, useMonth, useSource, type Source } from "../components.tsx";
 import { RECOMMENDED_TRUST_LIST } from "../config.ts";
+import { Icon, PATHS } from "../art.tsx";
 import { useI18n } from "../i18n.tsx";
+import { PlatformLogo } from "../logos.tsx";
 
 /** The months the period filter offers: this one and the five before it. */
 export function recentPeriods(now = new Date()): number[] {
@@ -176,9 +178,9 @@ export function Explore() {
           <p className="lead">{tagline.endsWith(accent) ? <>{tagline.slice(0, -accent.length)}<em>{accent}</em></> : tagline}</p>
           <div className="steps">
             <ol>
-              <li>{t("step1")}</li>
-              <li>{t("step2")}</li>
-              <li>{t("step3")}</li>
+              <li><Icon>{PATHS.chart}</Icon><span>{t("step1")}</span></li>
+              <li><Icon>{PATHS.list}</Icon><span>{t("step2")}</span></li>
+              <li><Icon>{PATHS.shield}</Icon><span>{t("step3")}</span></li>
             </ol>
             <div className="row">
               <a className="button" href="#/compare">{t("ctaAdvice")}</a>
@@ -216,18 +218,18 @@ export function Explore() {
         {result.data && (
           <>
             <div className="stats">
-              <div><b>{stats.shifts}</b><span>{t("days")}</span></div>
-              <div><b>{stats.workers}</b><span>{t("workers")}</span></div>
-              <div><b>₹{stats.medianHourly}</b><span>{t("medianHourly")}</span></div>
+              <div><Icon size={26}>{PATHS.list}</Icon><b>{stats.shifts}</b><span>{t("days")}</span></div>
+              <div><Icon size={26}>{PATHS.users}</Icon><b>{stats.workers}</b><span>{t("workers")}</span></div>
+              <div className="highlight"><span className="rupee">₹</span><b>₹{stats.medianHourly}</b><span>{t("medianHourly")}</span></div>
             </div>
             {groups.length > 0 && (
               <div className="table-wrap">
                 <table>
-                  <thead><tr><th>{t("colGroup")}</th><th>{t("colMedian")}</th><th>{t("colMiddle")}</th><th>{t("colCosts")}</th><th>{t("colDays")}</th><th>{t("colWorkers")}</th></tr></thead>
+                  <thead><tr><th>{t("colGroup")}</th><th className="key-col">{t("colMedian")}</th><th>{t("colMiddle")}</th><th>{t("colCosts")}</th><th>{t("colDays")}</th><th>{t("colWorkers")}</th></tr></thead>
                   <tbody>
                     {groups.map((g) => (
                       <tr key={`${g.platform}${g.work}${g.city}`}>
-                        <td>{v(g.platform)} · {v(g.work)} · {g.city ? v(g.city) : ""}</td>
+                        <td className="group"><span className="with-logo"><PlatformLogo platform={g.platform} /><span><b>{v(g.platform)}</b> · {v(g.work)}{g.city ? ` · ${v(g.city)}` : ""}</span></span></td>
                         <td><Hourly value={g.medianHourly} /></td>
                         <td className="muted">₹{g.p25Hourly} … ₹{g.p75Hourly}</td>
                         <td>{g.medianCostPct}%</td>

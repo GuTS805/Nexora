@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
 import { Change, EntityLink, ErrorNote, Field, Hourly, QueryBox, VocabSelect, WhatsAppButton, useAsync, useSource } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
+import { PlatformLogo } from "../logos.tsx";
 import { appUrl } from "../share.ts";
 import { SourcePicker, cliFor, creatorsFor, trustedSetFor, useRecommendedList } from "./Explore.tsx";
 
@@ -79,7 +80,7 @@ export function Compare() {
             {result.data.ranking.map((r) => (
               <li key={`${r.platform}${r.work}`} className={r.confirmed ? "card" : "card explore"}>
                 <h3>
-                  {v(r.platform)} · {v(r.work)} <Hourly value={r.medianHourly} />
+                  <span className="with-logo"><PlatformLogo platform={r.platform} />{v(r.platform)} · {v(r.work)}</span> <Hourly value={r.medianHourly} />
                   {r.monthChangePct !== null && <> <Change value={r.monthChangePct} /> <span className="small muted">{t("monthChange")}</span></>}
                   {!r.confirmed && <span className="badge warn" title={t("unconfirmedTitle")}>{t("unconfirmed")}</span>}
                 </h3>

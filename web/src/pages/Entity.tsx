@@ -6,6 +6,7 @@ import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
 import { Addr, EntityLink, ErrorNote, ExplorerEntity, Hourly, IncidentCard, TxLink, WalletBar, WhatsAppButton, useAsync, useMonth } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
+import { PlatformLogo } from "../logos.tsx";
 import { appUrl } from "../share.ts";
 
 const BLOCKS_PER_DAY = 86_400 / 2;
@@ -85,7 +86,7 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
     <section>
       {e.kind === "shift" ? (
         <>
-          <h2>{v(e.platform)} · {v(e.work)} <Hourly value={e.netHourly} /></h2>
+          <h2><span className="with-logo"><PlatformLogo platform={e.platform} />{v(e.platform)} · {v(e.work)}</span> <Hourly value={e.netHourly} /></h2>
           <p className="muted">
             {v(e.city)} · {v(e.vehicle)} · {month(e.period)} · {HOURS_BAND_LABELS[e.hoursBand]} · {t("colCosts")} {e.costPct}% · {t("incentive")}: {v(e.incentive)}
             {e.demo && ` · ${t("syntheticDemo")}`}

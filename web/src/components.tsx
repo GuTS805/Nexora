@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { Address, Hex } from "viem";
 import { useArkiv } from "./arkiv.tsx";
 import { useI18n, type StringKey } from "./i18n.tsx";
+import { PlatformLogo } from "./logos.tsx";
 import { whatsappUrl } from "./share.ts";
 import { store } from "./storage.ts";
 
@@ -127,7 +128,7 @@ export function ShiftCard({ e, trusted, block }: { e: Shift; trusted?: boolean |
   return (
     <article className="card entry">
       <header>
-        <strong>{v(e.platform)} · {v(e.work)}</strong>
+        <strong className="with-logo"><PlatformLogo platform={e.platform} />{v(e.platform)} · {v(e.work)}</strong>
         <Hourly value={e.netHourly} />
       </header>
       <p className="tags">
