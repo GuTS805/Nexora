@@ -21,6 +21,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: UI smoke test (headless Chrome against the production build)
+        run: npm run test:ui
       - run: npm run build:portable -w web
       - run: npm audit --audit-level=moderate
       - name: Portable build is one self-contained file

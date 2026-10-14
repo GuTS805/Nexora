@@ -18,6 +18,7 @@
     "seed": "tsx scripts/seed.ts",
     "e2e": "tsx scripts/e2e.ts",
     "check:secrets": "tsx scripts/check-secrets.ts",
+    "test:ui": "node scripts/ui-smoke.mjs",
     "wallets": "tsx scripts/wallets.ts"
   },
   "devDependencies": {

@@ -48,6 +48,7 @@ Requires Node.js 20+.
 ```bash
 npm install
 npm test                       # contract, SDK-encoding and translation tests
+npm run test:ui                # 11 UI checks in headless Chrome against the production build
 npm run typecheck
 npm run dev                    # http://localhost:5173
 
