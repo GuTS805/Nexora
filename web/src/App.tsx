@@ -35,6 +35,10 @@ export function App() {
     ["/mine", t("navMine")], ["/trust", t("navTrust")], ["/proof", t("navProof")], ["/about", t("navAbout")],
   ];
   const entity = /^\/e\/(0x[0-9a-fA-F]{64})$/.exec(route)?.[1] as Hex | undefined;
+  // On phones the nav scrolls sideways; keep the current page's tab in view.
+  useEffect(() => {
+    document.querySelector(".top nav a.active")?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [route]);
 
   return (
     <>

@@ -49,7 +49,7 @@ export function Proof() {
           : "Each row is a real Tiramisu transaction recorded by the demo seed script (arkiv/evidence.json). Open it on the explorer, or re-check it against the chain right here."}
       </p>
       {steps.length === 0 && <p className="card">{hi ? "सीड अभी नहीं चला है।" : "The seed has not run yet; nothing recorded."}</p>}
-      <div className="table-wrap">
+      {steps.length > 0 && <div className="table-wrap">
         <table>
           <thead><tr><th>{hi ? "फ़ीचर" : "Feature"}</th><th>{hi ? "ट्रांज़ैक्शन" : "Transactions"}</th><th>{hi ? "एंट्री" : "Entity"}</th><th /></tr></thead>
           <tbody>
@@ -70,7 +70,7 @@ export function Proof() {
             })}
           </tbody>
         </table>
-      </div>
+      </div>}
     </section>
   );
 }
