@@ -125,17 +125,24 @@ async function step(name: string, why: string, run: () => Promise<Record<string,
   return result;
 }
 
+/**
+ * Publishes `rows` from one wallet in batches. Resumable: rows this wallet already has on chain (from
+ * a run that stopped half-way, e.g. out of gas) are counted and skipped, so a rerun never duplicates.
+ */
 async function publishBatches(keyName: string, rows: ExperimentInput[]) {
   const wallet = walletFor(keyName);
-  const keys: Hex[] = [];
+  const creator = account(keyName).address;
+  const existing = await fetchExperiments(client, { includeDemo: true, creators: [creator] }, 200);
+  const keys: Hex[] = existing.items.map((e) => e.key);
   const txs: Hex[] = [];
-  for (let i = 0; i < rows.length; i += MAX_BATCH) {
+  if (keys.length > 0) console.log(`  ${creator} already has ${keys.length} rows on chain; publishing the remaining ${Math.max(0, rows.length - keys.length)}`);
+  for (let i = keys.length; i < rows.length; i += MAX_BATCH) {
     const creates: CreateEntityParameters[] = rows.slice(i, i + MAX_BATCH).map(experimentCreate);
     const result = await wallet.executeBatch({ creates });
     keys.push(...result.createdEntities);
     txs.push(result.txHash);
   }
-  return { creator: account(keyName).address, entities: keys.length, keys, txs };
+  return { creator, entities: keys.length, keys, txs };
 }
 
 const honest = SEED_KEY_NAMES.slice(0, 3);

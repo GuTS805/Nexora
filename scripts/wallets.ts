@@ -14,9 +14,10 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { arkivHttp, readClient } from "../ledger/src/index.ts";
 import { ENV_FILE, SEED_KEY_NAMES, SPONSOR_KEY_NAME, loadEnv, requireKey } from "./env.ts";
 
-const SEED_TARGET = parseEther("0.05");
 
 loadEnv();
+// GLM each seed wallet is topped up to; raise SEED_FUND_GLM if the seed runs out of gas.
+const SEED_TARGET = parseEther(process.env.SEED_FUND_GLM ?? "0.05");
 const existing = existsSync(ENV_FILE) ? readFileSync(ENV_FILE, "utf8") : "";
 const roles: [string, string][] = [
   [SPONSOR_KEY_NAME, "sponsor: gas sponsor for visitors' burner wallets + funds seed wallets"],
