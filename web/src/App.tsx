@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Hex } from "viem";
 import { useI18n } from "./i18n.tsx";
+import { store } from "./storage.ts";
 import { About } from "./pages/About.tsx";
 import { Advisor } from "./pages/Advisor.tsx";
 import { Entity } from "./pages/Entity.tsx";
@@ -30,6 +31,11 @@ function useRoute() {
 export function App() {
   const { route, query } = useRoute();
   const { t, lang, setLang } = useI18n();
+  const [lightTheme, setLightTheme] = useState(() => store.get("theme") === "light");
+  useEffect(() => {
+    document.documentElement.dataset.theme = lightTheme ? "light" : "dark";
+    store.set("theme", lightTheme ? "light" : "dark");
+  }, [lightTheme]);
   const nav: [string, string][] = [
     ["/", t("navExplore")], ["/advisor", t("navAdvisor")], ["/log", t("navLog")],
     ["/mine", t("navMine")], ["/trust", t("navTrust")], ["/proof", t("navProof")], ["/about", t("navAbout")],
@@ -53,7 +59,8 @@ export function App() {
         <nav>
           {nav.map(([path, label]) => <a key={path} href={`#${path}`} className={route === path ? "active" : ""}>{label}</a>)}
         </nav>
-        <button className="link lang" onClick={() => setLang(lang === "en" ? "hi" : "en")}>{t("switchLang")}</button>
+        <button className="icon-control" onClick={() => setLightTheme(!lightTheme)} title={t(lightTheme ? "themeDark" : "themeLight")} aria-label={t(lightTheme ? "themeDark" : "themeLight")}>{lightTheme ? "☾" : "☼"}</button>
+        <button className="icon-control lang" onClick={() => setLang(lang === "en" ? "hi" : "en")}>{t("switchLang")}</button>
       </header>
       <main>
         {entity ? <Entity entityKey={entity} /> :

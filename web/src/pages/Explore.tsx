@@ -156,21 +156,33 @@ export function Explore() {
   const combos = comboStats(items, { trusted: trustedSetFor(source, recommended) }).slice(0, 8);
   const stats = summarise(items);
   const sorted = [...items].sort((a, b) => b.roiPct - a.roiPct).slice(0, 60);
+  // The closing phrase of the tagline is highlighted, in either language.
+  const tagline = t("tagline"), accent = t("taglineAccent");
 
   return (
-    <section>
-      <p className="lead">{t("tagline")}</p>
+    <section className="explore-page">
+      <div className="hero">
+      <div className="hero-copy">
+      <p className="lead">{tagline.endsWith(accent) ? <>{tagline.slice(0, -accent.length)}<em>{accent}</em></> : tagline}</p>
       <div className="steps">
         <ol>
-          <li>{t("step1")}</li>
-          <li>{t("step2")}</li>
-          <li>{t("step3")}</li>
+          <li>{t("step1").replace(/^1\.\s*/, "")}</li>
+          <li>{t("step2").replace(/^2\.\s*/, "")}</li>
+          <li>{t("step3").replace(/^3\.\s*/, "")}</li>
         </ol>
         <div className="row">
           <a className="button" href="#/advisor">{t("ctaAdvice")}</a>
           <a className="button secondary" href="#/log">{t("ctaLog")}</a>
         </div>
       </div>
+      </div>
+      <div className="hero-art" aria-hidden="true">
+        <div className="orbit orbit-one" /><div className="orbit orbit-two" />
+        <div className="chart-card chart-back"><i /><i /><i /></div>
+        <div className="chart-card chart-front"><div className="chart-lines"><i /><i /></div><div className="chart-bars"><i /><i /><i /><i /><i /><i /></div><span className="chart-arrow">↗</span></div>
+      </div>
+      </div>
+      <div className="explore-panel">
       <LiveFeed onNew={bump} />
       <div className="filters">
         <Field label="category"><VocabSelect list={CATEGORIES} value={category} onChange={setCategory} any /></Field>
@@ -217,6 +229,7 @@ export function Explore() {
         </>
       )}
       {creators && creators.length === 0 && <p className="muted">{t("connectToSeeMine")}</p>}
+      </div>
     </section>
   );
 }

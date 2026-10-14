@@ -13,6 +13,8 @@ export const STRINGS = {
   navProof: ["Proof", "सबूत"],
   navAbout: ["How it works", "यह कैसे काम करता है"],
   switchLang: ["हिंदी", "English"],
+  themeLight: ["Switch to light mode", "लाइट मोड चालू करें"],
+  themeDark: ["Switch to dark mode", "डार्क मोड चालू करें"],
   footer: ["Data lives on Arkiv Tiramisu testnet · MIT · results are self-reported by sellers; synthetic demo rows are labelled", "डेटा Arkiv Tiramisu टेस्टनेट पर है · MIT · नतीजे विक्रेता खुद दर्ज करते हैं; डेमो (कृत्रिम) डेटा पर निशान लगा है"],
   source: ["source", "कोड"],
 
@@ -72,6 +74,7 @@ export const STRINGS = {
   shareWhatsApp: ["Share on WhatsApp", "व्हाट्सऐप पर भेजें"],
 
   // explore
+  taglineAccent: ["open to everyone.", "सबके लिए खुले।"],
   step1: ["1. See what worked for sellers like you", "1. देखें आप जैसे विक्रेताओं के लिए क्या चला"],
   step2: ["2. Try it with a small budget", "2. छोटे बजट से आज़माएँ"],
   step3: ["3. Log your result — the next seller learns from you", "3. अपना नतीजा दर्ज करें — अगला विक्रेता आपसे सीखेगा"],
