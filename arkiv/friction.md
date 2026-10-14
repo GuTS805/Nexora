@@ -71,6 +71,7 @@ Smooth paths are documented with the same rigour as problems.
   - an error within seconds that says "query budget exhausted, resets in ~36 min, use an access key";
   - documentation of the anonymous budget size and of what a query costs. The `ratelimit` header says `limit=10000` cost units, but the docs give no cost per query or per row.
 - **Also:** `getEntity` is implemented as an `arkiv_query` (`$key = key(…)`, see `src/actions/public/getEntity.ts`), so even single-entity lookups draw on the same scarce budget. Only `eth_*` calls sit in a separate bucket (`ratelimit: limit=600` per short window, observed on `eth_blockNumber`).
+- **Budget not visible until it is gone (live, 17:23 IST, after the window reset):** successful `arkiv_query` responses carry only the short request bucket (`ratelimit: limit=600, remaining=592, reset=29`). The 10,000-unit cost budget shows up in headers only on the 429. A client therefore cannot see that it is about to run out and slow down; the first sign is a hard stop of about an hour.
 - **Impact on apps:** a browser dApp that reads Arkiv directly (our censorship-resistance design) inherits this per visitor IP. Visitors on a shared NAT, such as an office, a college Wi-Fi or a mobile carrier's CGNAT in India, share one anonymous budget. Access keys are explicitly not safe in browsers ([docs](https://docs.arkiv.network/start-here/access-keys/)).
 - **Our workaround:** [`ledger/src/queries.ts`](../ledger/src/queries.ts) `arkivHttp()`:
   - throws `ArkivRateLimitError` from `onFetchResponse` on 429, which surfaces in about 2.5 s in our test instead of hanging;
@@ -80,7 +81,7 @@ Smooth paths are documented with the same rigour as problems.
   - the live feed batches up to 25 new keys into one `$key`-filtered query instead of one `getEntity` per chain event.
 - **Suggested fix:**
   1. Have the SDK's default transport not sleep on long `Retry-After` values (cap at a few seconds, then throw a typed `RateLimitError` carrying `retryAfter`).
-  2. Document the anonymous budget and the cost model.
+  2. Document the anonymous budget and the cost model, and return the remaining cost budget on every response (e.g. a second `ratelimit` entry), so clients can back off before the hour-long stop.
   3. Consider a per-origin or per-dApp read allowance, so browser-first apps do not have to proxy reads through a server, which reintroduces the central point that Arkiv removes.
 
 ## F6. Smooth: exact, rerunnable query text (status: live)
