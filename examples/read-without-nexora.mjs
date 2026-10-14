@@ -32,22 +32,27 @@ try {
 } catch (error) {
   const limited = String(error?.details ?? error).includes("ANON_COST_LIMITED");
   console.error(limited ? "Arkiv's anonymous query budget is used up for this IP; retry later or set ARKIV_RPC_URL to a keyed RPC." : `query failed: ${error?.shortMessage ?? error}`);
-  process.exit(1);
+  // exitCode, not process.exit(): exiting with sockets still closing trips a libuv assertion on Windows.
+  process.exitCode = 1;
 }
-console.log(`${predicate} → ${page.entities.length} entities at block ${page.blockNumber}\n`);
+if (page) report(page);
 
-// Group by platform/format and count DISTINCT creators — never trust one wallet's volume.
-const groups = new Map();
-for (const entity of page.entities) {
-  const a = entity.attributes ?? {};
-  const id = `${a.platform?.value}/${a.format?.value}`;
-  const g = groups.get(id) ?? { rois: [], creators: new Set() };
-  g.rois.push(a.roi_pct?.value);
-  g.creators.add(entity.creator);
-  groups.set(id, g);
+function report(page) {
+  console.log(`${predicate} → ${page.entities.length} entities at block ${page.blockNumber}\n`);
+
+  // Group by platform/format and count DISTINCT creators — never trust one wallet's volume.
+  const groups = new Map();
+  for (const entity of page.entities) {
+    const a = entity.attributes ?? {};
+    const id = `${a.platform?.value}/${a.format?.value}`;
+    const g = groups.get(id) ?? { rois: [], creators: new Set() };
+    g.rois.push(a.roi_pct?.value);
+    g.creators.add(entity.creator);
+    groups.set(id, g);
+  }
+  const rows = [...groups].map(([id, g]) => {
+    const sorted = g.rois.filter((n) => typeof n === "number").sort((x, y) => x - y);
+    return { combo: id, runs: sorted.length, sellers: g.creators.size, medianRoi: sorted[Math.floor(sorted.length / 2)] };
+  });
+  console.table(rows.sort((x, y) => y.sellers - x.sellers || y.medianRoi - x.medianRoi));
 }
-const rows = [...groups].map(([id, g]) => {
-  const sorted = g.rois.filter((n) => typeof n === "number").sort((x, y) => x - y);
-  return { combo: id, runs: sorted.length, sellers: g.creators.size, medianRoi: sorted[Math.floor(sorted.length / 2)] };
-});
-console.table(rows.sort((x, y) => y.sellers - x.sellers || y.medianRoi - x.medianRoi));

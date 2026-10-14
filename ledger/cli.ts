@@ -146,5 +146,6 @@ switch (command) {
 }
 } catch (error) {
   console.error(`error: ${explainError(error)}`);
-  process.exit(1);
+  // exitCode, not process.exit(): exiting with sockets still closing trips a libuv assertion on Windows.
+  process.exitCode = 1;
 }
