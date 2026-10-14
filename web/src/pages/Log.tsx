@@ -1,8 +1,4 @@
-import {
-  CATEGORIES, CSV_TEMPLATE, CTAS, EXPIRY_CHOICES_DAYS, FORMATS, LANGUAGES, MAX_BATCH, MIN_PASSPHRASE_LENGTH,
-  OFFERS, PLATFORM_FORMATS, PLATFORMS, SEASONS, SPEND_BAND_LABELS, TIERS, TONES, experimentCreate, isOneOf, parseExperimentsCsv,
-  roiPct, seal, spendBand, type ExperimentInput,
-} from "@nexora/ledger";
+import { explainError, CATEGORIES, CSV_TEMPLATE, CTAS, EXPIRY_CHOICES_DAYS, FORMATS, LANGUAGES, MAX_BATCH, MIN_PASSPHRASE_LENGTH, OFFERS, PLATFORM_FORMATS, PLATFORMS, SEASONS, SPEND_BAND_LABELS, TIERS, TONES, experimentCreate, isOneOf, parseExperimentsCsv, roiPct, seal, spendBand, type ExperimentInput } from "@nexora/ledger";
 import { useMemo, useState } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
@@ -91,7 +87,7 @@ export function Log() {
       setForm((f) => ({ ...f, passphrase: "" }));
       bump();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(explainError(cause));
     } finally {
       setBusy(false);
     }
@@ -192,7 +188,7 @@ function CsvImport() {
       if (txHash) setReceipt({ txHash, keys });
       bump();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(explainError(cause));
     } finally {
       setBusy(false);
     }

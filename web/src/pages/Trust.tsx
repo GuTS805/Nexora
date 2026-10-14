@@ -1,5 +1,5 @@
 import { readTrustLists } from "../cache.ts";
-import { CATEGORIES, MAX_TRUST_MEMBERS, trustListCreate, trustListPatch, type Category, type TrustList } from "@nexora/ledger";
+import { explainError, CATEGORIES, MAX_TRUST_MEMBERS, trustListCreate, trustListPatch, type Category, type TrustList } from "@nexora/ledger";
 import { useState } from "react";
 import type { Address, Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
@@ -31,7 +31,7 @@ function Editor({ existing, onDone }: { existing?: TrustList; onDone: () => void
       bump();
       onDone();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(explainError(cause));
     } finally {
       setBusy(false);
     }

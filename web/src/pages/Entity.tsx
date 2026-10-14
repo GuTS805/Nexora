@@ -1,6 +1,6 @@
 import { readExperiments, readTrustList } from "../cache.ts";
 import { ExpirationTime } from "@arkiv-network/sdk";
-import { EXTEND_DAYS, SPEND_BAND_LABELS, blockToDate, fetchExperiment, unseal, type PrivateFigures } from "@nexora/ledger";
+import { explainError, EXTEND_DAYS, SPEND_BAND_LABELS, blockToDate, fetchExperiment, unseal, type PrivateFigures } from "@nexora/ledger";
 import { useState } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
@@ -38,7 +38,7 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
       setTx(result.txHash);
       bump();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(explainError(cause));
     } finally {
       setBusy(null);
     }
