@@ -78,6 +78,8 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), devApi(), ...(portable ? [inlineEverything()] : [])],
     // Relative asset paths: the build runs from any static host or IPFS gateway.
     base: "./",
+    // The portable build is one file; icons and the install manifest only matter when hosted.
+    publicDir: portable ? false : "public",
     build: {
       target: "es2022",
       outDir: portable ? "dist-portable" : "dist",

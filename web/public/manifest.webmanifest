@@ -1,0 +1,16 @@
+{
+  "name": "Nexora Ledger",
+  "short_name": "Nexora",
+  "description": "What actually worked for sellers like you: an open ledger of ad experiments by Indian small sellers, on Arkiv.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbf8f3",
+  "theme_color": "#c2410c",
+  "lang": "en-IN",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
