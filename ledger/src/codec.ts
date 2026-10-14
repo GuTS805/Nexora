@@ -1,6 +1,6 @@
 import { ExpirationTime } from "@arkiv-network/sdk";
 import { bool, i32, key as keyAttr, str } from "@arkiv-network/sdk/attr";
-import type { CreateEntityParameters } from "@arkiv-network/sdk";
+import type { CreateEntityParameters, PatchEntityParameters } from "@arkiv-network/sdk";
 import { getAddress, isAddress, isHex, type Address, type Hex } from "viem";
 import {
   APP, CATEGORIES, CTAS, EXPIRY_CHOICES_DAYS, FORMATS, KIND, LANGUAGES, MAX_DAYS, MAX_NAME_LENGTH,
@@ -280,10 +280,13 @@ export function trustListCreate(input: TrustListInput): CreateEntityParameters {
   };
 }
 
-/** Patch parameters for editing a trust list's members in place. */
-export function trustListPatch(entityKey: Hex, input: TrustListInput) {
+/**
+ * Patch parameters for editing a trust list in place. Arkiv patches are mutations (`set` / `unset`),
+ * not a replacement, so every attribute is re-set alongside the new payload.
+ */
+export function trustListPatch(entityKey: Hex, input: TrustListInput): PatchEntityParameters {
   const create = trustListCreate(input);
-  return { entityKey, payload: create.payload, contentType: create.contentType, attributes: create.attributes };
+  return { entityKey, payload: create.payload, contentType: create.contentType, set: create.attributes };
 }
 
 export function decodeTrustList(raw: RawEntity): Decoded<TrustList> {

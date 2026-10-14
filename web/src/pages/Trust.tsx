@@ -22,9 +22,10 @@ function Editor({ existing, onDone }: { existing?: TrustList; onDone: () => void
     try {
       if (!wallet) throw new Error(t("connectFirst"));
       const input = { name, scope, description, members: members.split(/[\s,]+/).filter(Boolean) as Address[] };
-      const params = existing ? trustListPatch(existing.key, input) : trustListCreate(input);
       await ensureGas();
-      const result = existing ? await wallet.client.patchEntity(params as ReturnType<typeof trustListPatch>) : await wallet.client.createEntity(params as ReturnType<typeof trustListCreate>);
+      const result = existing
+        ? await wallet.client.patchEntity(trustListPatch(existing.key, input))
+        : await wallet.client.createEntity(trustListCreate(input));
       setTx(result.txHash);
       bump();
       onDone();

@@ -3,7 +3,7 @@ import { getAddress, type Hex } from "viem";
 import {
   comboStats, confidence, decodeExperiment, decodeTrustList, experimentCreate, experimentPredicate,
   parseExperimentsCsv, CSV_TEMPLATE, PLATFORM_FORMATS, queryText, roiPct, seal, spendBand, suggest, trustListCreate,
-  unseal, type ExperimentInput, type RawEntity,
+  trustListPatch, unseal, type ExperimentInput, type RawEntity,
 } from "../src/index.ts";
 
 const ALICE = getAddress("0x1111111111111111111111111111111111111111");
@@ -160,6 +160,13 @@ describe("trust lists and csv", () => {
     const params = trustListCreate({ name: "Jaipur crafts collective", scope: "handicrafts", description: "", members: [ALICE, ALICE.toLowerCase() as typeof ALICE, BOB] });
     const decoded = decodeTrustList({ key: KEY, creator: ALICE, owner: ALICE, expiresAt: 1n, payload: params.payload, attributes: params.attributes as RawEntity["attributes"] });
     expect(decoded.ok && decoded.value.members).toEqual([ALICE, BOB]);
+  });
+
+  it("builds trust-list edits as Arkiv patch mutations (set), not a create-shaped object", () => {
+    const patch = trustListPatch(KEY, { name: "Jaipur crafts collective", scope: "all", description: "", members: [ALICE, BOB] });
+    expect(patch.entityKey).toBe(KEY);
+    expect(patch.set).toMatchObject({ kind: { value: "trust_list" }, name: { value: "Jaipur crafts collective" } });
+    expect("attributes" in patch).toBe(false);
   });
 
   it("parses the template and reports bad rows by line", () => {
