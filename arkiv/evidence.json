@@ -1,7 +1,10 @@
 {
   "note": "Written by scripts/seed.ts and scripts/e2e.ts. Every hash here can be checked on https://tiramisu.explorer.arkiv.network.",
-  "network": { "name": "Tiramisu", "chainId": 7738577 },
-  "recommendedTrustList": null,
+  "network": {
+    "name": "Tiramisu",
+    "chainId": 7738577
+  },
+  "recommendedTrustList": "0xfc88d28d480fe8fb4a347c0cfde7d9c192a4b0d385868636593420c5a63bcc1e",
   "wallets": {
     "sponsor": "0xf00b81c90dF57B2924A3d165a670FcF656d0e492",
     "seed1": "0xF732ffac374A3dd89D756DeA0C96189C7FDddc56",
@@ -9,5 +12,222 @@
     "seed3": "0xb1b26E0adD353D4696DE256Cffc57bF1300dEf33",
     "seed4Spammer": "0x74223d52e2a0a4ff6E46a569C77b2b11B0AD4d77"
   },
-  "features": {}
+  "features": {
+    "batch_seed1": {
+      "why": "executeBatch: 30 synthetic experiments from honest seller 1",
+      "creator": "0xF732ffac374A3dd89D756DeA0C96189C7FDddc56",
+      "entities": 30,
+      "keys": [
+        "0x6c9e94389af5a945bcd5766f89f2bacf94531f1f76c5a20367c9bfc43563ebb0",
+        "0x6708762bdf92631d37028fea7664fc64beb7442f21531d0fe96265e060d84b64",
+        "0x707f6312503316340e316e516203c69fc6d08fe61afe5de9ff65c9adc153f5d4",
+        "0x35d52165d75a08487c340f6f53c5087d79bcee866f0928dcc8b56f6daca09924",
+        "0xe7bedc2d659545536854cad2dbe2641aea0ce546497a9896af4d6d9b68d274b4",
+        "0x7047e49cb2dfd91b215a171267155aa17110b5a4e0724a76af9b87460fb7aad3",
+        "0xe53865740f0e6f26de2d18aa2b5ed8450ce8da3292e66c7c2a41b13fb3521ab8",
+        "0xa28b63601d119fc3157b4330457b66df1a46850ce14e5ae65c6b5499e16d9aaf",
+        "0x15440447a06a2669a1f99b88d928670fb05f0bea99067100a3d9a4ceeecb98c7",
+        "0x2f3224b6b2d1f5c44fce1f7843d48a556175b3890ed05c4926b37f9cb915925c",
+        "0xf523d51fbe8a14b97f4b2a31af7c7832a6d32a03d44f2de07366b164a0611558",
+        "0x6f0f656ab8530f1c0dd57e3e07ee155ffc1d4255043f85d518bb7882b5a65be3",
+        "0x4ee1c75850104b3a68809d6f46f02035f5e473215674c46ca369602f03cfb479",
+        "0xbd2bfb992979b69ee7cbb19ac35bd7f81dc9bed42075a01890188142e143bcb4",
+        "0xf3bf390a3efef49ecb8d62d88268e1ab2e44dfa279e1564bfd575d2a74cf3f93",
+        "0x97e339e3cb7908082d40ac88409a66ada60094846f71e3f9ee443dc4291e2dd0",
+        "0xdca0e324d4396bb5572353de0ce042e092e683b462b7d86bf98a926171e22a00",
+        "0xee3dc910bea084383983a34ccb373a8740e29302135402f39ce132dc8aa586ff",
+        "0x02bf99ec878edc29dae5f7099f8684c14a948d68f56ff500985af0171655431d",
+        "0x7d3a66eb22048941552c55e60cad1c8ca368a6543ef134f2b77f5492012eb4eb",
+        "0xb23b641f37c10c1446be12118975cce4a6b5f8b7581903b66446c40a38196f6e",
+        "0x136d93c1c5eeef906bd6abc57a1f47677be2b416e390d87d1424a7e3b8c84c86",
+        "0x90df0dec6fe44cccbb46de59640d94e63c86059cc3024cfaefebdf7ecf91d4f3",
+        "0x63ee4aec8d41c47ee87eb2daf04b5c0467d0b8d79f44fdaa211821abbfc91a49",
+        "0xf60cb7bc59e7ad958bac02898208944edbc07b1dcd2713be779657b58d539994",
+        "0x8ba3e89ec62d3713f15576643e678086ce9cdc5d47ae1c6cf4a46d54fcd64e9d",
+        "0x57435fe54a6cbb7ae38f599412b2a06f797f7fd7ae9134905a26cd9ffb22166b",
+        "0x103263b10aa94082642541bd6f12a8a9a8e3fd98c386a366343dd118299484e6",
+        "0x1f9bbaf47c858b82239fce45a22b4d60a9e0dfa5d2464d480b90253e7b27a818",
+        "0xfce3e1eb95f8dbf6be3b80f3ea7a8d7e0f6af54910186db9085b8457d919abc6"
+      ],
+      "txs": [
+        "0x72a9f449f11c5dbca03b396bbc9eab8676dae5a69d311f78bffdc3f06d8ea1ac",
+        "0xe732a7f12e08988b44e0de45a68a9a9989fa64b20f0be502f544558cf51ac138"
+      ],
+      "at": "2026-10-14T13:59:35.431Z"
+    },
+    "batch_seed2": {
+      "why": "executeBatch: 30 synthetic experiments from honest seller 2",
+      "creator": "0xBe04e55C3B4621aB684D506D285dDDd7Fd61332f",
+      "entities": 30,
+      "keys": [
+        "0xde65f986fdca89e9980f86a70b1522e147d3104c6f9018cf2b557ffa4550ff0b",
+        "0xb8295fd6500dc0c368b74e8083897100e71b7f5efbd645e36dc5ca5346a95c0e",
+        "0x12e44af4e36049e41fbbfd499ec740d420af423627e38d418da0e5c851dbefa0",
+        "0xde96202b3301fc15121a9cfe2daddfe9809d098637f0811a16f6858e11b4b80c",
+        "0x8e7723ad5c01ec569bb18a91560bef8eb534bacb66267778f6b3ab0f9025f01c",
+        "0x9b011d17cea1d26b3639e860043c1b8c9cd29f4faffde212db8db4893afff4c9",
+        "0xede581bcfcc730ee3bbe489e0cb5e24d7e88f65a53265b6da9e825f8f7230dcf",
+        "0x01eaadc66421b4d4febb1311b12d4016f1feb15d8d952b0f15aa830563829541",
+        "0xa83e29ff303d2956cbc66ab5a721bec8cadf0ab7b516cee837001ed326640406",
+        "0xdb3f7d0e1eb8fdd9e16476a5417bbb23ac319d488de11496df746db51101f80b",
+        "0x1c3e0ac5fa7540c0bccf2ce86224562505d6e3392c586e7e9f3e36a652528427",
+        "0x74128cc0b6504a570acf63e2f4e6fefa189e12b0dcb3dfb12e33861646bea0e7",
+        "0xe120da17ec0d191fde0ecd670398b2dbacdd04ae4d5f0aefff98363b4a43a4a0",
+        "0xe7c35f5c7c524587fb19fbffaba14bba68dfad00da9269013c259e883cd9a296",
+        "0x24e2b61d84f0eed8d5f973919f51b9b61030c2b1b7ecc90f596120d29693194e",
+        "0x84e401e12ce4d30ed21ab613becd6ef931a10478daab217055afb04fabd49a06",
+        "0x929442fb9e2e782380a4549ea8124acc58c574970ed44b8c5987a2ef182f8429",
+        "0x16ee23dd103e030782940767f689e3c39d560dc90cc277483f3db092af48f7f9",
+        "0x0c3895941f95623f7cded52b4715248ab868dd6419326e158f51cfd8241c9088",
+        "0xbe184a69677b42ee2e1f7d450ba616ab09779ad80c9c4134b82fab67e159fec2",
+        "0x58f5a78a45ea96395f135ef95ee45f7e969053853ce981ccf76311098ed5801b",
+        "0xfa6c2d668f6618a556e762f7be19a69f967224a3957302b85115dd34f6b92130",
+        "0xe513ca17b8f6271dde6a3425600e85a886d4bd425f364a0a118644ee7bfe163b",
+        "0x5308470a7da3b5c50bc3653141274b712e295b98f657c110984ef6ea9717df12",
+        "0xd570042c0c3b01a96d229f3edf9a14f9e7f0bb02016c593644a4cbf2e844d2aa",
+        "0x98aefd9d55e27cc85fbf5e485ca296d4eb6d0631a8c2c078efda9e45ea18df93",
+        "0x3fa16d5f1c8dfbc8fe243083e172c8da692299e10514f9b4bad3b011899c1f6a",
+        "0x7bea5e184566ea559456558ec4c543a134a436160ee60fd6061b45b6df840f56",
+        "0x28f078f237676da629958bfcfbb9902c0ccbb5caa6014beeab59a405fc33d5ec",
+        "0xc0be51e73bc306d2b84aa1b7f1f9f33c60490fb46960a90f2eb3fd33c8238bfd"
+      ],
+      "txs": [
+        "0x9f767df09a66242ea12c4d25b023ed2903a1b6f6546123f9c21ab5d14d6e0b77",
+        "0x9e663f1b0da841a8cfc65d56a6865aca99dd6be8a021df7f5e2c84b2ab9ccd36"
+      ],
+      "at": "2026-10-14T13:59:51.404Z"
+    },
+    "batch_seed3": {
+      "why": "executeBatch: 30 synthetic experiments from honest seller 3",
+      "creator": "0xb1b26E0adD353D4696DE256Cffc57bF1300dEf33",
+      "entities": 30,
+      "keys": [
+        "0x4765d86738c17f5c9e3acbcdd03df9c1a0ec9ac4865508d5c55b8540b4e1ad0e",
+        "0xc884461351770faacf07850ebd224883c7010c3e4754456ac64e5be1a62a22d7",
+        "0x04f53156416b16bdbe12627c0fa62537a93f5486cb7658e7d06ebcd0256f502d",
+        "0x006254361910712d4fce2dbe2333d81d37956258d9551a9cc0a0d5d6335113b7",
+        "0xe1739ee5cd24ef5f2209c23d0edc692de730d69fafb0c854b5f2376c0c1cc3cc",
+        "0xe79ff284e8b570b1b1eff23317be50635bd2a4850585a917081378dda372a821",
+        "0xb996dae3d451703279411e565cb5ce7f939caaa4a2cc405faf874ec7f8235417",
+        "0x6a413c49564844ccb9381fa88a7fbf9c3b249d644de662a3f3111561d657d235",
+        "0x2faaa5fbb5b15202e24cb1bb8cd1444381a8893877ae0e0d040bcbff4104e437",
+        "0x6303db7077ae6c8a7fe88a53bb6641f180116c466fb0e7a60bdd2cce94f8fd67",
+        "0x895785bac86f7633a2b05571765858749c277ec03b51f8f9bd999a82bdf29ced",
+        "0x17666ec7fb9601874817a7d0177d11323a6db5207fd59c100f450ee03bb9684b",
+        "0x6567f03764a19fc11e462ca13aca29b109e745e8800d7b0c7a8ae5b809fbfe82",
+        "0xa691660c10a4a79cd810c9c3fe443478e0cf6ed03256f666564121e409b24bdf",
+        "0xb9d6fea14512da47dccd3e559cf9fd23830831d66e894da4161647b24fc54ffa",
+        "0x9ac0526b71deec3e33924b663f01300e01c11255c8e84f4e9d6dbdf149095b0c",
+        "0xe87e4e6a9603fb9b473bfeeaa66bfcdbb5104091f3982b60ed291c01a25db439",
+        "0x12f33686e675148e739a25487cbd62ff450b5f58ab83eda50966714a3986f2dc",
+        "0x48e2d3efc51d64c53aff3824af2d0d5638dbee4b4f1841907c42f211d2ab68b2",
+        "0xcd8c1d4f775216329cac533ea410c390bb7a316a71de7d85f2dafb1d8f7ed769",
+        "0x4bb73f1e81f86377f9765bfc12a254a543260139e477fc5be78914d36eec4f10",
+        "0xf3e7251d057b31deecea3f6ac25e74977aff15b81fd4314e15d550f090f3f1b4",
+        "0x935549f8a946af62a9a434ecde4adcbaaf97542e6123b501004e816d733eecb9",
+        "0xa82ccb51ef44b1ed746c54ea043601fc203f6d0e5775714ff5612a55c0311a7f",
+        "0xa8b028e22679bbd336fe9e46e1775a8efad2fb752a8c4fa7dff73671ab0f0a03",
+        "0xffc17fd7b1dd823f10dc203ae9f1fad52143a56fe457f5887bfaef879c5e99f3",
+        "0x38d40cec01069faa647102f0712c9a2bf7a2f591de64f235009a4089dd303d9f",
+        "0x85e83851707a8364d0c839076fe8b72bb7852ac88029b4dbc11a2c0424f6c0c5",
+        "0x9cc28aaac156829518457156de81d677f5d4f27087d90f62bb11ac788212b8b2",
+        "0x7d189da9839c89a8b0b2813cd1b3a08bbd4f6d22888163bad54ecd306665a63a"
+      ],
+      "txs": [
+        "0x5c7092e86fa660fa3c78bf69e29e5f8508fa4be489d557240ac2004bc7e69728",
+        "0xa80f6270eca949e318a286885b6b61c4e058cf5621317a0b44dcbf735a6a1ce7"
+      ],
+      "at": "2026-10-14T14:00:07.792Z"
+    },
+    "batch_spammer": {
+      "why": "executeBatch: 15 implausible ShareChat wins from the deliberate spammer",
+      "creator": "0x74223d52e2a0a4ff6E46a569C77b2b11B0AD4d77",
+      "entities": 15,
+      "keys": [
+        "0xcdb3194454707325af6a5aaa839513556301feb8e5214116fcfd911a9815db24",
+        "0x701cc9ac7d952f1ca7448076c891462ebfdcea4f344540a90d816e6f9b792d44",
+        "0x3b261ff94489547ee745a910433da0a9220121151e27ab6b097d1c3a0aad87df",
+        "0x664d574bf96fa4404a2d2727b44901ad625efc445be97d5a2202da63f942fed0",
+        "0x0dac173e712b745bd86372c81c679870b525d90c7ba90f7a89f63dc59956be81",
+        "0xe667634c87029de54d96e449b6d5de63ffc820f09759227702a0fc2da8804cd8",
+        "0xda9f9069d9c8b9af9172eba681818a4b885b1f43158313ab70d27622889395cc",
+        "0x27ad441067c97dfa86fb587b05dc972739b8646266b158deae053c2e8c802ec9",
+        "0x5405b2eaf42935e5dc2db7060ad1966f79d857953386f0fbd7a1ca0a37ad6985",
+        "0x7d57b31e0190ba2c25a3119ac5e5ca2c5d951456a5e5e0c329f4845721ec7d41",
+        "0xbd87c7d84e40581e3821d6e312e265d8b04b414497f89ecf75a02ed024541958",
+        "0x65c95162f4c9c724f842eea4055c037a1d7c553fd118fc9d6abb8c09fdde9ba2",
+        "0xdfa0c22d1a0c76a61e3e17b7ca332d2a28528e3bb89386d953cbc9a316fed1a4",
+        "0xa51a5ce5d3552a557668e831d58d9f23c5ed0cc051f9f167d810ef3df3dd217d",
+        "0xb410924500cf8324a9ec84b9b5e85147097dd61828f832b01ede43064de05582"
+      ],
+      "txs": [
+        "0x21e55795ce34d03aa0450cfc30d762f33a6430030b86bb6be9b94e9bcdd9985e"
+      ],
+      "at": "2026-10-14T14:00:12.209Z"
+    },
+    "lineage_variants": {
+      "why": "key-typed parent attribute: seller 2 publishes variants of seller 1's results",
+      "parents": [
+        "0x6c9e94389af5a945bcd5766f89f2bacf94531f1f76c5a20367c9bfc43563ebb0",
+        "0x6708762bdf92631d37028fea7664fc64beb7442f21531d0fe96265e060d84b64",
+        "0x707f6312503316340e316e516203c69fc6d08fe61afe5de9ff65c9adc153f5d4",
+        "0x35d52165d75a08487c340f6f53c5087d79bcee866f0928dcc8b56f6daca09924"
+      ],
+      "keys": [
+        "0x811f88cc3003e011cacf1255679ae6971b9ea0294ffd133f7904998352a7bd97",
+        "0x3e10b6ac5329742813ab991efb8e1ffc1e461327c560f20998d94a80047c8b2d",
+        "0xfea9fa414c35b1e29ae5f51ad148437054aedd99e70904a4d31636cc5237d534",
+        "0xf44de65108ed67bb98353d134a9712b37dccf7e1a58fc34403bba951d73b444f"
+      ],
+      "tx": "0x0828ede085ed89ba82ed9cfb738229545f196f43d17a847fa426cc223f340866",
+      "query": "app = str('nexora') AND kind = str('experiment') AND v = i32(1) AND parent = key(0x6c9e94389af5a945bcd5766f89f2bacf94531f1f76c5a20367c9bfc43563ebb0)",
+      "foundByParentQuery": 1,
+      "at": "2026-10-14T14:00:20.387Z"
+    },
+    "sealed_payload": {
+      "why": "client-side AES-256-GCM sealed figures in the payload (demo passphrase is public on purpose)",
+      "key": "0x5d65e58325f4d64428352af452d8fa69b5e7b625dc4291c693b4a624797c56e6",
+      "tx": "0x7bb7f3dfbb2021a9d43abb37db8c772e7f883cc047a27175b9d82d89d4aa4a80",
+      "demoPassphrase": "nexora-demo-2026",
+      "at": "2026-10-14T14:00:24.310Z"
+    },
+    "trust_list_create": {
+      "why": "trust list entity curated by the sponsor wallet; starts with sellers 1 and 2",
+      "key": "0xfc88d28d480fe8fb4a347c0cfde7d9c192a4b0d385868636593420c5a63bcc1e",
+      "tx": "0xf221fe015dc826fea7f24868fbdedcf2b01bec581a4ac35e623aa7fbd1622ff4",
+      "at": "2026-10-14T14:00:31.956Z"
+    },
+    "trust_list_patch": {
+      "why": "patchEntity by the owner: the curator adds seller 3 to the list",
+      "key": "0xfc88d28d480fe8fb4a347c0cfde7d9c192a4b0d385868636593420c5a63bcc1e",
+      "tx": "0x12bcb195ff8b520467c178d72fa9ba4398d6493aac788d4eb9d95d9123628b3a",
+      "membersAfter": 3,
+      "at": "2026-10-14T14:00:40.250Z"
+    },
+    "permissionless_extend": {
+      "why": "extendEntity by a NON-owner (the sponsor) on seller 1's entity, allowed by permissionlessExtension",
+      "key": "0x6c9e94389af5a945bcd5766f89f2bacf94531f1f76c5a20367c9bfc43563ebb0",
+      "owner": "0xF732ffac374A3dd89D756DeA0C96189C7FDddc56",
+      "extendedBy": "0xf00b81c90dF57B2924A3d165a670FcF656d0e492",
+      "tx": "0x8e0c7846e75da24f42f69e601aa58530acf5d8a77bfca2bd15a6442d5e05fdf2",
+      "expiresBefore": "16336308",
+      "expiresAfter": "17632308",
+      "at": "2026-10-14T14:00:44.382Z"
+    },
+    "readonly_enforced": {
+      "why": "patchEntity on a readonly experiment must be refused, even for its owner",
+      "key": "0x6708762bdf92631d37028fea7664fc64beb7442f21531d0fe96265e060d84b64",
+      "refused": true,
+      "error": "Transaction failed: entity 0x6708762b…d84b64 was created readonly, so its contents can never change. Its expiry can still be extended, and it can be transferred or deleted",
+      "at": "2026-10-14T14:00:46.044Z"
+    },
+    "owner_delete": {
+      "why": "deleteEntity by the owner: seller 2 publishes a mistaken row and removes it",
+      "key": "0x7e31c21dcf017243b5e2bd7592767d547c43ce41ff7664c49224fdc35aa83c9c",
+      "createTx": "0x44ce255652c088d8792fa618bae9d9a1d984afe4fffd7d8d97243a1a66ce7978",
+      "deleteTx": "0xfd18c77cf6db1d3eeaf8f4ce048d5ffaddef1d82677c636e8cde44877332b253",
+      "stillQueryable": false,
+      "at": "2026-10-14T14:01:01.552Z"
+    }
+  }
 }
