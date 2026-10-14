@@ -1,0 +1,24 @@
+{
+  "name": "nexora",
+  "private": true,
+  "version": "0.2.0",
+  "description": "An open, censorship-resistant ledger of ad experiments for Indian small sellers, stored on Arkiv.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "ledger",
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w web",
+    "build": "npm run build -w web",
+    "test": "npm run test -w @nexora/ledger",
+    "typecheck": "npm run typecheck -w @nexora/ledger && npm run typecheck -w web",
+    "cli": "npm run cli -w @nexora/ledger --",
+    "seed": "tsx scripts/seed.ts",
+    "wallets": "tsx scripts/wallets.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.5"
+  }
+}

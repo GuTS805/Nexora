@@ -1,0 +1,16 @@
+node_modules/
+dist/
+*.log
+*.tsbuildinfo
+
+# secrets: test wallet keys live only here
+.env
+.env.local
+.env.*.local
+
+# deploy
+.vercel
+
+# os
+Thumbs.db
+.DS_Store
