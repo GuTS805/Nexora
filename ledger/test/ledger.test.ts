@@ -3,7 +3,7 @@ import { getAddress, type Hex } from "viem";
 import {
   comboStats, confidence, decodeExperiment, decodeTrustList, experimentCreate, experimentPredicate,
   parseExperimentsCsv, CSV_TEMPLATE, PLATFORM_FORMATS, queryText, roiPct, seal, spendBand, suggest, trustListCreate,
-  trustListPatch, unseal, type ExperimentInput, type RawEntity,
+  fetchExperiment, getEntityOrNull, trustListPatch, unseal, type ExperimentInput, type RawEntity,
 } from "../src/index.ts";
 
 const ALICE = getAddress("0x1111111111111111111111111111111111111111");
@@ -174,5 +174,19 @@ describe("trust lists and csv", () => {
     expect(ok.rows).toHaveLength(2);
     const bad = parseExperimentsCsv(CSV_TEMPLATE + "tea_coffee,myspace,reel,hi,tier2,none,festive,shop_now,none,100,200,3\n", 30);
     expect(bad.errors[0]?.line).toBe(4);
+  });
+});
+
+describe("missing entities", () => {
+  const client = (error: Error) => ({ getEntity: async () => { throw error; } }) as unknown as Parameters<typeof fetchExperiment>[0];
+  const notFound = Object.assign(new Error("no entity"), { name: "NoEntityFoundError" });
+
+  it("treats an expired or deleted entity as a decode failure, not an exception", async () => {
+    expect(await getEntityOrNull(client(notFound), KEY)).toBeNull();
+    expect(await fetchExperiment(client(notFound), KEY)).toMatchObject({ ok: false, reason: expect.stringMatching(/expired, deleted/) });
+  });
+
+  it("still surfaces real failures such as the rate limit", async () => {
+    await expect(getEntityOrNull(client(new Error("HTTP 429")), KEY)).rejects.toThrow("429");
   });
 });

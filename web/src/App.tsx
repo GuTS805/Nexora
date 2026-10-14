@@ -7,6 +7,7 @@ import { Entity } from "./pages/Entity.tsx";
 import { Explore } from "./pages/Explore.tsx";
 import { Log } from "./pages/Log.tsx";
 import { Mine } from "./pages/Mine.tsx";
+import { Proof } from "./pages/Proof.tsx";
 import { Trust } from "./pages/Trust.tsx";
 
 /** Hash routing, so the static build works from any host, an IPFS gateway, or the portable single file. */
@@ -31,7 +32,7 @@ export function App() {
   const { t, lang, setLang } = useI18n();
   const nav: [string, string][] = [
     ["/", t("navExplore")], ["/advisor", t("navAdvisor")], ["/log", t("navLog")],
-    ["/mine", t("navMine")], ["/trust", t("navTrust")], ["/about", t("navAbout")],
+    ["/mine", t("navMine")], ["/trust", t("navTrust")], ["/proof", t("navProof")], ["/about", t("navAbout")],
   ];
   const entity = /^\/e\/(0x[0-9a-fA-F]{64})$/.exec(route)?.[1] as Hex | undefined;
 
@@ -51,6 +52,7 @@ export function App() {
           route === "/mine" ? <Mine /> :
           route === "/trust" ? <Trust /> :
           route === "/about" ? <About /> :
+          route === "/proof" ? <Proof /> :
           <Explore />}
       </main>
       <footer className="foot">

@@ -202,14 +202,26 @@ export async function fetchTrustLists(client: PublicArkivClient, curator?: Addre
   return { items, rejected, query: queryText(expression), blockNumber, truncated };
 }
 
+/** `getEntity`, but an expired or deleted entity is `null` instead of an exception. */
+export async function getEntityOrNull(client: PublicArkivClient, entityKey: Hex): Promise<RawEntity | null> {
+  try {
+    return (await client.getEntity(entityKey)) as RawEntity;
+  } catch (error) {
+    if ((error as { name?: string }).name === "NoEntityFoundError") return null;
+    throw error;
+  }
+}
+
+const GONE = "not found: expired, deleted, or never created";
+
 export async function fetchExperiment(client: PublicArkivClient, entityKey: Hex) {
-  const entity = await client.getEntity(entityKey);
-  return decodeExperiment(entity as RawEntity);
+  const entity = await getEntityOrNull(client, entityKey);
+  return entity ? decodeExperiment(entity) : ({ ok: false, key: entityKey, reason: GONE } as const);
 }
 
 export async function fetchTrustList(client: PublicArkivClient, entityKey: Hex) {
-  const entity = await client.getEntity(entityKey);
-  return decodeTrustList(entity as RawEntity);
+  const entity = await getEntityOrNull(client, entityKey);
+  return entity ? decodeTrustList(entity) : ({ ok: false, key: entityKey, reason: GONE } as const);
 }
 
 /** Approximate wall-clock time for a future block, at Arkiv's nominal 2 s block time. */

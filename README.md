@@ -22,6 +22,7 @@ Built for the Arkiv Global Tour Stop (pre-Devcon 8), 9–18 October 2026. Tracks
 | **Result page** | Creator, owner, flags, expiry; keep alive, delete, unlock sealed figures, see variants; share to WhatsApp | `getEntity`, `extendEntity` (`permissionlessExtension`), `deleteEntity`, `key`-typed `parent` |
 | **Trust lists** | Communities vouch for publisher wallets; every page can filter by a list | `$creator` `OR` filter, owner-only `patchEntity` (`set` mutations) |
 | **My data** | Everything this browser published, including one-time wallets; key backup | `$creator = addr(…)` `OR` |
+| **Proof** | Every Arkiv feature the app claims, as a recorded Tiramisu transaction, with a button that re-checks it against the chain | `getEntity`, creation flags, `$owner` |
 
 Every list shows the **exact Arkiv query** it ran, plus the equivalent CLI command. The UI is in English and Hindi (toggle in the header; shared links carry the sender's language).
 
@@ -87,7 +88,8 @@ Vercel project rooted at `web/`, with build `npm run build` and output `dist`. S
 4. Open the result: the creator is your test wallet, and the flags show read-only with community extension. Click *Keep alive +30 days* to send an `extendEntity` transaction.
 5. In *What to try* with **All sellers**, the spammer's ShareChat rows are counted but never suggested: proof only counts sellers on the recommended trust list. Switch to that list and the rows disappear entirely.
 6. Open the sealed demo row (its key is in `arkiv/evidence.json` under `sealed_payload`) and unlock it with the public demo passphrase `nexora-demo-2026`. On the explorer, the payload is only ciphertext.
-7. Download `nexora.html` from the latest CI run's artifacts, double-click it, and the same data loads with no website involved.
+7. Open *Proof*: each claimed feature (batch, lineage, sealed payload, trust-list patch, non-owner extension, refused readonly patch, owner delete) links to its transaction, and *verify on chain* re-reads it.
+8. Download `nexora.html` from the latest CI run's artifacts, double-click it, and the same data loads with no website involved.
 
 ## Safety
 

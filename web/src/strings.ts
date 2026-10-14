@@ -10,6 +10,7 @@ export const STRINGS = {
   navLog: ["Log a result", "नतीजा दर्ज करें"],
   navMine: ["My data", "मेरा डेटा"],
   navTrust: ["Trust lists", "भरोसा सूचियाँ"],
+  navProof: ["Proof", "सबूत"],
   navAbout: ["How it works", "यह कैसे काम करता है"],
   switchLang: ["हिंदी", "English"],
   footer: ["Data lives on Arkiv Tiramisu testnet · MIT · results are self-reported by sellers; synthetic demo rows are labelled", "डेटा Arkiv Tiramisu टेस्टनेट पर है · MIT · नतीजे विक्रेता खुद दर्ज करते हैं; डेमो (कृत्रिम) डेटा पर निशान लगा है"],
