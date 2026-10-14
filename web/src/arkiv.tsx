@@ -1,8 +1,8 @@
 import { createWalletClient, type WalletArkivClient } from "@arkiv-network/sdk";
 import { tiramisu } from "@arkiv-network/sdk/chains";
-import { TIRAMISU_RPC, readClient } from "@nexora/ledger";
+import { TIRAMISU_RPC, arkivHttp, readClient } from "@nexora/ledger";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { custom, formatEther, http, parseEther, type Address, type EIP1193Provider } from "viem";
+import { custom, formatEther, parseEther, type Address, type EIP1193Provider } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { store } from "./storage.ts";
 
@@ -41,7 +41,7 @@ function burnerClient(): Connected {
     store.set("burner", key);
   }
   const account = privateKeyToAccount(key);
-  return { address: account.address, mode: "burner", client: createWalletClient({ chain: tiramisu, transport: http(store.get("rpc") ?? TIRAMISU_RPC), account }) };
+  return { address: account.address, mode: "burner", client: createWalletClient({ chain: tiramisu, transport: arkivHttp(store.get("rpc") ?? TIRAMISU_RPC), account }) };
 }
 
 export function ArkivProvider({ children }: { children: ReactNode }) {

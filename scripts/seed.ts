@@ -12,11 +12,11 @@
  */
 import { createWalletClient, type CreateEntityParameters } from "@arkiv-network/sdk";
 import { tiramisu } from "@arkiv-network/sdk/chains";
-import { http, type Hex } from "viem";
+import type { Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
   CATEGORIES, CTAS, LANGUAGES, PLATFORM_FORMATS, MAX_BATCH, OFFERS, PLATFORMS, SEASONS, TIERS, TONES,
-  experimentCreate, fetchExperiments, fetchTrustLists, readClient, trustListCreate,
+  arkivHttp, experimentCreate, fetchExperiments, fetchTrustLists, readClient, trustListCreate,
   type ExperimentInput,
 } from "../ledger/src/index.ts";
 import { SEED_KEY_NAMES, SPONSOR_KEY_NAME, loadEnv, requireKey } from "./env.ts";
@@ -100,7 +100,7 @@ async function publish(keyName: string, rows: ExperimentInput[]): Promise<Hex[]>
     console.log(`[dry] ${account.address} would publish ${rows.length} rows`);
     return [];
   }
-  const wallet = createWalletClient({ chain: tiramisu, transport: http(), account });
+  const wallet = createWalletClient({ chain: tiramisu, transport: arkivHttp(), account });
   const keys: Hex[] = [];
   for (let i = 0; i < rows.length; i += MAX_BATCH) {
     const creates: CreateEntityParameters[] = rows.slice(i, i + MAX_BATCH).map(experimentCreate);
@@ -122,7 +122,7 @@ if (parents.length > 0 && !dry) {
   const account = privateKeyToAccount(requireKey(SEED_KEY_NAMES[1]));
   const variants = await fetchExperiments(client, { includeDemo: true, parent: parents[0] }, 5);
   if (variants.items.length === 0) {
-    const wallet = createWalletClient({ chain: tiramisu, transport: http(), account });
+    const wallet = createWalletClient({ chain: tiramisu, transport: arkivHttp(), account });
     const children = honestRows(77, parents.length).map((row, i) => ({ ...row, parent: parents[i] }));
     const result = await wallet.executeBatch({ creates: children.map(experimentCreate) });
     console.log(`variants: ${result.createdEntities.length} entities, tx ${result.txHash}`);
@@ -132,7 +132,7 @@ if (parents.length > 0 && !dry) {
 const sponsor = privateKeyToAccount(requireKey(SPONSOR_KEY_NAME));
 const lists = await fetchTrustLists(client, sponsor.address);
 if (lists.items.length === 0 && !dry) {
-  const wallet = createWalletClient({ chain: tiramisu, transport: http(), account: sponsor });
+  const wallet = createWalletClient({ chain: tiramisu, transport: arkivHttp(), account: sponsor });
   const members = honest.map((name) => privateKeyToAccount(requireKey(name)).address);
   const result = await wallet.createEntity(trustListCreate({
     name: "Nexora demo: honest seed sellers",

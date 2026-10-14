@@ -42,6 +42,7 @@ export const STRINGS = {
   // shared bits
   loading: ["Reading from Arkiv…", "Arkiv से पढ़ रहे हैं…"],
   arkivFailed: ["Arkiv request failed: {error}. If this RPC is unreachable, set another one under “How it works → Network”.", "Arkiv से जवाब नहीं आया: {error}। अगर यह RPC बंद है, तो “यह कैसे काम करता है → नेटवर्क” में दूसरा RPC डालें।"],
+  rateLimited: ["The public Arkiv RPC has rate-limited this network for now. The data is safe; try again in a few minutes, or set an RPC with your own Arkiv Hub key under “How it works → Network”.", "पब्लिक Arkiv RPC ने अभी इस नेटवर्क को कुछ देर के लिए रोका है। डेटा सुरक्षित है; कुछ मिनट बाद फिर कोशिश करें, या “यह कैसे काम करता है → नेटवर्क” में अपनी Arkiv Hub key वाला RPC डालें।"],
   you: ["you", "आप"],
   trusted: ["trusted", "भरोसेमंद"],
   trustedTitle: ["Seller is on the selected trust list", "यह विक्रेता चुनी हुई भरोसा सूची में है"],

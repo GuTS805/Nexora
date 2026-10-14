@@ -15,9 +15,9 @@
  */
 import { getAddress, type Address, type Hex } from "viem";
 import {
-  SPEND_BAND_LABELS, decodeExperiment, experimentPredicate, fetchExperiment, fetchExperiments,
+  SPEND_BAND_LABELS, explainError, experimentPredicate, fetchExperiment, fetchExperiments,
   fetchTrustList, fetchTrustLists, liveClient, queryText, readClient, suggest,
-  type ExperimentFilters, type RawEntity,
+  type ExperimentFilters,
 } from "./src/index.ts";
 
 const [command = "help", ...rest] = process.argv.slice(2);
@@ -65,6 +65,7 @@ async function filtersFromFlags(): Promise<ExperimentFilters> {
   };
 }
 
+try {
 switch (command) {
   case "query": {
     const filters = await filtersFromFlags();
@@ -120,17 +121,30 @@ switch (command) {
   case "watch": {
     const live = liveClient(flag("ws"));
     console.log(`watching for new Nexora experiments…\n  filter: ${queryText(experimentPredicate({ includeDemo: true }))}`);
+    // Events carry no attributes: batch new keys and check them with one $key-filtered query.
+    const pending: Hex[] = [];
     live.watchEntityEvents({
-      onEntityCreated: async (event) => {
-        const entity = await client.getEntity(event.entityKey).catch(() => null);
-        if (!entity) return;
-        const decoded = decodeExperiment(entity as RawEntity);
-        if (decoded.ok) console.log(`+ ${decoded.value.key} ${decoded.value.platform}/${decoded.value.format} ROI ${decoded.value.roiPct}% by ${getAddress(decoded.value.creator)} (block ${event.blockNumber})`);
+      onEntityCreated: (event) => {
+        pending.push(event.entityKey);
       },
-      onError: (error) => console.error(`watch error: ${error.message}`),
+      onError: (error) => console.error(`watch error: ${explainError(error)}`),
     });
+    setInterval(async () => {
+      const batch = pending.splice(0, 25);
+      if (batch.length === 0) return;
+      try {
+        const found = await fetchExperiments(client, { keys: batch, includeDemo: true }, 25);
+        for (const e of found.items) console.log(`+ ${e.key} ${e.platform}/${e.format} ROI ${e.roiPct}% by ${getAddress(e.creator)}`);
+      } catch (error) {
+        console.error(`lookup failed: ${explainError(error)}`);
+      }
+    }, 5_000);
     break;
   }
   default:
     console.log("commands: query | recommend | show <key> | lists | watch   (see header of ledger/cli.ts)");
+}
+} catch (error) {
+  console.error(`error: ${explainError(error)}`);
+  process.exit(1);
 }

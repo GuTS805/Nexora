@@ -1,4 +1,4 @@
-import { SPEND_BAND_LABELS, explorerAddress, explorerEntity, explorerTx, fetchTrustList, type Experiment, type TrustList } from "@nexora/ledger";
+import { SPEND_BAND_LABELS, explainError, explorerAddress, explorerEntity, explorerTx, fetchTrustList, type Experiment, type TrustList } from "@nexora/ledger";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Address, Hex } from "viem";
 import { useArkiv } from "./arkiv.tsx";
@@ -13,7 +13,7 @@ export function useAsync<T>(run: () => Promise<T>, deps: unknown[]) {
     setState((s) => ({ ...s, loading: true, error: undefined }));
     run().then(
       (data) => live && setState({ data, loading: false }),
-      (error: unknown) => live && setState({ error: error instanceof Error ? error.message : String(error), loading: false }),
+      (error: unknown) => live && setState({ error: explainError(error), loading: false }),
     );
     return () => {
       live = false;
@@ -161,6 +161,7 @@ export function VocabSelect<T extends string>({ list, value, onChange, any }: { 
 export function ErrorNote({ error }: { error?: string | undefined }) {
   const { t } = useI18n();
   if (!error) return null;
+  if (error.includes("ANON_COST_LIMITED")) return <p className="error" role="alert">{t("rateLimited")}<br /><span className="small muted">{error}</span></p>;
   return <p className="error" role="alert">{t("arkivFailed", { error })}</p>;
 }
 

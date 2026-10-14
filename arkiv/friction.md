@@ -53,6 +53,35 @@ Smooth paths are documented with the same rigour as problems.
 - **Actual:** the docs do not give it. The explorer is a SPA that answers `200` for every path, including a nonsense key, so links cannot be validated with a HEAD request. We recovered `/entity/<key>`, `/tx/<hash>` and `/address/<addr>` by reading the explorer's JS bundle.
 - **Suggested fix:** document the deep-link formats, and return 404 from `/api/entity/<key>` for unknown keys so links are checkable.
 
+## F9. Exhausted anonymous query budget looks like a silent hang of several minutes (status: live)
+
+- **Surface:** public RPC (`arkiv_query`) together with TypeScript SDK 0.8.1 / viem `http()` transport
+- **What happened (14 Oct 2026):** a working day of development reads from one IP (CLI runs, about 30 headless-browser page loads) used up the anonymous budget. From then on, every `select().fetch()` and `getEntity` blocked with no output: `npx tsx ledger/cli.ts query --demo` was still silent after 90 s. `eth_getBalance` and `eth_blockNumber` kept working, which made it look like an SDK or query bug.
+- **Root cause, found with curl:**
+  ```
+  $ curl -sD - -X POST https://rpc.tiramisu.db-chain.testnet.arkiv.network \
+      -d '{"jsonrpc":"2.0","id":1,"method":"arkiv_query","params":["v = i32(1)",{"limit":1}]}'
+  HTTP/1.1 429 Too Many Requests
+  ratelimit: limit=10000, remaining=0, reset=2165
+  retry-after: 2165
+  {"error":"ANON_COST_LIMITED","message":"unauthenticated query budget exhausted; get an API key at https://hub.arkiv.network for a monthly quota"}
+  ```
+  viem's HTTP transport honours `Retry-After` on 429 and retries up to 3 times (`viem/utils/buildRequest.ts`). With a 2165 s header, one call can block for hours. The SDK passes viem's transport through unchanged, so nothing reaches the user.
+- **Expected:**
+  - an error within seconds that says "query budget exhausted, resets in ~36 min, use an access key";
+  - documentation of the anonymous budget size and of what a query costs. The `ratelimit` header says `limit=10000` cost units, but the docs give no cost per query or per row.
+- **Impact on apps:** a browser dApp that reads Arkiv directly (our censorship-resistance design) inherits this per visitor IP. Visitors on a shared NAT, such as an office, a college Wi-Fi or a mobile carrier's CGNAT in India, share one anonymous budget. Access keys are explicitly not safe in browsers ([docs](https://docs.arkiv.network/start-here/access-keys/)).
+- **Our workaround:** [`ledger/src/queries.ts`](../ledger/src/queries.ts) `arkivHttp()`:
+  - throws `ArkivRateLimitError` from `onFetchResponse` on 429, which surfaces in about 2.5 s in our test instead of hanging;
+  - the CLI prints `Arkiv RPC query budget exhausted (HTTP 429 ANON_COST_LIMITED); resets in about 35 min…` and exits 1;
+  - the web app shows a translated notice;
+  - `ARKIV_RPC_URL` lets the CLI, scripts and sponsor use a keyed URL server-side;
+  - the live feed batches up to 25 new keys into one `$key`-filtered query instead of one `getEntity` per chain event.
+- **Suggested fix:**
+  1. Have the SDK's default transport not sleep on long `Retry-After` values (cap at a few seconds, then throw a typed `RateLimitError` carrying `retryAfter`).
+  2. Document the anonymous budget and the cost model.
+  3. Consider a per-origin or per-dApp read allowance, so browser-first apps do not have to proxy reads through a server, which reintroduces the central point that Arkiv removes.
+
 ## F6. Smooth: exact, rerunnable query text (status: live)
 
 - **Surface:** TypeScript SDK query builder

@@ -49,7 +49,8 @@ export async function POST(request: Request): Promise<Response> {
   if (ipHits.length >= PER_IP_DAILY) return json(429, { error: "This network already received its free gas today." });
   if (global.length >= GLOBAL_HOURLY) return json(429, { error: "Hourly sponsor budget used up." });
 
-  const rpc = http(tiramisu.rpcUrls.default.http[0]);
+  // ARKIV_RPC_URL may carry a Hub access key; it stays server-side, never in the browser bundle.
+  const rpc = http(process.env.ARKIV_RPC_URL || tiramisu.rpcUrls.default.http[0], { retryCount: 1, timeout: 20_000 });
   const reader = createPublicClient({ chain: tiramisu, transport: rpc });
   const sponsor = privateKeyToAccount(key as `0x${string}`);
   const [balance, sponsorBalance] = await Promise.all([

@@ -9,9 +9,9 @@
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { createWalletClient } from "@arkiv-network/sdk";
 import { tiramisu } from "@arkiv-network/sdk/chains";
-import { formatEther, http, parseEther } from "viem";
+import { formatEther, parseEther } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { readClient } from "../ledger/src/index.ts";
+import { arkivHttp, readClient } from "../ledger/src/index.ts";
 import { ENV_FILE, SEED_KEY_NAMES, SPONSOR_KEY_NAME, loadEnv, requireKey } from "./env.ts";
 
 const SEED_TARGET = parseEther("0.05");
@@ -33,7 +33,7 @@ for (const [name] of roles) {
 const client = readClient();
 const fund = process.argv.includes("--fund");
 const sponsor = privateKeyToAccount(requireKey(SPONSOR_KEY_NAME));
-const wallet = createWalletClient({ chain: tiramisu, transport: http(), account: sponsor });
+const wallet = createWalletClient({ chain: tiramisu, transport: arkivHttp(), account: sponsor });
 
 for (const [name, role] of roles) {
   const account = privateKeyToAccount(requireKey(name));

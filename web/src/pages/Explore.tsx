@@ -1,9 +1,10 @@
 import {
-  CATEGORIES, LANGUAGES, PLATFORMS, SEASONS, TIERS, comboStats, decodeExperiment, fetchExperiments,
+  CATEGORIES, LANGUAGES, PLATFORMS, SEASONS, TIERS, comboStats, fetchExperiments,
   fetchTrustList, fetchTrustLists, liveClient, summarise, type TrustList, type Category, type ExperimentFilters, type Language,
-  type Platform, type RawEntity, type Season, type Tier,
+  type Platform, type Season, type Tier,
 } from "@nexora/ledger";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
 import { ErrorNote, ExperimentCard, Field, QueryBox, Roi, VocabSelect, useAsync, useSource, type Source } from "../components.tsx";
 import { RECOMMENDED_TRUST_LIST } from "../config.ts";
@@ -80,11 +81,17 @@ export function creatorsFor(source: Source, wallet: { address: `0x${string}` } |
   return undefined;
 }
 
+/**
+ * Live feed over WebSocket entity events. Events carry no attributes, so instead of one `getEntity`
+ * per event (one RPC per entity created anywhere on the chain), new keys are batched and checked
+ * with a single `$key`-filtered query every few seconds — only Nexora experiments come back.
+ */
 function LiveFeed({ onNew }: { onNew: () => void }) {
   const { reader } = useArkiv();
   const { t, v } = useI18n();
   const [events, setEvents] = useState<{ key: string; text: string }[]>([]);
   const [status, setStatus] = useState("connecting");
+  const pending = useRef<Hex[]>([]);
   useEffect(() => {
     let client: ReturnType<typeof liveClient>;
     try {
@@ -95,18 +102,26 @@ function LiveFeed({ onNew }: { onNew: () => void }) {
     }
     setStatus("live");
     const stop = client.watchEntityEvents({
-      onEntityCreated: async (event) => {
-        const entity = await reader.getEntity(event.entityKey).catch(() => null);
-        if (!entity) return;
-        const decoded = decodeExperiment(entity as RawEntity);
-        if (!decoded.ok) return;
-        const e = decoded.value;
-        setEvents((prev) => [{ key: e.key, text: `${v(e.category)} · ${v(e.platform)} ${v(e.format)} · ${e.roiPct > 0 ? "+" : ""}${e.roiPct}%` }, ...prev].slice(0, 5));
-        onNew();
+      onEntityCreated: (event) => {
+        pending.current.push(event.entityKey);
       },
       onError: () => setStatus("reconnecting"),
     });
-    return stop;
+    const timer = setInterval(async () => {
+      const batch = pending.current.splice(0, 25);
+      if (batch.length === 0) return;
+      const found = await fetchExperiments(reader, { keys: batch, includeDemo: true }, 25).catch(() => null);
+      if (!found || found.items.length === 0) return;
+      setEvents((prev) => [
+        ...found.items.map((e) => ({ key: e.key, text: `${v(e.category)} · ${v(e.platform)} ${v(e.format)} · ${e.roiPct > 0 ? "+" : ""}${e.roiPct}%` })),
+        ...prev,
+      ].slice(0, 5));
+      onNew();
+    }, 10_000);
+    return () => {
+      stop();
+      clearInterval(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reader]);
   return (
