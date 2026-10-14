@@ -1,4 +1,5 @@
-import { SPEND_BAND_LABELS, explainError, explorerAddress, explorerEntity, explorerTx, fetchTrustList, type Experiment, type TrustList } from "@nexora/ledger";
+import { readTrustList } from "./cache.ts";
+import { SPEND_BAND_LABELS, explainError, explorerAddress, explorerEntity, explorerTx, type Experiment, type TrustList } from "@nexora/ledger";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Address, Hex } from "viem";
 import { useArkiv } from "./arkiv.tsx";
@@ -128,7 +129,7 @@ export function useSource(): [Source, (s: Source) => void, TrustList | null] {
   const { reader } = useArkiv();
   const list = useAsync(async () => {
     if (source.kind !== "list") return null;
-    const decoded = await fetchTrustList(reader, source.key);
+    const decoded = await readTrustList(reader, source.key);
     return decoded.ok ? decoded.value : null;
   }, [source.kind === "list" ? source.key : source.kind, reader]);
   const update = (next: Source) => {

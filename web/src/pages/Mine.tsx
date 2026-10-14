@@ -1,4 +1,4 @@
-import { fetchExperiments } from "@nexora/ledger";
+import { readExperiments } from "../cache.ts";
 import { useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
 import { ErrorNote, ExperimentCard, QueryBox, WalletBar, useAsync } from "../components.tsx";
@@ -11,7 +11,7 @@ export function Mine() {
   const oneOffs = oneOffWallets().map((w) => w.address);
   // One $creator OR query covers the main wallet and up to 24 one-time wallets.
   const creators = [...(wallet ? [wallet.address] : []), ...oneOffs].slice(0, 25);
-  const result = useAsync(async () => (creators.length ? fetchExperiments(reader, { creators, includeDemo: true }) : null), [reader, creators.join(","), revision]);
+  const result = useAsync(async () => (creators.length ? readExperiments(reader, { creators, includeDemo: true }) : null), [reader, creators.join(","), revision]);
   const [showKey, setShowKey] = useState(false);
   const [importKey, setImportKey] = useState("");
 

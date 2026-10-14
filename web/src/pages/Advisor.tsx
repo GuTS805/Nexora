@@ -1,7 +1,5 @@
-import {
-  CATEGORIES, LANGUAGES, SPEND_BAND_LABELS, TIERS, fetchExperiments, isOneOf, suggest,
-  type Category, type ExperimentFilters, type Language, type Suggestion, type Tier,
-} from "@nexora/ledger";
+import { readExperiments } from "../cache.ts";
+import { CATEGORIES, LANGUAGES, SPEND_BAND_LABELS, TIERS, isOneOf, suggest, type Category, type ExperimentFilters, type Language, type Suggestion, type Tier } from "@nexora/ledger";
 import { useMemo, useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
 import { EntityLink, ErrorNote, Field, QueryBox, Roi, VocabSelect, WhatsAppButton, useAsync, useSource } from "../components.tsx";
@@ -38,7 +36,7 @@ export function Advisor() {
   };
   const result = useAsync(async () => {
     if (!category || (source.kind === "list" && !list) || (creators && creators.length === 0)) return null;
-    const outcome = await fetchExperiments(reader, filters);
+    const outcome = await readExperiments(reader, filters, 400);
     return { outcome, suggestions: suggest(outcome.items, 3, { trusted }) };
   }, [reader, revision, category, tier, lang, band, includeDemo, source.kind, list?.key, wallet?.address, recommended?.key]);
 

@@ -1,4 +1,5 @@
-import { CATEGORIES, MAX_TRUST_MEMBERS, fetchTrustLists, trustListCreate, trustListPatch, type Category, type TrustList } from "@nexora/ledger";
+import { readTrustLists } from "../cache.ts";
+import { CATEGORIES, MAX_TRUST_MEMBERS, trustListCreate, trustListPatch, type Category, type TrustList } from "@nexora/ledger";
 import { useState } from "react";
 import type { Address, Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
@@ -61,7 +62,7 @@ function Editor({ existing, onDone }: { existing?: TrustList; onDone: () => void
 export function Trust() {
   const { reader, wallet, revision } = useArkiv();
   const { t, v } = useI18n();
-  const lists = useAsync(() => fetchTrustLists(reader), [reader, revision]);
+  const lists = useAsync(() => readTrustLists(reader), [reader, revision]);
   const [editing, setEditing] = useState<TrustList | "new" | null>(null);
 
   return (

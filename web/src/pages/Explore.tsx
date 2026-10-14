@@ -1,8 +1,5 @@
-import {
-  CATEGORIES, LANGUAGES, PLATFORMS, SEASONS, TIERS, comboStats, fetchExperiments,
-  fetchTrustList, fetchTrustLists, liveClient, summarise, type TrustList, type Category, type ExperimentFilters, type Language,
-  type Platform, type Season, type Tier,
-} from "@nexora/ledger";
+import { readExperiments, readTrustList, readTrustLists } from "../cache.ts";
+import { CATEGORIES, LANGUAGES, PLATFORMS, SEASONS, TIERS, comboStats, fetchExperiments, liveClient, summarise, type TrustList, type Category, type ExperimentFilters, type Language, type Platform, type Season, type Tier } from "@nexora/ledger";
 import { useEffect, useRef, useState } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
@@ -32,7 +29,7 @@ export function cliFor(command: string, filters: ExperimentFilters, source: Sour
 export function SourcePicker({ source, setSource }: { source: Source; setSource: (s: Source) => void }) {
   const { reader, wallet, revision } = useArkiv();
   const { t } = useI18n();
-  const lists = useAsync(() => fetchTrustLists(reader), [reader, revision]);
+  const lists = useAsync(() => readTrustLists(reader), [reader, revision]);
   const value = source.kind === "list" ? source.key : source.kind;
   return (
     <label className="field">
@@ -61,7 +58,7 @@ export function useRecommendedList(): TrustList | null {
   const { reader } = useArkiv();
   const result = useAsync(async () => {
     if (!RECOMMENDED_TRUST_LIST) return null;
-    const decoded = await fetchTrustList(reader, RECOMMENDED_TRUST_LIST);
+    const decoded = await readTrustList(reader, RECOMMENDED_TRUST_LIST);
     return decoded.ok ? decoded.value : null;
   }, [reader]);
   return result.data ?? null;
@@ -151,7 +148,7 @@ export function Explore() {
   const waitingForList = source.kind === "list" && !list;
   const result = useAsync(async () => {
     if (waitingForList || (creators && creators.length === 0)) return null;
-    return fetchExperiments(reader, filters);
+    return readExperiments(reader, filters);
   }, [reader, revision, category, platform, tier, lang, season, includeDemo, source.kind, list?.key, list?.members.length, wallet?.address]);
 
   const items = result.data?.items ?? [];

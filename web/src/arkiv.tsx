@@ -1,3 +1,4 @@
+import { clearReads } from "./cache.ts";
 import { createWalletClient, type WalletArkivClient } from "@arkiv-network/sdk";
 import { tiramisu } from "@arkiv-network/sdk/chains";
 import { TIRAMISU_RPC, arkivHttp, readClient } from "@nexora/ledger";
@@ -153,7 +154,10 @@ export function ArkivProvider({ children }: { children: ReactNode }) {
       return key ? keyClient(key, "burner") : null;
     },
     revision,
-    bump: () => setRevision((r) => r + 1),
+    bump: () => {
+      clearReads();
+      setRevision((r) => r + 1);
+    },
   };
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }

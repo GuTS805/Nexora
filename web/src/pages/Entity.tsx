@@ -1,8 +1,6 @@
+import { readExperiments, readTrustList } from "../cache.ts";
 import { ExpirationTime } from "@arkiv-network/sdk";
-import {
-  EXTEND_DAYS, SPEND_BAND_LABELS, blockToDate, fetchExperiment, fetchExperiments, fetchTrustList, unseal,
-  type PrivateFigures,
-} from "@nexora/ledger";
+import { EXTEND_DAYS, SPEND_BAND_LABELS, blockToDate, fetchExperiment, unseal, type PrivateFigures } from "@nexora/ledger";
 import { useState } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
@@ -18,10 +16,10 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
   const data = useAsync(async () => {
     const [decoded, block] = await Promise.all([fetchExperiment(reader, entityKey), reader.getBlockNumber()]);
     if (!decoded.ok) {
-      const list = await fetchTrustList(reader, entityKey);
+      const list = await readTrustList(reader, entityKey);
       return { kind: "other" as const, block, reason: decoded.reason, list: list.ok ? list.value : null };
     }
-    const children = await fetchExperiments(reader, { parent: entityKey, includeDemo: true });
+    const children = await readExperiments(reader, { parent: entityKey, includeDemo: true });
     return { kind: "experiment" as const, block, e: decoded.value, children: children.items, childQuery: children.query };
   }, [reader, entityKey, revision]);
 
