@@ -102,7 +102,7 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
   - There is no Nexora database. The web app is a static bundle with hash routing and relative paths, so it runs from any host or IPFS gateway, and `npm run build:portable` produces a single `nexora.html` that opens from disk or a file share.
   - The CLI reads Arkiv directly.
   - The RPC is configurable in the UI and the CLI (`--rpc`, `ARKIV_RPC_URL`).
-- **Residual:** the public Tiramisu RPC is a single default endpoint, and it rate-limits anonymous reads (friction F9). A blocked or exhausted RPC needs another node or an access key.
+- **Residual:** the public Tiramisu RPC is a single default endpoint, and it rate-limits anonymous reads (friction F6). A blocked or exhausted RPC needs another node or an access key.
 
 ### T11. Read-budget exhaustion as denial of service
 

@@ -63,7 +63,7 @@ node examples/read-without-nexora.mjs sarees_textiles
 # any CLI command accepts --rpc <url>; ARKIV_RPC_URL sets a keyed RPC for CLI and scripts
 ```
 
-The public Tiramisu RPC has a small anonymous query budget per IP. When it runs out, every command says so within seconds (see friction F9); use an [Arkiv Hub access key](https://docs.arkiv.network/start-here/access-keys/) via `ARKIV_RPC_URL`.
+The public Tiramisu RPC has a small anonymous query budget per IP. When it runs out, every command says so within seconds (see friction F6); use an [Arkiv Hub access key](https://docs.arkiv.network/start-here/access-keys/) via `ARKIV_RPC_URL`.
 
 ### Maintainers: demo data and live checks
 

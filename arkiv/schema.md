@@ -78,13 +78,15 @@ These strings are produced by the SDK's `Expression.toString()`. The UI shows th
 | Explore, filtered, demo hidden | `… AND category = str('tea_coffee') AND tier = str('tier2') AND demo = false` |
 | What to try (budget band 2) | `… AND category = str('tea_coffee') AND spend_band >= i32(1) AND spend_band <= i32(3)`. With *All sellers*, rows from everyone are used, but only creators on the recommended trust list count toward "proven". |
 | Any view with a trust list | `… AND ($creator = addr(0xA…) OR $creator = addr(0xB…) OR …)` |
-| My data | `… AND ($creator = addr(<test wallet>) OR $creator = addr(<one-time wallet>) OR …)` (up to 25) |
+| My data | `… AND ($creator = addr(<test wallet>) OR $creator = addr(<one-time wallet>) OR …)`, 25 wallets per query; more wallets become several queries whose results are merged |
 | Variants of an experiment | `… AND parent = key(0x…)` |
 | Trust lists | `app = str('nexora') AND kind = str('trust_list') AND v = i32(1)` |
 | Entity page | `getEntity(key)` |
 | Live feed | `watchEntityEvents` over WebSocket (`wss://…`) collects `EntityCreated` keys; every 10 s one query `… AND ($key = key(0x…) OR …)` (≤ 25 keys) returns only the Nexora experiments among them. Events carry no attributes (friction F3), and this replaces one `getEntity` per chain event. |
 
-Results are paged with the SDK cursor (200 per page): Explore reads one page, What to try up to 400 rows, the CLI up to 600. The web app also caches identical reads for 30 s, because each visitor IP has a small anonymous query budget (friction F9). Arkiv has no server-side ordering, so sorting and the recommendation statistics (median and quartiles of ROI, distinct `$creator` count) run on the client, in [`ledger/src/insights.ts`](../ledger/src/insights.ts).
+The Tiramisu node refuses a query with more than 64 predicates or more than 8192 bytes (measured, friction F4). A Nexora query has at most 14 filter predicates plus 25 `$creator` or `$key` branches (`MAX_OR_BRANCHES`), about 2 KB.
+
+Results are paged with the SDK cursor (200 per page): Explore reads one page, What to try up to 400 rows, the CLI up to 600. The web app also caches identical reads for 30 s, because each visitor IP has a small anonymous query budget (friction F6). Arkiv has no server-side ordering, so sorting and the recommendation statistics (median and quartiles of ROI, distinct `$creator` count) run on the client, in [`ledger/src/insights.ts`](../ledger/src/insights.ts).
 
 ## Mutations
 

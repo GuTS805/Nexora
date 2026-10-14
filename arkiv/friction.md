@@ -5,7 +5,7 @@ Each entry gives its **status**:
 - **live**: reproduced against Tiramisu.
 - **source**: established by reading the SDK's shipped TypeScript source, live check pending.
 
-Smooth paths are documented with the same rigour as problems.
+Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 change how a browser-first app has to be designed. A short list of what worked well is at the end, kept separate from the friction.
 
 ---
 
@@ -30,21 +30,48 @@ Smooth paths are documented with the same rigour as problems.
 - **Our workaround:** [`web/src/pages/Entity.tsx`](../web/src/pages/Entity.tsx) uses `ExpirationTime.atBlock(entity.expiresAt + 30 × 43_200n)`.
 - **Suggested fix:** add `ExpirationTime.extendBy(lifetime)` (relative to the current expiry), or rename the parameter to `newExpiry`. Either way, document the semantics on `extendEntity`'s JSDoc.
 
-## F3. Entity events carry no attributes, so filtering a live feed costs one extra RPC call per event (status: source)
+## F3. Entity events carry no attributes, so filtering a live feed costs extra queries per event (status: live)
 
 - **Surface:** `watchEntityEvents` (WebSocket)
 - **Code:** in `src/types/events.ts`, `EntityCreatedEvent` has `entityKey`, `owner`, `expiresAt` and `creationFlags`, and no attributes, content type or payload.
+- **Live (14 Oct 2026, block ~567 330):** a 90 s subscription received **61** `EntityCreated` events from other apps, about 40 per minute. A real event, in full:
+  ```
+  {"type":"EntityCreated","blockNumber":"567332","transactionHash":"0x2c5e…ff75","logIndex":0,
+   "entityKey":"0xeb1a…ff72","owner":"0x679B…7B59","expiresAt":"568232",
+   "creationFlags":{"readonly":false,"permissionlessExtension":false,"raw":0}}
+  ```
 - **Expected:** to subscribe to "entities where `app = nexora`", or at least to receive attributes with each event.
-- **Actual:** every client receives every entity created on the chain and must call `getEntity` on each one to learn whether it is relevant. On a busy chain, a live view for one app is O(chain traffic) in RPC calls.
-- **Workaround:** our live feed (`web/src/pages/Explore.tsx`, `ledger/cli.ts watch`) calls `getEntity` and then runs the contract decoder, dropping anything that fails.
+- **Actual:** every client receives every entity created on the chain and must look each one up to learn whether it is relevant. `getEntity` is itself an `arkiv_query` (see F6), so a naive live view spends ~40 queries per minute per open tab on other apps' data, at today's traffic.
+- **Reproduce:** run `npx tsx ledger/cli.ts watch` and count the events against the Nexora rows it prints.
+- **Workaround:** our live feed (`web/src/pages/Explore.tsx`, `ledger/cli.ts watch`) collects keys and every 5–10 s checks up to 25 of them with one `$key = key(…) OR …` query, then runs the contract decoder. That is 6–12 queries per minute however busy the chain is.
 - **Suggested fix:** an optional query predicate on `watchEntityEvents` evaluated by the node, or indexed event topics for a few well-known attributes.
 
-## F4. Limits you need for paging and for `OR` filters are only in the source (status: source)
+## F4. Query limits are undocumented, and the node enforces two that are not in the SDK at all (status: live)
 
-- **Surface:** Docs (Tiramisu page, Querying Data)
-- **Expected:** the docs state the maximum page size, the maximum number of `OR` branches or the total predicate size, and the faucet amount.
-- **Actual:** we found `MAX_LIMIT = 200` in `src/query/engine.ts`. We did not find an `OR`-branch limit anywhere. Our trust-list filter emits one `$creator = addr(…)` branch per member, so we capped lists at 25 members defensively. The Tiramisu docs page lists none of these values.
-- **Suggested fix:** a "Limits" table on the network page: page size, predicate size, `OR` branches, payload bytes (`MAX_PAYLOAD_BYTES = 128 KiB`, also only in source), attribute count (`MAX_ATTRIBUTES = 32`) and string length (128 bytes).
+- **Surface:** Docs (Tiramisu page, Querying Data), `arkiv_query`
+- **Expected:** the docs state the maximum page size, how many predicates or `OR` branches a query may have, and the maximum query length.
+- **Actual:** `MAX_LIMIT = 200` is in the SDK source (`src/query/engine.ts`), and nothing else is written down. We measured the rest on the public Tiramisu RPC, using raw `arkiv_query` calls with one `app = str('nexora')` clause plus N `$creator = addr(0x…)` branches:
+
+  | Query | Result |
+  | --- | --- |
+  | 1 + 63 predicates (3 991 bytes) | ok |
+  | 1 + 64 predicates (4 054 bytes) | `-32004 query has too many predicates` |
+  | 60 short predicates, 8 192 bytes in total | passes the length check |
+  | same, 8 193 bytes | `-32004 query is too long` |
+  | one `str('…')` literal over 128 bytes | `str values are limited to 128 bytes of UTF-8` |
+
+  So a query may hold at most **64 predicates** and **8 192 bytes**. The errors name neither number, and the SDK does not check either before sending.
+- **Why it matters:** "show me results from these wallets" is a natural `OR` over `$creator`, and it breaks at about 60 wallets. Before we measured this, our *My data* page silently capped its wallet list at 25, which hid results from a seller's 26th one-time wallet onwards.
+- **Reproduce:**
+  ```
+  node -e 'const a=i=>"0x"+i.toString(16).padStart(40,"0");
+    for (const n of [63,64]) fetch("https://rpc.tiramisu.db-chain.testnet.arkiv.network",{method:"POST",
+      headers:{"content-type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:1,method:"arkiv_query",
+      params:["app = str(\x27nexora\x27) AND ("+Array.from({length:n},(_,i)=>"$creator = addr("+a(i+1)+")").join(" OR ")+")",{limit:1}]})})
+      .then(r=>r.json()).then(j=>console.log(n+1,"predicates:",j.error?.message??"ok"))'
+  ```
+- **Our workaround:** [`ledger/src/queries.ts`](../ledger/src/queries.ts) caps one query at `MAX_OR_BRANCHES = 25` `$creator` or `$key` branches (at most 39 predicates and about 2 KB with every filter set). `fetchExperiments` splits longer lists into several queries and merges the results. A test checks the heaviest filter against both limits.
+- **Suggested fix:** a "Limits" table on the network page covering page size, predicates per query, query bytes, payload bytes (`MAX_PAYLOAD_BYTES = 128 KiB`, also only in source), attribute count (`MAX_ATTRIBUTES = 32`) and string length (128 bytes). Put the limit in the error message (`query has 65 predicates, max 64`), and validate in the SDK's query builder so the error appears before a network round trip. An `IN` operator (`$creator IN (…)`) would make the common case one predicate.
 
 ## F5. Entity URL format on the block explorer is undocumented (status: live)
 
@@ -53,7 +80,7 @@ Smooth paths are documented with the same rigour as problems.
 - **Actual:** the docs do not give it. The explorer is a SPA that answers `200` for every path, including a nonsense key, so links cannot be validated with a HEAD request. We recovered `/entity/<key>`, `/tx/<hash>` and `/address/<addr>` by reading the explorer's JS bundle.
 - **Suggested fix:** document the deep-link formats, and return 404 from `/api/entity/<key>` for unknown keys so links are checkable.
 
-## F9. Exhausted anonymous query budget looks like a silent hang of several minutes (status: live)
+## F6. Exhausted anonymous query budget looks like a silent hang of several minutes (status: live)
 
 - **Surface:** public RPC (`arkiv_query`) together with TypeScript SDK 0.8.1 / viem `http()` transport
 - **What happened (14 Oct 2026):** a working day of development reads from one IP (CLI runs, about 30 headless-browser page loads) used up the anonymous budget. From then on, every `select().fetch()` and `getEntity` blocked with no output: `npx tsx ledger/cli.ts query --demo` was still silent after 90 s. `eth_getBalance` and `eth_blockNumber` kept working, which made it look like an SDK or query bug.
@@ -84,24 +111,13 @@ Smooth paths are documented with the same rigour as problems.
   2. Document the anonymous budget and the cost model, and return the remaining cost budget on every response (e.g. a second `ratelimit` entry), so clients can back off before the hour-long stop.
   3. Consider a per-origin or per-dApp read allowance, so browser-first apps do not have to proxy reads through a server, which reintroduces the central point that Arkiv removes.
 
-## F6. Smooth: exact, rerunnable query text (status: live)
+---
 
-- **Surface:** TypeScript SDK query builder
-- `and([...]).toString()` renders the exact predicate the node executes, with typed literals, e.g. `app = str('nexora') AND spend_band >= i32(1) AND ($creator = addr(0x…) OR …)`. We print it under every list in the UI, and judges can paste it into any client. Building reproducibility into the product took zero extra code.
-- Note: the format is `category = str('tea_coffee')`, not `category = "tea_coffee"`. Our first test assumed the latter (`ledger/test/ledger.test.ts`). It is worth one example in the docs.
+## What worked well (not friction)
 
-## F7. Smooth: SDK errors and types that teach (status: live)
-
-- **Surface:** TypeScript SDK attribute and expiry types
-- Out-of-range values throw an `InvalidValueError` that explains the fix ("use u64(...) for … timestamps … (Date.now() does not fit an i32)").
-- Expiries can only be built with `ExpirationTime.*` (a branded type), so a raw number of seconds does not compile.
-- `readonly` and `permissionlessExtension` are plain booleans with clear JSDoc.
-- The package ships its TypeScript source (the `bun` export condition points to `src/`). That is how we could establish F2–F4 precisely instead of guessing.
-
-## F8. Smooth: reading Tiramisu with no key and no account (status: live)
-
-- **Surface:** public RPC, `createPublicClient({ chain: tiramisu, transport: http() })`
-- `getBlockNumber()` and `select().where(...).fetch()` worked on the first try from Node and the browser, with no API key and no CORS problems. This is the property our censorship-resistance story depends on.
+- **Query text you can paste anywhere.** `and([...]).toString()` renders the exact predicate the node runs, with typed literals, e.g. `app = str('nexora') AND spend_band >= i32(1)`. We show it under every list, so reproducibility took no extra code. One docs example of the `str('…')` literal format would have saved us a failing test.
+- **Types that prevent mistakes.** Out-of-range values throw an `InvalidValueError` that names the fix ("use u64(...) for … timestamps"). Expiries can only be built with `ExpirationTime.*`, so raw seconds do not compile. The package ships its TypeScript source, which is how we could pin down F2 and F3 precisely.
+- **Reading needs no account.** `select().where(...).fetch()` worked first time from Node and the browser, with no key and no CORS problems, until the budget in F6 ran out.
 
 ---
 
@@ -109,5 +125,6 @@ Smooth paths are documented with the same rigour as problems.
 
 - Gas cost of one `createEntity` and of a 20-create `executeBatch`.
 - Read-after-write latency: blocks until a new entity appears in `select()` results.
-- Whether a 25-branch `$creator` `OR` query succeeds.
 - Live confirmation of F2 (expected `ExpiryNotExtended` revert).
+
+Already confirmed live without funds: the query limits in F4 (including a 25-branch `$creator` query) and the event shape in F3.

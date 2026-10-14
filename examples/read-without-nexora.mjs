@@ -13,7 +13,7 @@ import { http } from "viem";
 const category = process.argv[2] ?? "tea_coffee";
 const client = createPublicClient({
   chain: tiramisu,
-  // Fail fast instead of honouring a long Retry-After on the anonymous budget (see friction F9).
+  // Fail fast instead of honouring a long Retry-After on the anonymous budget (see friction F6).
   transport: http(process.env.ARKIV_RPC_URL ?? tiramisu.rpcUrls.default.http[0], { retryCount: 0 }),
 });
 
