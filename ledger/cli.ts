@@ -9,13 +9,15 @@
  *   nexora recommend --category <c> [--tier <t>] [--demo] [--trust <listKey>]
  *   nexora show      <entityKey>
  *   nexora lists
+ *   nexora verify    re-check every feature recorded in arkiv/evidence.json against the chain
  *   nexora watch     live feed of new entities over WebSocket
  *
  *   --rpc <url>      use another Arkiv node (default: Tiramisu public RPC)
  */
+import { readFileSync } from "node:fs";
 import { getAddress, type Address, type Hex } from "viem";
 import {
-  SPEND_BAND_LABELS, explainError, experimentPredicate, fetchExperiment, fetchExperiments,
+  SPEND_BAND_LABELS, explainError, getEntityOrNull, experimentPredicate, fetchExperiment, fetchExperiments,
   fetchTrustList, fetchTrustLists, liveClient, queryText, readClient, suggest,
   type ExperimentFilters,
 } from "./src/index.ts";
@@ -112,6 +114,29 @@ switch (command) {
     }
     break;
   }
+  case "verify": {
+    // Re-check the seed script's recorded evidence against the chain (same checks as the Proof page).
+    const file = new URL("../arkiv/evidence.json", import.meta.url);
+    const evidence = JSON.parse(readFileSync(file, "utf8")) as { features: Record<string, Record<string, unknown>> };
+    const steps = Object.entries(evidence.features);
+    if (steps.length === 0) console.log("no recorded evidence yet: run npm run seed with a funded wallet");
+    for (const [name, step] of steps) {
+      const key = (step.key ?? (step.keys as Hex[] | undefined)?.[0]) as Hex | undefined;
+      if (!key) {
+        console.log(`-    ${name}: no entity to check`);
+        continue;
+      }
+      const entity = await getEntityOrNull(client, key);
+      const flags = entity?.creationFlags;
+      const verdict =
+        name === "owner_delete" ? entity === null :
+        name === "trust_list_create" || name === "trust_list_patch" ? entity !== null && flags?.readonly === false :
+        name === "permissionless_extend" ? !!flags?.permissionlessExtension && String(step.extendedBy).toLowerCase() !== String(entity?.owner).toLowerCase() :
+        entity !== null && !!flags?.readonly;
+      console.log(`${verdict ? "ok  " : "FAIL"} ${name}: ${key}${entity ? ` creator ${entity.creator}` : " (gone)"}`);
+    }
+    break;
+  }
   case "lists": {
     const result = await fetchTrustLists(client);
     for (const list of result.items) console.log(`${list.key}  "${list.name}" (${list.scope}) by ${list.creator}: ${list.members.length} members`);
@@ -142,7 +167,7 @@ switch (command) {
     break;
   }
   default:
-    console.log("commands: query | recommend | show <key> | lists | watch   (see header of ledger/cli.ts)");
+    console.log("commands: query | recommend | show <key> | lists | watch | verify   (see header of ledger/cli.ts)");
 }
 } catch (error) {
   console.error(`error: ${explainError(error)}`);

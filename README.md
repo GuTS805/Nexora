@@ -57,6 +57,7 @@ npx tsx ledger/cli.ts recommend --demo --category tea_coffee --tier tier2
 npx tsx ledger/cli.ts lists
 npx tsx ledger/cli.ts show <entityKey>
 npx tsx ledger/cli.ts watch    # live feed over WebSocket
+npx tsx ledger/cli.ts verify   # re-check every recorded feature in arkiv/evidence.json against the chain
 node examples/read-without-nexora.mjs sarees_textiles
 # any CLI command accepts --rpc <url>; ARKIV_RPC_URL sets a keyed RPC for CLI and scripts
 ```

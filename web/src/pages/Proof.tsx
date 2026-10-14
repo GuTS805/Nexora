@@ -12,6 +12,7 @@ type Step = { why?: string; tx?: Hex; txs?: Hex[]; key?: Hex; keys?: Hex[]; crea
 const CHECKS: Record<string, { key: (s: Step) => Hex | undefined; expect: string; verify: (e: { creator?: string; owner?: string; creationFlags?: { readonly: boolean; permissionlessExtension: boolean } } | null, s: Step) => boolean }> = {
   sealed_payload: { key: (s) => s.key, expect: "exists, readonly", verify: (e) => !!e?.creationFlags?.readonly },
   trust_list_create: { key: (s) => s.key, expect: "exists, editable by its owner", verify: (e) => e !== null && e.creationFlags?.readonly === false },
+  trust_list_patch: { key: (s) => s.key, expect: "exists, edited in place by its owner", verify: (e) => e !== null && e.creationFlags?.readonly === false },
   permissionless_extend: { key: (s) => s.key, expect: "owner ≠ extender, community extension on", verify: (e, s) => !!e?.creationFlags?.permissionlessExtension && String(s.extendedBy).toLowerCase() !== String(e.owner).toLowerCase() },
   readonly_enforced: { key: (s) => s.key, expect: "still readonly after the refused patch", verify: (e) => !!e?.creationFlags?.readonly },
   owner_delete: { key: (s) => s.key, expect: "gone after delete", verify: (e) => e === null },
