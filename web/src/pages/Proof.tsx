@@ -2,6 +2,7 @@ import { explainError, explorerEntity, explorerTx, getEntityOrNull } from "@nexo
 import { useEffect, useState, type ReactNode } from "react";
 import type { Hex } from "viem";
 import evidence from "../../../arkiv/evidence.json";
+import { Cube, Icon, PATHS } from "../art.tsx";
 import { useArkiv } from "../arkiv.tsx";
 import { short } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
@@ -52,24 +53,7 @@ const ICON_PATHS: Record<string, ReactNode> = {
   owner_delete: <><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6" /></>,
 };
 
-function Icon({ children }: { children: ReactNode }) {
-  return <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>;
-}
-
 const External = () => <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>;
-
-/** An isometric cube for the hero art: top, left and right faces around (x, y). */
-function Cube({ x, y, s }: { x: number; y: number; s: number }) {
-  const w = s * 0.866;
-  const pts = (p: number[][]) => p.map(([a, b]) => `${a},${b}`).join(" ");
-  return (
-    <g>
-      <polygon className="cube-left" points={pts([[x - w, y - s / 2], [x, y], [x, y + s], [x - w, y + s / 2]])} />
-      <polygon className="cube-right" points={pts([[x, y], [x + w, y - s / 2], [x + w, y + s / 2], [x, y + s]])} />
-      <polygon className="cube-top" points={pts([[x, y - s], [x + w, y - s / 2], [x, y], [x - w, y - s / 2]])} />
-    </g>
-  );
-}
 
 type Result = { state: "checking" } | { state: "ok" | "fail"; error?: string };
 
@@ -152,7 +136,7 @@ export function Proof() {
           <span>{hi ? "एंट्रीज़" : "Entities"}</span><b>{entities}</b><small>{hi ? "सीड से बनी अलग-अलग एंट्रीज़" : "distinct entities the seed created"}</small>
         </div>
         <div>
-          <Icon><><path d="m12 2 9 5v10l-9 5-9-5V7Z" /><path d="m3 7 9 5 9-5M12 12v10" /></></Icon>
+          <Icon>{PATHS.box}</Icon>
           <span>{hi ? "नेटवर्क" : "Network"}</span><b>{doc.network?.name ?? "Tiramisu"}</b><small>{hi ? "टेस्टनेट" : "testnet"} · chain {doc.network?.chainId ?? 7738577}</small>
         </div>
       </div>
