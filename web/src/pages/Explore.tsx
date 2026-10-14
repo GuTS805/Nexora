@@ -34,7 +34,7 @@ export function SourcePicker({ source, setSource }: { source: Source; setSource:
   const value = source.kind === "list" ? source.key : source.kind;
   return (
     <label className="field">
-      <span>Whose results</span>
+      <span>{t("whoseResults")}</span>
       <select
         value={value}
         onChange={(e) => {
@@ -46,7 +46,7 @@ export function SourcePicker({ source, setSource }: { source: Source; setSource:
         <option value="all">{t("allPublishers")}</option>
         {wallet && <option value="mine">{t("onlyMine")}</option>}
         {lists.data?.items.map((list) => (
-          <option key={list.key} value={list.key}>Trust list: {list.name} ({list.members.length})</option>
+          <option key={list.key} value={list.key}>{t("trustListOption", { name: list.name, n: list.members.length })}</option>
         ))}
       </select>
     </label>
@@ -62,7 +62,7 @@ export function creatorsFor(source: Source, wallet: { address: `0x${string}` } |
 
 function LiveFeed({ onNew }: { onNew: () => void }) {
   const { reader } = useArkiv();
-  const { v } = useI18n();
+  const { t, v } = useI18n();
   const [events, setEvents] = useState<{ key: string; text: string }[]>([]);
   const [status, setStatus] = useState("connecting");
   useEffect(() => {
@@ -91,8 +91,8 @@ function LiveFeed({ onNew }: { onNew: () => void }) {
   }, [reader]);
   return (
     <div className="live">
-      <span className={`dot ${status}`} /> Live over WebSocket ({status})
-      {events.map((event) => <a key={event.key} href={`#/e/${event.key}`} className="live-item">new: {event.text}</a>)}
+      <span className={`dot ${status}`} /> {t("liveStatus", { status: t(`live_${status}` as "live_live") })}
+      {events.map((event) => <a key={event.key} href={`#/e/${event.key}`} className="live-item">{t("liveNew", { text: event.text })}</a>)}
     </div>
   );
 }
@@ -144,13 +144,13 @@ export function Explore() {
         <>
           <div className="stats">
             <div><b>{stats.experiments}</b><span>{t("experiments")}</span></div>
-            <div><b>{stats.publishers}</b><span>{t("publishers")}</span></div>
-            <div><b>{Math.round(stats.profitableShare * 100)}%</b><span>profitable</span></div>
+            <div><b>{stats.publishers}</b><span>{t("sellers")}</span></div>
+            <div><b>{Math.round(stats.profitableShare * 100)}%</b><span>{t("profitable")}</span></div>
           </div>
           {combos.length > 0 && (
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Platform · format</th><th>Median {t("roi")}</th><th>Middle half</th><th>Runs</th><th>Independent {t("publishers")}</th></tr></thead>
+                <thead><tr><th>{t("colCombo")}</th><th>{t("colMedian")}</th><th>{t("colMiddle")}</th><th>{t("colRuns")}</th><th>{t("colSellers")}</th></tr></thead>
                 <tbody>
                   {combos.map((c) => (
                     <tr key={`${c.platform}${c.format}`}>
@@ -158,7 +158,7 @@ export function Explore() {
                       <td><Roi value={Math.round(c.medianRoi)} /></td>
                       <td className="muted">{Math.round(c.p25Roi)}% … {Math.round(c.p75Roi)}%</td>
                       <td>{c.count}</td>
-                      <td>{c.publishers}{c.publishers < 2 && <span className="badge warn" title="Only one wallet reports this">unconfirmed</span>}</td>
+                      <td>{c.publishers}{c.publishers < 2 && <span className="badge warn" title={t("unconfirmedTitle")}>{t("unconfirmed")}</span>}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -172,7 +172,7 @@ export function Explore() {
           </div>
         </>
       )}
-      {creators && creators.length === 0 && <p className="muted">Connect a wallet to see your own results.</p>}
+      {creators && creators.length === 0 && <p className="muted">{t("connectToSeeMine")}</p>}
     </section>
   );
 }

@@ -1,20 +1,28 @@
 import {
-  CATEGORIES, LANGUAGES, SPEND_BAND_LABELS, TIERS, fetchExperiments, suggest,
-  type Category, type ExperimentFilters, type Language, type Tier,
+  CATEGORIES, LANGUAGES, SPEND_BAND_LABELS, TIERS, fetchExperiments, isOneOf, suggest,
+  type Category, type ExperimentFilters, type Language, type Suggestion, type Tier,
 } from "@nexora/ledger";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
-import { EntityLink, ErrorNote, Field, QueryBox, Roi, VocabSelect, useAsync, useSource } from "../components.tsx";
+import { EntityLink, ErrorNote, Field, QueryBox, Roi, VocabSelect, WhatsAppButton, useAsync, useSource } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
+import { appUrl } from "../share.ts";
 import { SourcePicker, cliFor, creatorsFor } from "./Explore.tsx";
+
+/** Filters live in the URL, so a link shared on WhatsApp opens the same advice. */
+function useInitialParams() {
+  return useMemo(() => new URLSearchParams(location.hash.split("?")[1] ?? ""), []);
+}
 
 export function Advisor() {
   const { reader, wallet, revision } = useArkiv();
-  const { t, v } = useI18n();
-  const [category, setCategory] = useState<Category | "">("tea_coffee");
-  const [tier, setTier] = useState<Tier | "">("");
-  const [lang, setLang] = useState<Language | "">("");
-  const [band, setBand] = useState<number | "">("");
+  const { t, v, lang: uiLang } = useI18n();
+  const params = useInitialParams();
+  const initialBand = Number(params.get("band"));
+  const [category, setCategory] = useState<Category | "">(isOneOf(CATEGORIES, params.get("category")) ? (params.get("category") as Category) : "tea_coffee");
+  const [tier, setTier] = useState<Tier | "">(isOneOf(TIERS, params.get("tier")) ? (params.get("tier") as Tier) : "");
+  const [lang, setLang] = useState<Language | "">(isOneOf(LANGUAGES, params.get("lang")) ? (params.get("lang") as Language) : "");
+  const [band, setBand] = useState<number | "">(Number.isInteger(initialBand) && params.has("band") && initialBand >= 0 && initialBand < SPEND_BAND_LABELS.length ? initialBand : "");
   const [includeDemo, setIncludeDemo] = useState(true);
   const [source, setSource, list] = useSource();
 
@@ -32,16 +40,31 @@ export function Advisor() {
     return { outcome, suggestions: suggest(outcome.items) };
   }, [reader, revision, category, tier, lang, band, includeDemo, source.kind, list?.key, wallet?.address]);
 
+  const combo = (platform: string, format: string) => `${v(platform)} · ${v(format)}`;
+
+  function shareText(suggestions: Suggestion[]): string {
+    const query = new URLSearchParams({ category, ui: uiLang });
+    if (tier) query.set("tier", tier);
+    if (lang) query.set("lang", lang);
+    if (band !== "") query.set("band", String(band));
+    const proven = suggestions.filter((s) => s.kind === "proven");
+    const lines = proven.length
+      ? proven.map((s) => t("shareLine", { combo: combo(s.combo.platform, s.combo.format), r: Math.round(s.combo.medianRoi), p: s.combo.publishers })).join("\n")
+      : t("shareNoData");
+    const where = [tier && v(tier), lang && v(lang), band !== "" && SPEND_BAND_LABELS[band]].filter(Boolean).join(", ") || t("any");
+    return t("shareAdvice", { category: v(category), where, lines, url: appUrl(`#/advisor?${query}`) });
+  }
+
   return (
     <section>
       <h2>{t("navAdvisor")}</h2>
-      <p className="muted">Pick what you sell and where your buyers are. Suggestions come only from experiments other sellers published on Arkiv — every one links to its evidence.</p>
+      <p className="muted">{t("advisorIntro")}</p>
       <div className="filters">
         <Field label="category"><VocabSelect list={CATEGORIES} value={category} onChange={setCategory} /></Field>
         <Field label="tier"><VocabSelect list={TIERS} value={tier} onChange={setTier} any /></Field>
         <Field label="lang"><VocabSelect list={LANGUAGES} value={lang} onChange={setLang} any /></Field>
         <label className="field">
-          <span>Your budget</span>
+          <span>{t("yourBudget")}</span>
           <select value={band} onChange={(e) => setBand(e.target.value === "" ? "" : Number(e.target.value))}>
             <option value="">{t("any")}</option>
             {SPEND_BAND_LABELS.map((label, i) => <option key={label} value={i}>{label}</option>)}
@@ -54,23 +77,29 @@ export function Advisor() {
       {result.loading && <p className="muted">{t("loading")}</p>}
       {result.data && (
         <>
-          <p className="muted">Based on {result.data.outcome.items.length} matching experiments from {new Set(result.data.outcome.items.map((e) => e.creator)).size} sellers.</p>
+          <div className="row spread">
+            <p className="muted">{t("basedOn", { n: result.data.outcome.items.length, m: new Set(result.data.outcome.items.map((e) => e.creator)).size })}</p>
+            <WhatsAppButton text={shareText(result.data.suggestions)} />
+          </div>
           {result.data.suggestions.length === 0 && (
-            <p className="card">Not enough independent evidence yet for this combination. A combo needs results from at least two different sellers before it is suggested. Run a small test and <a href="#/log">publish your result</a> — you will be the evidence for the next seller.</p>
+            <p className="card">{t("notEnough")} <a href="#/log">{t("notEnoughLink")}</a> {t("notEnoughEnd")}</p>
           )}
           <ol className="suggestions">
             {result.data.suggestions.map((s, i) =>
               s.kind === "proven" ? (
                 <li key={i} className="card">
-                  <h3>Try {v(s.combo.platform)} · {v(s.combo.format)} <Roi value={Math.round(s.combo.medianRoi)} /></h3>
-                  <p>{s.reason}.</p>
-                  <p className="small muted">Evidence: {s.combo.evidence.slice(0, 6).map((key) => <span key={key}><EntityLink entityKey={key} /> </span>)}{s.combo.evidence.length > 6 && `+${s.combo.evidence.length - 6} more`}</p>
+                  <h3>{t("tryCombo", { combo: combo(s.combo.platform, s.combo.format) })} <Roi value={Math.round(s.combo.medianRoi)} /></h3>
+                  <p>{t("provenReason", { p: s.combo.publishers, r: Math.round(s.combo.medianRoi), w: Math.round(s.combo.winRate * 100) })}</p>
+                  <p className="small muted">
+                    {t("evidence")} {s.combo.evidence.slice(0, 6).map((key) => <span key={key}><EntityLink entityKey={key} /> </span>)}
+                    {s.combo.evidence.length > 6 && t("more", { n: s.combo.evidence.length - 6 })}
+                  </p>
                 </li>
               ) : (
                 <li key={i} className="card explore">
-                  <h3>Explore: {v(s.platform)} · {v(s.format)}</h3>
-                  <p>{s.reason}. Neighbour of {v(s.basedOn.platform)} · {v(s.basedOn.format)}.</p>
-                  <a href={`#/log?platform=${s.platform}&format=${s.format}&category=${category}`}>Log this experiment when it finishes →</a>
+                  <h3>{t("exploreCombo", { combo: combo(s.platform, s.format) })}</h3>
+                  <p>{t("exploreReason", { combo: combo(s.basedOn.platform, s.basedOn.format) })}</p>
+                  <a href={`#/log?platform=${s.platform}&format=${s.format}&category=${category}`}>{t("logWhenDone")}</a>
                 </li>
               ),
             )}

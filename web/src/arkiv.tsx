@@ -78,7 +78,7 @@ export function ArkivProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const ensureGas = useCallback(async () => {
-    if (!wallet) throw new Error("Connect a wallet first.");
+    if (!wallet) throw new Error(store.get("lang") === "hi" ? "पहले वॉलेट कनेक्ट करें।" : "Connect a wallet first.");
     const balance = await reader.getBalance({ address: wallet.address });
     if (balance >= LOW_BALANCE) return formatEther(balance);
     const response = await fetch("api/sponsor", {
@@ -88,7 +88,10 @@ export function ArkivProvider({ children }: { children: ReactNode }) {
     }).catch(() => null);
     const body = response ? ((await response.json().catch(() => ({}))) as { error?: string; txHash?: string }) : {};
     if (!response?.ok) {
-      throw new Error(`${body.error ?? "Gas sponsor unreachable."} Get free test GLM for ${wallet.address} at https://hub.arkiv.network/faucet and try again.`);
+      const hint = store.get("lang") === "hi"
+        ? `${wallet.address} के लिए मुफ़्त टेस्ट GLM https://hub.arkiv.network/faucet से लें और फिर कोशिश करें।`
+        : `Get free test GLM for ${wallet.address} at https://hub.arkiv.network/faucet and try again.`;
+      throw new Error(`${body.error ?? "Gas sponsor unreachable."} ${hint}`);
     }
     if (body.txHash) await reader.waitForTransactionReceipt({ hash: body.txHash as `0x${string}` });
     return formatEther(await reader.getBalance({ address: wallet.address }));

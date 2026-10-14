@@ -1,49 +1,10 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { store } from "./storage.ts";
+import { STRINGS, type StringKey } from "./strings.ts";
 
 export type Lang = "en" | "hi";
 
-const STRINGS = {
-  tagline: ["What actually worked for sellers like you — ads tested by real small businesses, open to everyone.", "आप जैसे विक्रेताओं के लिए असल में क्या चला — छोटे व्यापारियों के आज़माए विज्ञापन, सबके लिए खुले।"],
-  navExplore: ["Explore", "देखें"],
-  navAdvisor: ["What to try", "क्या आज़माएँ"],
-  navLog: ["Log a result", "नतीजा दर्ज करें"],
-  navMine: ["My data", "मेरा डेटा"],
-  navTrust: ["Trust lists", "भरोसा सूचियाँ"],
-  navAbout: ["How it works", "यह कैसे काम करता है"],
-  category: ["Product category", "उत्पाद श्रेणी"],
-  platform: ["Platform", "प्लेटफ़ॉर्म"],
-  format: ["Ad format", "विज्ञापन प्रकार"],
-  lang: ["Ad language", "विज्ञापन की भाषा"],
-  tier: ["Where buyers are", "ग्राहक कहाँ हैं"],
-  season: ["Season / festival", "मौसम / त्योहार"],
-  tone: ["Tone", "अंदाज़"],
-  cta: ["Call to action", "ग्राहक से क्या कहा"],
-  offer: ["Offer", "ऑफ़र"],
-  spend: ["Total spend (₹)", "कुल खर्च (₹)"],
-  revenue: ["Sales from this ad (₹)", "इस विज्ञापन से बिक्री (₹)"],
-  days: ["Ran for (days)", "कितने दिन चला"],
-  any: ["Any", "कोई भी"],
-  allPublishers: ["All publishers", "सभी प्रकाशक"],
-  onlyMine: ["Only mine", "सिर्फ़ मेरे"],
-  showDemo: ["Include synthetic demo data", "डेमो (कृत्रिम) डेटा दिखाएँ"],
-  publish: ["Publish to Arkiv", "Arkiv पर प्रकाशित करें"],
-  publishing: ["Publishing…", "प्रकाशित हो रहा है…"],
-  roi: ["ROI", "मुनाफ़ा %"],
-  publishers: ["sellers", "विक्रेता"],
-  experiments: ["experiments", "प्रयोग"],
-  loading: ["Reading from Arkiv…", "Arkiv से पढ़ रहे हैं…"],
-  empty: ["No experiments match yet. Be the first to publish one.", "अभी कोई प्रयोग नहीं मिला। पहला प्रकाशित करें।"],
-  getAdvice: ["Show me what to try", "बताइए क्या आज़माऊँ"],
-  keepAlive: ["Keep alive +30 days", "30 दिन और रखें"],
-  delete: ["Delete", "हटाएँ"],
-  unseal: ["Unlock exact figures", "असली आँकड़े खोलें"],
-  passphrase: ["Passphrase (stays on this device)", "पासफ़्रेज़ (इसी डिवाइस पर रहता है)"],
-  expiry: ["Keep this public for", "इसे कितने समय तक सार्वजनिक रखें"],
-  daysUnit: ["days", "दिन"],
-} as const;
-
-export type StringKey = keyof typeof STRINGS;
+export type { StringKey };
 
 /** Labels for the closed vocabularies. Unlisted values fall back to a readable form of the code. */
 const VOCAB: Record<string, [string, string]> = {
@@ -78,13 +39,25 @@ const VOCAB: Record<string, [string, string]> = {
   cod: ["Cash on delivery", "कैश ऑन डिलीवरी"], first_order: ["First-order offer", "पहले ऑर्डर पर ऑफ़र"],
 };
 
-type I18n = { lang: Lang; setLang: (lang: Lang) => void; t: (key: StringKey) => string; v: (code: string) => string };
+type Vars = Record<string, string | number>;
+type I18n = { lang: Lang; setLang: (lang: Lang) => void; t: (key: StringKey, vars?: Vars) => string; v: (code: string) => string };
 
 const Context = createContext<I18n | null>(null);
 
+function fill(template: string, vars?: Vars): string {
+  if (!vars) return template;
+  return template.replace(/\{(\w+)\}/g, (match, name: string) => (name in vars ? String(vars[name]) : match));
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => (store.get("lang") === "hi" ? "hi" : "en"));
+  const [lang, setLangState] = useState<Lang>(() => {
+    // A shared link can carry the sender's language (?ui=hi), so a Hindi WhatsApp share opens in Hindi.
+    const fromLink = new URLSearchParams(location.hash.split("?")[1] ?? "").get("ui");
+    if (fromLink === "hi" || fromLink === "en") return fromLink;
+    return store.get("lang") === "hi" ? "hi" : "en";
+  });
   const index = lang === "hi" ? 1 : 0;
+  if (typeof document !== "undefined") document.documentElement.lang = lang;
   const value: I18n = {
     lang,
     setLang: (next) => {
@@ -92,7 +65,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       store.set("lang", next);
       document.documentElement.lang = next;
     },
-    t: (key) => STRINGS[key][index],
+    t: (key, vars) => fill(STRINGS[key][index], vars),
     v: (code) => VOCAB[code]?.[index] ?? code.replace(/_/g, " "),
   };
   return <Context.Provider value={value}>{children}</Context.Provider>;

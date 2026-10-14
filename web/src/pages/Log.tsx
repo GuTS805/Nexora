@@ -16,13 +16,14 @@ function useQueryParams() {
 }
 
 function PublishResult({ receipt, error }: { receipt: Receipt | null; error: string | null }) {
+  const { t } = useI18n();
   if (error) return <p className="error" role="alert">{error}</p>;
   if (!receipt) return null;
   return (
     <div className="card success">
-      <p>Published {receipt.keys.length} entit{receipt.keys.length === 1 ? "y" : "ies"} on Tiramisu. Transaction <TxLink hash={receipt.txHash} />.</p>
+      <p>{t("published", { n: receipt.keys.length })} <TxLink hash={receipt.txHash} /></p>
       <p className="small">{receipt.keys.map((key) => <span key={key}><EntityLink entityKey={key} /> </span>)}</p>
-      <p className="small muted">Anyone can now read this with the CLI or any Arkiv client, even if this website goes offline.</p>
+      <p className="small muted">{t("publishedNote")}</p>
     </div>
   );
 }
@@ -69,8 +70,8 @@ export function Log() {
     setError(null);
     setReceipt(null);
     try {
-      if (!wallet) throw new Error("Connect a wallet first.");
-      if (sealing && form.passphrase.length < MIN_PASSPHRASE_LENGTH) throw new Error(`Passphrase must be at least ${MIN_PASSPHRASE_LENGTH} characters, or leave it empty to skip sealing.`);
+      if (!wallet) throw new Error(t("connectFirst"));
+      if (sealing && form.passphrase.length < MIN_PASSPHRASE_LENGTH) throw new Error(t("passTooShort", { n: MIN_PASSPHRASE_LENGTH }));
       const input: ExperimentInput = {
         category: form.category, platform: form.platform, format: form.format, lang: form.lang, tier: form.tier,
         season: form.season, tone: form.tone, cta: form.cta, offer: form.offer,
@@ -95,7 +96,7 @@ export function Log() {
     <section>
       <h2>{t("navLog")}</h2>
       <WalletBar />
-      {parent && <p className="card">This is a variant of <EntityLink entityKey={parent} />. It will be linked to it on Arkiv so others can compare.</p>}
+      {parent && <p className="card">{t("variantOf").split("{key}")[0]}<EntityLink entityKey={parent} />{t("variantOf").split("{key}")[1]}</p>}
       <div className="form-grid">
         <Field label="category"><VocabSelect list={CATEGORIES} value={form.category} onChange={(x) => x && set("category")(x)} /></Field>
         <Field label="platform"><VocabSelect list={PLATFORMS} value={form.platform} onChange={(x) => x && set("platform")(x)} /></Field>
@@ -112,24 +113,24 @@ export function Log() {
       </div>
 
       <fieldset className="privacy">
-        <legend>Privacy — what goes where</legend>
+        <legend>{t("privacyLegend")}</legend>
         <div className="columns">
           <div>
-            <h4>🌐 Public on Arkiv</h4>
-            <p className="small">{v(form.category)}, {v(form.platform)} · {v(form.format)}, {v(form.tier)}, {v(form.lang)}, {v(form.season)}, {v(form.tone)}, {v(form.cta)}, {v(form.offer)}, {form.days} days</p>
-            <p className="small">Spend band: <b>{valid ? SPEND_BAND_LABELS[spendBand(spend)] : "—"}</b> · ROI rounded to 10%: <b>{valid ? <Roi value={roiPct(spend, revenue)} /> : "—"}</b></p>
-            <p className="small muted">Your wallet address is shown as the publisher. No name, phone, shop or product name is ever asked for.</p>
+            <h4>{t("publicTitle")}</h4>
+            <p className="small">{[`${v(form.platform)} · ${v(form.format)}`, v(form.category), v(form.tier), v(form.lang), form.season !== "none" && v(form.season), v(form.tone), v(form.cta), form.offer !== "none" && v(form.offer), t("daysShort", { n: form.days || "?" })].filter(Boolean).join(", ")}</p>
+            <p className="small">{t("spendBandIs")} <b>{valid ? SPEND_BAND_LABELS[spendBand(spend)] : "—"}</b> · {t("roiRounded")} <b>{valid ? <Roi value={roiPct(spend, revenue)} /> : "—"}</b></p>
+            <p className="small muted">{t("publicNote")}</p>
           </div>
           <div>
-            <h4>🔒 Sealed (optional)</h4>
-            <p className="small">Exact ₹{form.spendInr || "…"} spend, ₹{form.revenueInr || "…"} sales, orders and a private note — encrypted in this browser (AES-256-GCM). Only someone with the passphrase can open them.</p>
-            <input placeholder="Orders (optional)" inputMode="numeric" value={form.orders} onChange={(e) => set("orders")(e.target.value.replace(/\D/g, ""))} />
-            <input placeholder="Private note (optional)" maxLength={200} value={form.note} onChange={(e) => set("note")(e.target.value)} />
-            <input type="password" placeholder={`${t("passphrase")} — min ${MIN_PASSPHRASE_LENGTH}`} value={form.passphrase} onChange={(e) => set("passphrase")(e.target.value)} autoComplete="new-password" />
+            <h4>{t("sealedSection")}</h4>
+            <p className="small">{t("sealedDesc", { s: form.spendInr || "…", r: form.revenueInr || "…" })}</p>
+            <input placeholder={t("ordersPh")} inputMode="numeric" value={form.orders} onChange={(e) => set("orders")(e.target.value.replace(/\D/g, ""))} />
+            <input placeholder={t("notePh")} maxLength={200} value={form.note} onChange={(e) => set("note")(e.target.value)} />
+            <input type="password" placeholder={t("passMin", { label: t("passphrase"), n: MIN_PASSPHRASE_LENGTH })} value={form.passphrase} onChange={(e) => set("passphrase")(e.target.value)} autoComplete="new-password" />
           </div>
           <div>
-            <h4>📱 Never leaves this device</h4>
-            <p className="small">Your passphrase. Without a passphrase, the exact rupee figures are discarded after computing the band and ROI.</p>
+            <h4>{t("neverTitle")}</h4>
+            <p className="small">{t("neverDesc")}</p>
           </div>
         </div>
         <Field label="expiry">
@@ -137,7 +138,7 @@ export function Log() {
             {EXPIRY_CHOICES_DAYS.map((d) => <option key={d} value={d}>{d} {t("daysUnit")}</option>)}
           </select>
         </Field>
-        <p className="small muted">After this it disappears from Arkiv automatically. You can delete it earlier from “My data”. Others may extend a result they find useful, but nobody — including you — can edit it once published.</p>
+        <p className="small muted">{t("expiryNote")}</p>
       </fieldset>
 
       <button disabled={!wallet || !valid || busy} onClick={publish}>{busy ? t("publishing") : t("publish")}</button>
@@ -149,6 +150,7 @@ export function Log() {
 
 function CsvImport() {
   const { wallet, ensureGas, bump } = useArkiv();
+  const { t } = useI18n();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
@@ -179,13 +181,13 @@ function CsvImport() {
 
   return (
     <details className="card">
-      <summary>Import past campaigns from a spreadsheet (CSV)</summary>
-      <p className="small muted">Paste rows exported from your sheet. They are validated here, banded, and written in batches of {MAX_BATCH} per transaction. Exact figures are never published.</p>
+      <summary>{t("csvSummary")}</summary>
+      <p className="small muted">{t("csvDesc", { n: MAX_BATCH })}</p>
       <textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder={CSV_TEMPLATE} />
-      <button className="link" onClick={() => setText(CSV_TEMPLATE)}>Use example</button>
-      {parsed && <p className="small">{parsed.rows.length} valid rows{parsed.errors.length > 0 && `, ${parsed.errors.length} errors`}</p>}
-      {parsed?.errors.slice(0, 5).map((e) => <p key={e.line} className="error small">Line {e.line}: {e.message}</p>)}
-      <button disabled={!wallet || !parsed || parsed.rows.length === 0 || busy} onClick={importRows}>{busy ? "Importing…" : `Publish ${parsed?.rows.length ?? 0} rows`}</button>
+      <button className="link" onClick={() => setText(CSV_TEMPLATE)}>{t("useExample")}</button>
+      {parsed && <p className="small">{t("validRows", { n: parsed.rows.length })}{parsed.errors.length > 0 && t("rowErrors", { n: parsed.errors.length })}</p>}
+      {parsed?.errors.slice(0, 5).map((e) => <p key={e.line} className="error small">{t("lineError", { n: e.line, message: e.message })}</p>)}
+      <button disabled={!wallet || !parsed || parsed.rows.length === 0 || busy} onClick={importRows}>{busy ? t("importing") : t("publishRows", { n: parsed?.rows.length ?? 0 })}</button>
       <PublishResult receipt={receipt} error={error} />
     </details>
   );

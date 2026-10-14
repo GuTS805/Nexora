@@ -11,8 +11,8 @@ import { Trust } from "./pages/Trust.tsx";
 
 /** Hash routing, so the static build works from any host, an IPFS gateway, or a local folder. */
 function useRoute() {
-  const read = () => location.hash.replace(/^#/, "").split("?")[0] || "/";
-  const [route, setRoute] = useState(read);
+  const read = () => location.hash.replace(/^#/, "");
+  const [hash, setRoute] = useState(read);
   useEffect(() => {
     const onChange = () => {
       setRoute(read());
@@ -21,11 +21,13 @@ function useRoute() {
     addEventListener("hashchange", onChange);
     return () => removeEventListener("hashchange", onChange);
   }, []);
-  return route;
+  // Pages that read link parameters remount when those change, e.g. a shared link opened in this tab.
+  const [path, query = ""] = hash.split("?");
+  return { route: path || "/", query };
 }
 
 export function App() {
-  const route = useRoute();
+  const { route, query } = useRoute();
   const { t, lang, setLang } = useI18n();
   const nav: [string, string][] = [
     ["/", t("navExplore")], ["/advisor", t("navAdvisor")], ["/log", t("navLog")],
@@ -40,19 +42,19 @@ export function App() {
         <nav>
           {nav.map(([path, label]) => <a key={path} href={`#${path}`} className={route === path ? "active" : ""}>{label}</a>)}
         </nav>
-        <button className="link lang" onClick={() => setLang(lang === "en" ? "hi" : "en")}>{lang === "en" ? "हिंदी" : "English"}</button>
+        <button className="link lang" onClick={() => setLang(lang === "en" ? "hi" : "en")}>{t("switchLang")}</button>
       </header>
       <main>
         {entity ? <Entity entityKey={entity} /> :
-          route === "/advisor" ? <Advisor /> :
-          route === "/log" ? <Log /> :
+          route === "/advisor" ? <Advisor key={query} /> :
+          route === "/log" ? <Log key={query} /> :
           route === "/mine" ? <Mine /> :
           route === "/trust" ? <Trust /> :
           route === "/about" ? <About /> :
           <Explore />}
       </main>
       <footer className="foot">
-        Data lives on <a href="https://arkiv.network" target="_blank" rel="noreferrer">Arkiv</a> Tiramisu testnet · MIT · <a href="https://github.com/" target="_blank" rel="noreferrer">source</a> · ad results are self-reported; synthetic demo rows are labelled
+        {t("footer")} · <a href="https://github.com/GuTS805/Nexora" target="_blank" rel="noreferrer">{t("source")}</a>
       </footer>
     </>
   );

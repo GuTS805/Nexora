@@ -55,19 +55,20 @@ pre { background: var(--code); padding: 0.75rem; border-radius: 8px; overflow-x:
 }
 .brand { font-weight: 800; font-size: 1.15rem; color: var(--text); text-decoration: none; }
 .brand span { color: var(--accent); font-weight: 600; }
-.top nav { display: flex; gap: 0.25rem; overflow-x: auto; flex: 1; scrollbar-width: none; }
+.top nav { display: flex; gap: 0.25rem; overflow-x: auto; flex: 1 1 100%; min-width: 0; order: 3; scrollbar-width: none; }
+@media (min-width: 760px) { .top nav { flex: 1 1 auto; order: 0; } }
 .top nav a { padding: 0.35rem 0.6rem; border-radius: 999px; text-decoration: none; color: var(--muted); white-space: nowrap; font-size: 0.95rem; }
 .top nav a.active { background: var(--accent); color: var(--accent-ink); }
 .lang { margin-left: auto; }
 
-main { max-width: 1080px; margin: 0 auto; padding: 1rem 16px 3rem; }
+main { max-width: 1080px; margin: 0 auto; padding: 1rem 16px 3rem; overflow-wrap: anywhere; }
 .foot { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 1.5rem 16px; border-top: 1px solid var(--line); }
 .lead { font-size: 1.15rem; max-width: 48ch; margin: 0.5rem 0 1rem; }
 .muted { color: var(--muted); }
 .small { font-size: 0.85rem; }
 .prose { max-width: 70ch; }
 
-.filters, .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.75rem; margin: 0.75rem 0; }
+.filters, .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 0.75rem; margin: 0.75rem 0; }
 .field { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: var(--muted); }
 input, select, textarea {
   font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line);
@@ -93,7 +94,7 @@ button.link { background: none; border: none; color: var(--accent); padding: 0.2
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0.9rem 1rem; margin: 0.75rem 0; }
 .card.success { border-color: var(--up); }
 .card.explore { border-style: dashed; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 0.75rem; }
 .grid .card { margin: 0; }
 .experiment header, .experiment footer { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
 .experiment footer { font-size: 0.8rem; margin-top: 0.5rem; }
@@ -131,9 +132,13 @@ th { color: var(--muted); font-weight: 600; }
 .live-item { background: var(--ok-bg); color: var(--ok-ink); padding: 0.1rem 0.5rem; border-radius: 999px; text-decoration: none; }
 
 .walletbar { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin: 0.5rem 0 1rem; }
-.privacy { border: 1px solid var(--line); border-radius: 12px; padding: 0.75rem 1rem; margin: 1rem 0; background: var(--surface); }
+.privacy { min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 0.75rem 1rem; margin: 1rem 0; background: var(--surface); }
 .privacy legend { font-weight: 700; padding: 0 0.4rem; }
-.privacy .columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.privacy .columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 1rem; }
 .privacy h4 { margin: 0.25rem 0; }
 .privacy input { margin-bottom: 0.4rem; }
 .error { color: var(--down); }
+
+.button.whatsapp { display: inline-flex; align-items: center; gap: 0.4rem; background: #128c4a; border-color: #128c4a; color: #fff; }
+.row.spread { justify-content: space-between; }
+.row.spread p { margin: 0; }

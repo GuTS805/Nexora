@@ -6,14 +6,15 @@ import {
 import { useState } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
-import { Addr, EntityLink, ErrorNote, ExperimentCard, ExplorerEntity, Roi, TxLink, WalletBar, useAsync } from "../components.tsx";
+import { Addr, EntityLink, ErrorNote, ExperimentCard, ExplorerEntity, Roi, TxLink, WalletBar, WhatsAppButton, useAsync } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
+import { appUrl } from "../share.ts";
 
 const BLOCKS_PER_DAY = 86_400 / 2;
 
 export function Entity({ entityKey }: { entityKey: Hex }) {
   const { reader, wallet, revision, bump, ensureGas } = useArkiv();
-  const { t, v } = useI18n();
+  const { t, v, lang } = useI18n();
   const data = useAsync(async () => {
     const [decoded, block] = await Promise.all([fetchExperiment(reader, entityKey), reader.getBlockNumber()]);
     if (!decoded.ok) {
@@ -51,12 +52,12 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
 
   if (data.data.kind === "other") {
     const list = data.data.list;
-    if (!list) return <p className="error">This entity does not satisfy the Nexora data contract ({data.data.reason}). It may have expired, been deleted, or been written by someone else.</p>;
+    if (!list) return <p className="error">{t("notContract", { reason: data.data.reason })}</p>;
     return (
       <section>
-        <h2>Trust list: {list.name}</h2>
+        <h2>{t("trustListTitle", { name: list.name })}</h2>
         <p>{list.description}</p>
-        <p>Curated by <Addr address={list.creator} /> · scope {list.scope === "all" ? "all categories" : v(list.scope)} · <ExplorerEntity entityKey={list.key} /></p>
+        <p>{t("curatedBy")} <Addr address={list.creator} /> · {list.scope === "all" ? t("allCategories") : v(list.scope)} · <ExplorerEntity entityKey={list.key} /></p>
         <ul>{list.members.map((m) => <li key={m}><Addr address={m} /></li>)}</ul>
       </section>
     );
@@ -65,20 +66,23 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
   const { e, block, children } = data.data;
   const isOwner = wallet?.address.toLowerCase() === e.owner.toLowerCase();
   const expires = blockToDate(e.expiresAt, block);
+  const locale = lang === "hi" ? "hi-IN" : "en-IN";
+  const combo = `${v(e.platform)} · ${v(e.format)}`;
+  const shareText = t("shareEntity", { combo, category: v(e.category), where: `${v(e.tier)}, ${v(e.lang)}`, r: `${e.roiPct > 0 ? "+" : ""}${e.roiPct}`, url: appUrl(`#/e/${e.key}?ui=${lang}`) });
 
   return (
     <section>
-      <h2>{v(e.platform)} · {v(e.format)} <Roi value={e.roiPct} /></h2>
-      <p className="muted">{v(e.category)} · {v(e.tier)} · {v(e.lang)} · {v(e.season)} · {SPEND_BAND_LABELS[e.spendBand]} · {e.days} days · {v(e.tone)} · {v(e.cta)} · {v(e.offer)}{e.demo && " · synthetic demo"}</p>
+      <h2>{combo} <Roi value={e.roiPct} /></h2>
+      <p className="muted">{v(e.category)} · {v(e.tier)} · {v(e.lang)} · {v(e.season)} · {SPEND_BAND_LABELS[e.spendBand]} · {t("daysShort", { n: e.days })} · {v(e.tone)} · {v(e.cta)} · {v(e.offer)}{e.demo && ` · ${t("syntheticDemo")}`}</p>
       <div className="table-wrap">
         <table className="kv">
           <tbody>
-            <tr><th>Entity key</th><td className="mono">{e.key} · <ExplorerEntity entityKey={e.key} /></td></tr>
-            <tr><th>Published by ($creator)</th><td><Addr address={e.creator} /> <span className="muted small">— set by Arkiv, cannot be forged by the writer</span></td></tr>
-            <tr><th>Owner ($owner)</th><td><Addr address={e.owner} /></td></tr>
-            <tr><th>Expires</th><td>block {e.expiresAt.toString()} ≈ {expires.toLocaleDateString()} (now at block {block.toString()})</td></tr>
-            <tr><th>Flags</th><td>{e.readonly ? "read-only: nobody can edit it" : "editable"} · {e.communityCanExtend ? "anyone may extend its life" : "only the owner may extend"}</td></tr>
-            <tr><th>Variant of</th><td>{e.parent ? <EntityLink entityKey={e.parent} /> : "—"}</td></tr>
+            <tr><th>{t("kvKey")}</th><td className="mono">{e.key} · <ExplorerEntity entityKey={e.key} /></td></tr>
+            <tr><th>{t("kvCreator")}</th><td><Addr address={e.creator} /> <span className="muted small">{t("kvCreatorNote")}</span></td></tr>
+            <tr><th>{t("kvOwner")}</th><td><Addr address={e.owner} /></td></tr>
+            <tr><th>{t("kvExpires")}</th><td>{t("kvExpiresValue", { b: e.expiresAt.toString(), date: expires.toLocaleDateString(locale), now: block.toString() })}</td></tr>
+            <tr><th>{t("kvFlags")}</th><td>{e.readonly ? t("flagReadonly") : t("flagEditable")} · {e.communityCanExtend ? t("flagAnyExtend") : t("flagOwnerExtend")}</td></tr>
+            <tr><th>{t("kvVariantOf")}</th><td>{e.parent ? <EntityLink entityKey={e.parent} /> : "—"}</td></tr>
           </tbody>
         </table>
       </div>
@@ -87,27 +91,32 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
       <div className="actions">
         {e.communityCanExtend && (
           <button disabled={!wallet || busy !== null} onClick={() => act("extend", () => wallet!.client.extendEntity({ entityKey: e.key, expires: ExpirationTime.atBlock(e.expiresAt + BigInt(EXTEND_DAYS * BLOCKS_PER_DAY)) }))}>
-            {busy === "extend" ? "Extending…" : t("keepAlive")}
+            {busy === "extend" ? t("extending") : t("keepAlive")}
           </button>
         )}
-        <a className="button secondary" href={`#/log?parent=${e.key}&category=${e.category}&platform=${e.platform}&format=${e.format}`}>I ran a variant of this</a>
+        <a className="button secondary" href={`#/log?parent=${e.key}&category=${e.category}&platform=${e.platform}&format=${e.format}`}>{t("ranVariant")}</a>
+        <WhatsAppButton text={shareText} />
         {isOwner && (
-          <button className="danger" disabled={busy !== null} onClick={() => confirm("Delete this experiment from Arkiv? This cannot be undone.") && act("delete", () => wallet!.client.deleteEntity({ entityKey: e.key }))}>
-            {busy === "delete" ? "Deleting…" : t("delete")}
+          <button className="danger" disabled={busy !== null} onClick={() => confirm(t("deleteConfirm")) && act("delete", () => wallet!.client.deleteEntity({ entityKey: e.key }))}>
+            {busy === "delete" ? t("deleting") : t("delete")}
           </button>
         )}
       </div>
-      {tx && <p className="card success">Done. Transaction <TxLink hash={tx} /></p>}
+      {tx && <p className="card success">{t("doneTx")} <TxLink hash={tx} /></p>}
       {error && <p className="error" role="alert">{error}</p>}
 
       {e.sealed && (
         <div className="card">
-          <h3>🔒 Sealed figures</h3>
-          <p className="small muted">Encrypted with {e.sealed.alg}, key from {e.sealed.kdf} × {e.sealed.iter.toLocaleString()}. Decryption happens only in this browser.</p>
+          <h3>{t("sealedFigures")}</h3>
+          <p className="small muted">{t("sealedInfo", { alg: e.sealed.alg, kdf: e.sealed.kdf, iter: e.sealed.iter.toLocaleString(locale) })}</p>
           {figures ? (
-            <p>Spend ₹{figures.spendInr.toLocaleString("en-IN")} · sales ₹{figures.revenueInr.toLocaleString("en-IN")}{figures.orders !== undefined && ` · ${figures.orders} orders`}{figures.note && ` · “${figures.note}”`}</p>
+            <p>
+              {t("figures", { s: figures.spendInr.toLocaleString("en-IN"), r: figures.revenueInr.toLocaleString("en-IN") })}
+              {figures.orders !== undefined && t("figuresOrders", { n: figures.orders })}
+              {figures.note && ` · “${figures.note}”`}
+            </p>
           ) : (
-            <form onSubmit={(ev) => { ev.preventDefault(); unseal(e.sealed!, pass).then(setFigures, (err: Error) => setError(err.message)); }}>
+            <form className="row" onSubmit={(ev) => { ev.preventDefault(); unseal(e.sealed!, pass).then(setFigures, (err: Error) => setError(err.message)); }}>
               <input type="password" placeholder={t("passphrase")} value={pass} onChange={(ev) => setPass(ev.target.value)} />
               <button type="submit">{t("unseal")}</button>
             </form>
@@ -115,7 +124,7 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
         </div>
       )}
 
-      <h3>Variants published by other sellers ({children.length})</h3>
+      <h3>{t("variantsTitle", { n: children.length })}</h3>
       <p className="small muted mono">{data.data.childQuery}</p>
       <div className="grid">{children.map((c) => <ExperimentCard key={c.key} e={c} />)}</div>
     </section>
