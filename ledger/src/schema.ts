@@ -59,7 +59,30 @@ export const FORMATS = [
   "listing_boost",
 ] as const;
 
-export const LANGUAGES = ["hi", "en", "hinglish", "ta", "te", "kn", "ml", "mr", "bn", "gu", "pa", "or"] as const;
+/**
+ * Which formats each platform actually offers. Used to keep the form honest and to stop the advisor
+ * suggesting combinations that cannot be bought (a WhatsApp search ad). Readers do not reject other
+ * pairs — the contract stays permissive, the UI stays sensible.
+ */
+export const PLATFORM_FORMATS: Readonly<Record<(typeof PLATFORMS)[number], readonly (typeof FORMATS)[number][]>> = {
+  instagram: ["reel", "story", "carousel", "static_image", "influencer"],
+  facebook: ["reel", "carousel", "static_image", "long_video", "story"],
+  whatsapp: ["status", "broadcast"],
+  youtube: ["reel", "long_video", "influencer"],
+  google_search: ["search_text"],
+  meesho: ["listing_boost"],
+  amazon: ["listing_boost"],
+  flipkart: ["listing_boost"],
+  sharechat: ["reel", "static_image", "long_video", "influencer"],
+  moj: ["reel", "influencer"],
+  telegram: ["broadcast"],
+};
+
+export function formatsFor(platform: (typeof PLATFORMS)[number]): readonly (typeof FORMATS)[number][] {
+  return PLATFORM_FORMATS[platform];
+}
+
+export const LANGUAGES =["hi", "en", "hinglish", "ta", "te", "kn", "ml", "mr", "bn", "gu", "pa", "or"] as const;
 
 export const TIERS = ["metro", "tier1", "tier2", "tier3", "rural", "pan_india"] as const;
 

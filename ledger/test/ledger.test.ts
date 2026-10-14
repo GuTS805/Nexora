@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getAddress, type Hex } from "viem";
 import {
   comboStats, confidence, decodeExperiment, decodeTrustList, experimentCreate, experimentPredicate,
-  parseExperimentsCsv, CSV_TEMPLATE, queryText, roiPct, seal, spendBand, suggest, trustListCreate,
+  parseExperimentsCsv, CSV_TEMPLATE, PLATFORM_FORMATS, queryText, roiPct, seal, spendBand, suggest, trustListCreate,
   unseal, type ExperimentInput, type RawEntity,
 } from "../src/index.ts";
 
@@ -123,6 +123,28 @@ describe("insights", () => {
     const proven = suggest([...spam, ...honest]).filter((s) => s.kind === "proven");
     expect(proven.map((s) => s.kind === "proven" && s.combo.platform)).toEqual(["instagram"]);
     expect(confidence(5)).toBeGreaterThan(confidence(1));
+  });
+
+  it("with a trust set, free throwaway wallets cannot manufacture independent confirmation", () => {
+    const sybils = [3, 4, 5, 6, 7].map((n) => getAddress(`0x${String(n).repeat(40)}`));
+    const fake = sybils.map((wallet, i) => make(wallet, "moj", 800, 200 + i));
+    const honest = [make(ALICE, "instagram", 150, 300), make(BOB, "instagram", 120, 301)];
+    // Without a trust set, five fresh wallets look like five independent sellers.
+    expect(suggest([...fake, ...honest])[0]).toMatchObject({ kind: "proven", combo: { platform: "moj" } });
+    // With one, only trusted creators count toward proof; the fake rows stay visible but unproven.
+    const trusted = new Set([ALICE, BOB]);
+    const proven = suggest([...fake, ...honest], 3, { trusted }).filter((s) => s.kind === "proven");
+    expect(proven.map((s) => s.kind === "proven" && s.combo.platform)).toEqual(["instagram"]);
+    const mojStats = comboStats([...fake, ...honest], { trusted }).find((c) => c.platform === "moj");
+    expect(mojStats).toMatchObject({ publishers: 5, trustedPublishers: 0, score: 0 });
+  });
+
+  it("only explores formats the platform actually sells", () => {
+    const rows = [make(ALICE, "whatsapp", 200, 400), make(BOB, "whatsapp", 180, 401)];
+    const explore = suggest(rows).find((s) => s.kind === "explore");
+    expect(explore).toBeDefined();
+    if (explore?.kind !== "explore") return;
+    expect(PLATFORM_FORMATS[explore.platform]).toContain(explore.format);
   });
 
   it("suggests proven combos plus one exploration", () => {

@@ -7,7 +7,7 @@ import { useArkiv } from "../arkiv.tsx";
 import { EntityLink, ErrorNote, Field, QueryBox, Roi, VocabSelect, WhatsAppButton, useAsync, useSource } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
 import { appUrl } from "../share.ts";
-import { SourcePicker, cliFor, creatorsFor } from "./Explore.tsx";
+import { SourcePicker, cliFor, creatorsFor, trustedSetFor, useRecommendedList } from "./Explore.tsx";
 
 /** Filters live in the URL, so a link shared on WhatsApp opens the same advice. */
 function useInitialParams() {
@@ -27,6 +27,8 @@ export function Advisor() {
   const [source, setSource, list] = useSource();
 
   const creators = creatorsFor(source, wallet, list?.members);
+  const recommended = useRecommendedList();
+  const trusted = trustedSetFor(source, recommended);
   const filters: ExperimentFilters = {
     category: category || undefined, tier: tier || undefined, lang: lang || undefined,
     // Results within one band either side of the seller's budget are comparable; outside it they mislead.
@@ -37,8 +39,8 @@ export function Advisor() {
   const result = useAsync(async () => {
     if (!category || (source.kind === "list" && !list) || (creators && creators.length === 0)) return null;
     const outcome = await fetchExperiments(reader, filters);
-    return { outcome, suggestions: suggest(outcome.items) };
-  }, [reader, revision, category, tier, lang, band, includeDemo, source.kind, list?.key, wallet?.address]);
+    return { outcome, suggestions: suggest(outcome.items, 3, { trusted }) };
+  }, [reader, revision, category, tier, lang, band, includeDemo, source.kind, list?.key, wallet?.address, recommended?.key]);
 
   const combo = (platform: string, format: string) => `${v(platform)} · ${v(format)}`;
 
@@ -49,7 +51,7 @@ export function Advisor() {
     if (band !== "") query.set("band", String(band));
     const proven = suggestions.filter((s) => s.kind === "proven");
     const lines = proven.length
-      ? proven.map((s) => t("shareLine", { combo: combo(s.combo.platform, s.combo.format), r: Math.round(s.combo.medianRoi), p: s.combo.publishers })).join("\n")
+      ? proven.map((s) => t("shareLine", { combo: combo(s.combo.platform, s.combo.format), r: Math.round(s.combo.medianRoi), p: s.combo.trustedPublishers })).join("\n")
       : t("shareNoData");
     const where = [tier && v(tier), lang && v(lang), band !== "" && SPEND_BAND_LABELS[band]].filter(Boolean).join(", ") || t("any");
     return t("shareAdvice", { category: v(category), where, lines, url: appUrl(`#/advisor?${query}`) });
@@ -72,6 +74,12 @@ export function Advisor() {
         </label>
         <SourcePicker source={source} setSource={setSource} />
       </div>
+      {source.kind === "all" && (
+        <p className="card notice">
+          {recommended ? t("trustedBasis", { name: recommended.name }) : t("sybilWarn")}
+          {recommended && <> <button className="link" onClick={() => setSource({ kind: "list", key: recommended.key })}>{t("useList", { name: recommended.name })}</button></>}
+        </p>
+      )}
       <label className="check"><input type="checkbox" checked={includeDemo} onChange={(e) => setIncludeDemo(e.target.checked)} /> {t("showDemo")}</label>
       <ErrorNote error={result.error} />
       {result.loading && <p className="muted">{t("loading")}</p>}
@@ -89,7 +97,7 @@ export function Advisor() {
               s.kind === "proven" ? (
                 <li key={i} className="card">
                   <h3>{t("tryCombo", { combo: combo(s.combo.platform, s.combo.format) })} <Roi value={Math.round(s.combo.medianRoi)} /></h3>
-                  <p>{t("provenReason", { p: s.combo.publishers, r: Math.round(s.combo.medianRoi), w: Math.round(s.combo.winRate * 100) })}</p>
+                  <p>{t("provenReason", { p: s.combo.trustedPublishers, r: Math.round(s.combo.medianRoi), w: Math.round(s.combo.winRate * 100) })}</p>
                   <p className="small muted">
                     {t("evidence")} {s.combo.evidence.slice(0, 6).map((key) => <span key={key}><EntityLink entityKey={key} /> </span>)}
                     {s.combo.evidence.length > 6 && t("more", { n: s.combo.evidence.length - 6 })}

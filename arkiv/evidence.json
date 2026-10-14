@@ -1,0 +1,13 @@
+{
+  "note": "Written by scripts/seed.ts and scripts/e2e.ts. Every hash here can be checked on https://tiramisu.explorer.arkiv.network.",
+  "network": { "name": "Tiramisu", "chainId": 7738577 },
+  "recommendedTrustList": null,
+  "wallets": {
+    "sponsor": "0xf00b81c90dF57B2924A3d165a670FcF656d0e492",
+    "seed1": "0xF732ffac374A3dd89D756DeA0C96189C7FDddc56",
+    "seed2": "0xBe04e55C3B4621aB684D506D285dDDd7Fd61332f",
+    "seed3": "0xb1b26E0adD353D4696DE256Cffc57bF1300dEf33",
+    "seed4Spammer": "0x74223d52e2a0a4ff6E46a569C77b2b11B0AD4d77"
+  },
+  "features": {}
+}

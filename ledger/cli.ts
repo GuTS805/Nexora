@@ -86,8 +86,13 @@ switch (command) {
     const result = await fetchExperiments(client, filters);
     console.log(`based on ${result.items.length} experiments matching:\n  ${result.query}\n`);
     for (const s of suggest(result.items)) {
-      if (s.kind === "proven") console.log(`TRY      ${s.combo.platform}/${s.combo.format} — ${s.reason}\n         evidence: ${s.combo.evidence.slice(0, 5).join(", ")}${s.combo.evidence.length > 5 ? ", …" : ""}`);
-      else console.log(`EXPLORE  ${s.platform}/${s.format} — ${s.reason}`);
+      if (s.kind === "proven") {
+        const c = s.combo;
+        console.log(`TRY      ${c.platform}/${c.format} — ${c.trustedPublishers} independent sellers, median ROI ${Math.round(c.medianRoi)}%, ${Math.round(c.winRate * 100)}% of runs profitable`);
+        console.log(`         evidence: ${c.evidence.slice(0, 5).join(", ")}${c.evidence.length > 5 ? ", …" : ""}`);
+      } else {
+        console.log(`EXPLORE  ${s.platform}/${s.format} — barely tested neighbour of ${s.basedOn.platform}/${s.basedOn.format}; try with ~10% of budget and publish the result`);
+      }
     }
     break;
   }

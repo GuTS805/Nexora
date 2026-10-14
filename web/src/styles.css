@@ -142,3 +142,5 @@ th { color: var(--muted); font-weight: 600; }
 .button.whatsapp { display: inline-flex; align-items: center; gap: 0.4rem; background: #128c4a; border-color: #128c4a; color: #fff; }
 .row.spread { justify-content: space-between; }
 .row.spread p { margin: 0; }
+.card.notice { border-color: var(--warn-ink); background: var(--warn-bg); color: var(--warn-ink); font-size: 0.9rem; }
+.card.notice .link { color: inherit; }

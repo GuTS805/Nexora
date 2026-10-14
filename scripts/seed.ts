@@ -15,7 +15,7 @@ import { tiramisu } from "@arkiv-network/sdk/chains";
 import { http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
-  CATEGORIES, CTAS, FORMATS, LANGUAGES, MAX_BATCH, OFFERS, PLATFORMS, SEASONS, TIERS, TONES,
+  CATEGORIES, CTAS, LANGUAGES, PLATFORM_FORMATS, MAX_BATCH, OFFERS, PLATFORMS, SEASONS, TIERS, TONES,
   experimentCreate, fetchExperiments, fetchTrustLists, readClient, trustListCreate,
   type ExperimentInput,
 } from "../ledger/src/index.ts";
@@ -52,19 +52,6 @@ function trueRoi(e: Omit<ExperimentInput, "revenueInr" | "expiresInDays">, r: ()
   return roi + (r() - 0.5) * 120;
 }
 
-const PLATFORM_FORMATS: Record<string, readonly (typeof FORMATS)[number][]> = {
-  instagram: ["reel", "story", "carousel", "static_image", "influencer"],
-  facebook: ["carousel", "static_image", "long_video"],
-  whatsapp: ["status", "broadcast"],
-  youtube: ["long_video", "influencer"],
-  google_search: ["search_text"],
-  meesho: ["listing_boost"],
-  amazon: ["listing_boost"],
-  flipkart: ["listing_boost"],
-  sharechat: ["static_image", "long_video"],
-  moj: ["reel"],
-  telegram: ["broadcast"],
-};
 
 function honestRows(seed: number, count: number): ExperimentInput[] {
   const r = rng(seed);
@@ -73,7 +60,7 @@ function honestRows(seed: number, count: number): ExperimentInput[] {
     const base = {
       category: pick(r, CATEGORIES.filter((c) => c !== "other")),
       platform,
-      format: pick(r, PLATFORM_FORMATS[platform] ?? FORMATS),
+      format: pick(r, PLATFORM_FORMATS[platform]),
       lang: pick(r, LANGUAGES),
       tier: pick(r, TIERS),
       season: r() < 0.6 ? "none" as const : pick(r, SEASONS),

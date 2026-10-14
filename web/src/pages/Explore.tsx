@@ -1,11 +1,12 @@
 import {
   CATEGORIES, LANGUAGES, PLATFORMS, SEASONS, TIERS, comboStats, decodeExperiment, fetchExperiments,
-  fetchTrustLists, liveClient, summarise, type Category, type ExperimentFilters, type Language,
+  fetchTrustList, fetchTrustLists, liveClient, summarise, type TrustList, type Category, type ExperimentFilters, type Language,
   type Platform, type RawEntity, type Season, type Tier,
 } from "@nexora/ledger";
 import { useEffect, useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
 import { ErrorNote, ExperimentCard, Field, QueryBox, Roi, VocabSelect, useAsync, useSource, type Source } from "../components.tsx";
+import { RECOMMENDED_TRUST_LIST } from "../config.ts";
 import { useI18n } from "../i18n.tsx";
 
 export function cliFor(command: string, filters: ExperimentFilters, source: Source): string {
@@ -54,6 +55,25 @@ export function SourcePicker({ source, setSource }: { source: Source; setSource:
 }
 
 /** Turns the source choice into a `$creator` filter. */
+/** The suggested trust list (see config.ts), loaded from Arkiv. Null until loaded or if none exists. */
+export function useRecommendedList(): TrustList | null {
+  const { reader } = useArkiv();
+  const result = useAsync(async () => {
+    if (!RECOMMENDED_TRUST_LIST) return null;
+    const decoded = await fetchTrustList(reader, RECOMMENDED_TRUST_LIST);
+    return decoded.ok ? decoded.value : null;
+  }, [reader]);
+  return result.data ?? null;
+}
+
+/**
+ * When the reader looks at "All sellers", proof still has to come from trusted wallets. Rows from
+ * everyone stay visible; only the confirmation count is restricted.
+ */
+export function trustedSetFor(source: Source, recommended: TrustList | null): ReadonlySet<string> | undefined {
+  return source.kind === "all" && recommended ? new Set(recommended.members) : undefined;
+}
+
 export function creatorsFor(source: Source, wallet: { address: `0x${string}` } | null, members: readonly `0x${string}`[] | undefined) {
   if (source.kind === "mine") return wallet ? [wallet.address] : [];
   if (source.kind === "list") return members ?? [];
@@ -120,7 +140,8 @@ export function Explore() {
   }, [reader, revision, category, platform, tier, lang, season, includeDemo, source.kind, list?.key, list?.members.length, wallet?.address]);
 
   const items = result.data?.items ?? [];
-  const combos = comboStats(items).slice(0, 8);
+  const recommended = useRecommendedList();
+  const combos = comboStats(items, { trusted: trustedSetFor(source, recommended) }).slice(0, 8);
   const stats = summarise(items);
   const sorted = [...items].sort((a, b) => b.roiPct - a.roiPct).slice(0, 60);
 
@@ -158,7 +179,7 @@ export function Explore() {
                       <td><Roi value={Math.round(c.medianRoi)} /></td>
                       <td className="muted">{Math.round(c.p25Roi)}% … {Math.round(c.p75Roi)}%</td>
                       <td>{c.count}</td>
-                      <td>{c.publishers}{c.publishers < 2 && <span className="badge warn" title={t("unconfirmedTitle")}>{t("unconfirmed")}</span>}</td>
+                      <td>{c.publishers}{c.trustedPublishers < 2 && <span className="badge warn" title={t("unconfirmedTitle")}>{t("unconfirmed")}</span>}</td>
                     </tr>
                   ))}
                 </tbody>

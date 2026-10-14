@@ -5,8 +5,9 @@
  * every read path is unaffected.
  *
  * Abuse limits are per instance and in memory (serverless instances are short-lived): one drip per
- * address per hour, five per IP per hour, a global hourly cap, and a floor below which the sponsor wallet
- * stops paying.
+ * address per hour, three per IP per day, a global hourly cap, and a floor below which the sponsor
+ * wallet stops paying. Free wallets make Sybil identities cheap; the per-IP cap raises that cost a
+ * little, and the real defence is in the reader (trust lists, distinct-publisher counting).
  */
 import { tiramisu } from "@arkiv-network/sdk/chains";
 import { createPublicClient, createWalletClient, getAddress, http, isAddress, parseEther, type Address } from "viem";
@@ -16,6 +17,8 @@ const DRIP = parseEther(process.env.SPONSOR_DRIP_GLM ?? "0.01");
 const ALREADY_FUNDED = parseEther("0.001");
 const SPONSOR_FLOOR = parseEther("0.05");
 const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
+const PER_IP_DAILY = 3;
 const GLOBAL_HOURLY = 200;
 
 const byAddress = new Map<string, number>();
@@ -41,9 +44,9 @@ export async function POST(request: Request): Promise<Response> {
   const now = Date.now();
   const ip = (request.headers.get("x-forwarded-for") ?? "local").split(",")[0]!.trim();
   global = global.filter((t) => now - t < HOUR);
-  const ipHits = (byIp.get(ip) ?? []).filter((t) => now - t < HOUR);
+  const ipHits = (byIp.get(ip) ?? []).filter((t) => now - t < DAY);
   if (now - (byAddress.get(address) ?? 0) < HOUR) return json(429, { error: "This wallet was funded less than an hour ago." });
-  if (ipHits.length >= 5) return json(429, { error: "Too many requests from this network." });
+  if (ipHits.length >= PER_IP_DAILY) return json(429, { error: "This network already received its free gas today." });
   if (global.length >= GLOBAL_HOURLY) return json(429, { error: "Hourly sponsor budget used up." });
 
   const rpc = http(tiramisu.rpcUrls.default.http[0]);
