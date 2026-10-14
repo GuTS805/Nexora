@@ -86,7 +86,7 @@ The full threat model, with residual risks, is in [`THREAT_MODEL.md`](THREAT_MOD
 
 ## How we use each Arkiv feature
 
-Each row says what the feature changes for the user and why we chose it. Every claim is backed by a transaction recorded in [`arkiv/evidence.json`](../arkiv/evidence.json) by `npm run seed`.
+Each row says what the feature changes for the user and why we chose it. Every claim is backed by a transaction recorded in [`arkiv/evidence.json`](../arkiv/evidence.json) by `npm run seed`. The app's **Proof** page lists those transactions and re-checks each against the chain on demand; `npx tsx ledger/cli.ts verify` does the same from a terminal.
 
 | Feature | Where | What the user sees / why |
 | --- | --- | --- |
