@@ -80,6 +80,17 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), devApi(), ...(portable ? [inlineEverything()] : [])],
     // Relative asset paths: the build runs from any static host or IPFS gateway.
     base: "./",
+    // Preact's React-compatible runtime: same components, about a fifth of the size — it matters on
+    // the slow mobile connections many sellers use.
+    resolve: {
+      alias: {
+        "react-dom/client": "preact/compat/client",
+        "react-dom": "preact/compat",
+        "react/jsx-runtime": "preact/jsx-runtime",
+        "react/jsx-dev-runtime": "preact/jsx-dev-runtime",
+        react: "preact/compat",
+      },
+    },
     // The portable build is one file; icons and the install manifest only matter when hosted.
     publicDir: portable ? false : "public",
     build: {
