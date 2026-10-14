@@ -230,11 +230,11 @@ export function Explore() {
                     {groups.map((g) => (
                       <tr key={`${g.platform}${g.work}${g.city}`}>
                         <td className="group"><span className="with-logo"><PlatformLogo platform={g.platform} /><span><b>{v(g.platform)}</b> · {v(g.work)}{g.city ? ` · ${v(g.city)}` : ""}</span></span></td>
-                        <td><Hourly value={g.medianHourly} /></td>
-                        <td className="muted">₹{g.p25Hourly} … ₹{g.p75Hourly}</td>
-                        <td>{g.medianCostPct}%</td>
-                        <td>{g.shifts}</td>
-                        <td>{g.workers}{!g.confirmed && <span className="badge warn" title={t("unconfirmedTitle")}>{t("unconfirmed")}</span>}</td>
+                        <td data-label={t("colMedian")}><Hourly value={g.medianHourly} /></td>
+                        <td className="muted" data-label={t("colMiddle")}>₹{g.p25Hourly} … ₹{g.p75Hourly}</td>
+                        <td data-label={t("colCosts")}>{g.medianCostPct}%</td>
+                        <td data-label={t("colDays")}>{g.shifts}</td>
+                        <td data-label={t("colWorkers")}>{g.workers}{!g.confirmed && <span className="badge warn" title={t("unconfirmedTitle")}>{t("unconfirmed")}</span>}</td>
                       </tr>
                     ))}
                   </tbody>

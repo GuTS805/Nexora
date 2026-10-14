@@ -407,3 +407,26 @@ select option:checked { background-color: var(--accent); color: var(--accent-ink
 .about-open > p { margin: 0; }
 @media (max-width: 1100px) { .about-open-ways { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .about-open-head { grid-template-columns: 1fr; }.about-open-head .about-icon { display: none; }.about-open-ways { grid-template-columns: 1fr; } }
+
+/* Earnings table becomes one card per row on phones */
+@media (max-width: 760px) {
+  .explore-panel .table-wrap { overflow: visible; border: 0; background: none; padding: 0; }
+  .explore-panel table, .explore-panel tbody { display: block; }
+  .explore-panel thead { display: none; }
+  .explore-panel tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; margin: 0 0 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--surface), transparent 10%); }
+  .explore-panel td { display: block; min-width: 0; padding: 0; border: 0; font-size: 13px; }
+  .explore-panel td.group { grid-column: 1 / -1; min-width: 0; font-size: 14px; }
+  .explore-panel td[data-label]:before { content: attr(data-label); display: block; font-size: 11px; color: var(--muted); }
+  .explore-panel td[data-label="Take-home per hour"], .explore-panel td[data-label="हर घंटे की बचत"] { grid-column: 1 / -1; font-size: 16px; }
+}
+
+/* Any table marked "cards" becomes one card per row on phones */
+@media (max-width: 760px) {
+  table.cards, table.cards tbody { display: block; }
+  table.cards thead { display: none; }
+  table.cards tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; margin: 0 0 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--surface), transparent 10%); }
+  table.cards td { display: block; min-width: 0; padding: 0; border: 0; font-size: 13px; }
+  table.cards td.group { grid-column: 1 / -1; font-size: 15px; }
+  table.cards td[data-label]:before { content: attr(data-label); display: block; font-size: 11px; color: var(--muted); }
+  table.cards .badge { margin-left: 0; margin-top: 2px; }
+}

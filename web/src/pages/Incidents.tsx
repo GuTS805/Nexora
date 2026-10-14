@@ -51,17 +51,17 @@ export function Incidents() {
         <>
           {stats.length > 0 && (
             <div className="table-wrap">
-              <table>
+              <table className="cards">
                 <thead><tr><th>{t("colType")}</th><th>{t("colReports")}</th><th>{t("colWorkers")}</th><th>{t("colDaysLost")}</th><th>{t("colNoReason")}</th><th>{t("colResolved")}</th></tr></thead>
                 <tbody>
                   {stats.map((s) => (
                     <tr key={s.type}>
-                      <td>{v(s.type)}</td>
-                      <td>{s.reports}</td>
-                      <td>{s.workers}{!s.confirmed && <span className="badge warn" title={t("unconfirmedTitle")}>{t("unconfirmed")}</span>}</td>
-                      <td>{s.medianDaysLost > 0 ? t("daysShort", { n: s.medianDaysLost }) : "—"}</td>
-                      <td>{Math.round(s.noReasonShare * 100)}%</td>
-                      <td>{Math.round(s.resolvedShare * 100)}%</td>
+                      <td className="group"><b>{v(s.type)}</b></td>
+                      <td data-label={t("colReports")}>{s.reports}</td>
+                      <td data-label={t("colWorkers")}>{s.workers}{!s.confirmed && <span className="badge warn" title={t("unconfirmedTitle")}>{t("unconfirmed")}</span>}</td>
+                      <td data-label={t("colDaysLost")}>{s.medianDaysLost > 0 ? t("daysShort", { n: s.medianDaysLost }) : "—"}</td>
+                      <td data-label={t("colNoReason")}>{Math.round(s.noReasonShare * 100)}%</td>
+                      <td data-label={t("colResolved")}>{Math.round(s.resolvedShare * 100)}%</td>
                     </tr>
                   ))}
                 </tbody>
