@@ -30,7 +30,7 @@ Nexora is a shared, permanent-unless-you-choose-otherwise notebook of ad experim
   - India-first platforms (Meesho, ShareChat, Moj, WhatsApp broadcast) and offers (cash on delivery).
   - INR bands.
   - A Hindi UI toggle.
-- **Works today:** the app is live and needs no signup. A wallet is created in the browser and gas is sponsored. Demo data is synthetic and labelled; every real entry is a real seller's own result.
+- **Works today:** the app is live at https://nexora-pi-snowy.vercel.app and needs no signup. A wallet is created in the browser and gas is sponsored. Demo data is synthetic and labelled; every real entry is a real seller's own result.
 
 ## Privacy: who is harmed if this data leaks
 

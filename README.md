@@ -2,7 +2,7 @@
 
 **What actually worked for sellers like you.** Nexora is an open ledger of ad experiments run by Indian small sellers: which platform, format, language, region and festival, and roughly what return. It is stored on [Arkiv](https://arkiv.network). Anyone can read it, nobody can quietly rewrite it, and there is no company database to shut down.
 
-- **Live app:** _add deployment URL_
+- **Live app:** https://nexora-pi-snowy.vercel.app
 - **Demo video (≤ 3 min):** _add link_
 - **Data contract:** [`arkiv/schema.md`](arkiv/schema.md)
 - **Friction report:** [`arkiv/friction.md`](arkiv/friction.md)
