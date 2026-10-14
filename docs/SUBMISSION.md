@@ -79,7 +79,7 @@ Nexora is a shared, permanent-unless-you-choose-otherwise notebook of ad experim
 - **Operational:**
   - Keys exist only in the gitignored `.env.local` and the deployment's secrets.
   - The sponsor validates input and enforces per-address, per-IP, global and sponsor-floor limits.
-  - Strict security headers and a CSP are set in `web/vercel.json`.
+  - Strict security headers and a CSP are set in `vercel.json`.
   - `npm audit` reports 0 vulnerabilities.
 
 The full threat model, with residual risks, is in [`THREAT_MODEL.md`](THREAT_MODEL.md).

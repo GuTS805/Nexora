@@ -34,7 +34,7 @@ ledger/          @nexora/ledger: the MIT data contract (schema, codec, sealing, 
   cli.ts         read the ledger without any Nexora server
   test/          contract tests + every write shape run through the real SDK up to signing
 web/             static React app (Vite); reads Arkiv directly from the browser
-  api/sponsor.ts optional gas sponsor: the only server code
+api/sponsor.ts   optional gas sponsor (Vercel function): the only server code
 scripts/         wallets, demo seed (records every feature on chain), end-to-end check, secret check
 examples/        read-without-nexora.mjs: the dataset with only the official SDK
 arkiv/           schema.md, friction.md, evidence.json, e2e-report.md
@@ -77,7 +77,7 @@ npm run check:secrets          # also runs as a pre-commit hook: git config core
 
 ### Deploy
 
-Vercel project rooted at `web/`, with build `npm run build` and output `dist`. Set `NEXORA_SPONSOR_KEY` as a secret if you want the gas sponsor; without it, visitors fund their own wallet from the faucet. The `dist/` folder also works on any static host or IPFS gateway.
+Import the repository in Vercel and keep **Root Directory = repository root**. [`vercel.json`](vercel.json) installs the workspaces (`npm ci`), builds `web`, serves `web/dist`, and exposes the sponsor from [`api/sponsor.ts`](api/sponsor.ts). Set `NEXORA_SPONSOR_KEY` (and optionally `ARKIV_RPC_URL` with a Hub key) as secrets if you want the gas sponsor; without it, visitors fund their own wallet from the faucet. The `web/dist/` folder also works on any static host or IPFS gateway.
 
 **Portable single file:** `npm run build:portable -w web` writes `web/dist-portable/nexora.html`, the whole app in one file (JS and CSS inlined; CI attaches it to every run). It opens from disk, an email attachment or a WhatsApp/Telegram file share, and reads Arkiv directly. If every website hosting Nexora disappeared, this file would still work.
 

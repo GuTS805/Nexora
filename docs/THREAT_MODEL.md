@@ -38,7 +38,7 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
 - **Mitigations:**
   - With a trust set (the selected trust list, or the recommended one when viewing "All sellers"), only trusted creators count toward proof. Everyone's rows stay visible (`InsightOptions.trusted`).
   - The Advisor tells the visitor this in plain language.
-  - The sponsor gives at most 3 drips per IP per day ([`web/api/sponsor.ts`](../web/api/sponsor.ts)).
+  - The sponsor gives at most 3 drips per IP per day ([`api/sponsor.ts`](../api/sponsor.ts)).
 - **Test:** *with a trust set, free throwaway wallets cannot manufacture independent confirmation*.
 - **Residual:** trust lists move the problem to curators. That is deliberate: curation is social, and there are many competing lists rather than one gatekeeper.
 
@@ -60,7 +60,7 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
 - **Mitigations:**
   - `decodeExperiment` / `decodeTrustList` check every attribute's type and vocabulary, the ROI grid, the payload size (4 KB) and the sealed-box shape. Rejected entities are counted and listed in the UI.
   - React escapes all rendered text, and nothing is rendered as HTML.
-  - A CSP in [`web/vercel.json`](../web/vercel.json) blocks inline scripts.
+  - A CSP in [`vercel.json`](../vercel.json) blocks inline scripts.
 - **Test:** *rejects an entity whose attributes were hand-written outside the vocabulary*.
 
 ### T6. Impersonating a trust list

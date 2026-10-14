@@ -1,8 +1,9 @@
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+import { fileURLToPath } from "node:url";
 
 /**
- * Serves `api/*.ts` (Vercel functions) during `vite dev`, so the gas sponsor can be exercised
+ * Serves the repo-root `api/*.ts` (Vercel functions) during `vite dev`, so the gas sponsor can be exercised
  * locally exactly as it runs in production. The production build itself is fully static.
  */
 function devApi(): Plugin {
@@ -15,7 +16,8 @@ function devApi(): Plugin {
         if (!req.url?.startsWith("/api/")) return next();
         const name = req.url.slice(5).split("?")[0];
         try {
-          const mod = await server.ssrLoadModule(`/api/${name}.ts`);
+          // Functions live in the repo-root api/ folder, where Vercel serves them from.
+          const mod = await server.ssrLoadModule(fileURLToPath(new URL(`../api/${name}.ts`, import.meta.url)));
           const handler = mod[req.method ?? "GET"];
           if (typeof handler !== "function") {
             res.statusCode = 405;

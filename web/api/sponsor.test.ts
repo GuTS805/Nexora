@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { POST } from "./sponsor.ts";
+import { POST } from "../../api/sponsor.ts";
 
 const post = (body: string) => POST(new Request("http://localhost/api/sponsor", { method: "POST", body, headers: { "content-type": "application/json" } }));
 
