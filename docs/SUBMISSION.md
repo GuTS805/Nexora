@@ -84,6 +84,26 @@ Nexora is a shared, permanent-unless-you-choose-otherwise notebook of ad experim
 
 The full threat model, with residual risks, is in [`THREAT_MODEL.md`](THREAT_MODEL.md).
 
+## How we use each Arkiv feature
+
+Each row says what the feature changes for the user and why we chose it. Every claim is backed by a transaction recorded in [`arkiv/evidence.json`](../arkiv/evidence.json) by `npm run seed`.
+
+| Feature | Where | What the user sees / why |
+| --- | --- | --- |
+| **Typed attributes vs payload** | [`codec.ts:130-160`](../ledger/src/codec.ts#L130-L160) | Only what people filter on is an attribute (category, platform, format, language, tier, season, spend band, ROI, demo, parent). Display-only fields (tone, CTA, offer, days, sealed box) live in a 4 KB JSON payload, so they cost no indexes and stay out of the queryable surface. |
+| **Range queries on `i32`** | [`queries.ts:129-131`](../ledger/src/queries.ts#L129-L131) | *What to try* compares only budgets within one band of yours (`spend_band >= b-1 AND <= b+1`). `roi_pct >= 0` gives profitable runs. Banding and rounding are privacy decisions that still allow ranges. |
+| **`$creator` filters** | [`queries.ts:138-141`](../ledger/src/queries.ts#L138-L141) | Trust lists and *My data* filter with `OR` over `$creator`, which writers cannot forge. This one feature carries the Security track. |
+| **`key`-typed attribute** | [`codec.ts:144`](../ledger/src/codec.ts#L144), [`queries.ts:133`](../ledger/src/queries.ts#L133) | "I ran a variant of this" links results. The result page lists every variant with `parent = key(…)`, so sellers compare a tweak against its original. |
+| **`readonly` creation flag** | [`codec.ts:160`](../ledger/src/codec.ts#L160) | A published result cannot be edited after others copied it, not even by its author. Seed step `readonly_enforced` records the refused patch. |
+| **`permissionlessExtension` flag + `extendEntity`** | [`Entity.tsx:92`](../web/src/pages/Entity.tsx#L92) | "Keep alive +30 days" lets any reader pay to keep a useful result alive, without write access. Seed step `permissionless_extend` has a non-owner extending. We use `atBlock(current + 30 d)` because extension sets an absolute deadline (friction F2). |
+| **Expiration** | [`codec.ts:157`](../ledger/src/codec.ts#L157) | The seller picks 7, 30, 90 or 365 days, and data disappears on schedule. This is the Privacy track's "expiry the user controls". |
+| **`deleteEntity` (owner)** | [`Entity.tsx:99`](../web/src/pages/Entity.tsx#L99) | The author can withdraw a result early, including from a one-time wallet whose key the browser kept. |
+| **`patchEntity` with `set`** | [`Trust.tsx:28`](../web/src/pages/Trust.tsx#L28), [`codec.ts:287`](../ledger/src/codec.ts#L287) | A curator edits a trust list's members in place (mutable on purpose, owner-only). Seed step `trust_list_patch`. |
+| **`executeBatch`** | [`Log.tsx:176`](../web/src/pages/Log.tsx#L176) | CSV import writes 20 results per transaction. The seed and e2e scripts use batches for creates and deletes. |
+| **Cursor paging** | [`queries.ts:168`](../ledger/src/queries.ts#L168) | Lists follow the SDK cursor (200 per page). |
+| **WebSocket entity events** | [`Explore.tsx:101-110`](../web/src/pages/Explore.tsx#L101-L110) | The live feed shows new results without reloading. Keys are batched into one `$key` query, because events carry no attributes (friction F3). |
+| **`Expression.toString()`** | [`queries.ts:153`](../ledger/src/queries.ts#L153) | Every list shows the exact query and the equivalent CLI command, so anyone can reproduce it without us. |
+
 ## Why Arkiv (what would break elsewhere)
 
 | Alternative | What breaks |
