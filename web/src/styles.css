@@ -144,3 +144,5 @@ th { color: var(--muted); font-weight: 600; }
 .row.spread p { margin: 0; }
 .card.notice { border-color: var(--warn-ink); background: var(--warn-bg); color: var(--warn-ink); font-size: 0.9rem; }
 .card.notice .link { color: inherit; }
+.steps { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0.75rem 1rem; margin: 0 0 1rem; }
+.steps ol { list-style: none; padding: 0; margin: 0 0 0.75rem; display: grid; gap: 0.25rem; }

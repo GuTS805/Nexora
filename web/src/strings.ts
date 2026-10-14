@@ -71,6 +71,11 @@ export const STRINGS = {
   shareWhatsApp: ["Share on WhatsApp", "व्हाट्सऐप पर भेजें"],
 
   // explore
+  step1: ["1. See what worked for sellers like you", "1. देखें आप जैसे विक्रेताओं के लिए क्या चला"],
+  step2: ["2. Try it with a small budget", "2. छोटे बजट से आज़माएँ"],
+  step3: ["3. Log your result — the next seller learns from you", "3. अपना नतीजा दर्ज करें — अगला विक्रेता आपसे सीखेगा"],
+  ctaAdvice: ["What should I try?", "मैं क्या आज़माऊँ?"],
+  ctaLog: ["Log my result", "मेरा नतीजा दर्ज करें"],
   liveStatus: ["Live updates ({status})", "लाइव अपडेट ({status})"],
   live_connecting: ["connecting", "जुड़ रहा है"],
   live_live: ["on", "चालू"],

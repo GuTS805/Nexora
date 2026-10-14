@@ -160,6 +160,17 @@ export function Explore() {
   return (
     <section>
       <p className="lead">{t("tagline")}</p>
+      <div className="steps">
+        <ol>
+          <li>{t("step1")}</li>
+          <li>{t("step2")}</li>
+          <li>{t("step3")}</li>
+        </ol>
+        <div className="row">
+          <a className="button" href="#/advisor">{t("ctaAdvice")}</a>
+          <a className="button secondary" href="#/log">{t("ctaLog")}</a>
+        </div>
+      </div>
       <LiveFeed onNew={bump} />
       <div className="filters">
         <Field label="category"><VocabSelect list={CATEGORIES} value={category} onChange={setCategory} any /></Field>
