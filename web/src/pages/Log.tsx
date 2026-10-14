@@ -1,14 +1,42 @@
-import { explainError, CATEGORIES, CSV_TEMPLATE, CTAS, EXPIRY_CHOICES_DAYS, FORMATS, LANGUAGES, MAX_BATCH, MIN_PASSPHRASE_LENGTH, OFFERS, PLATFORM_FORMATS, PLATFORMS, SEASONS, SPEND_BAND_LABELS, TIERS, TONES, experimentCreate, isOneOf, parseExperimentsCsv, roiPct, seal, spendBand, type ExperimentInput } from "@nexora/ledger";
-import { useMemo, useState } from "react";
+import {
+  CITIES, CSV_TEMPLATE, EXPIRY_CHOICES_DAYS, HOURS_BAND_LABELS, INCENTIVES, INCIDENT_TYPES, MAX_BATCH, MAX_DAYS_LOST,
+  MIN_PASSPHRASE_LENGTH, PLATFORM_WORK, PLATFORMS, VEHICLES, costPct, explainError, hoursBand, incidentCreate, isOneOf,
+  netHourly, parseShiftsCsv, seal, shiftCreate, type City, type Platform, type Vehicle, type WorkType,
+} from "@nexora/ledger";
+import type { CreateEntityParameters } from "@arkiv-network/sdk";
+import { useMemo, useState, type ReactNode } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
-import { EntityLink, Field, Roi, TxLink, VocabSelect, WalletBar } from "../components.tsx";
+import { EntityLink, Field, Hourly, TxLink, VocabSelect, WalletBar, useMonth } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
+import { store } from "../storage.ts";
+import { recentPeriods } from "./Explore.tsx";
 
 type Receipt = { txHash: Hex; keys: Hex[] };
+type Lifetime = (typeof EXPIRY_CHOICES_DAYS)[number];
 
 function useQueryParams() {
   return useMemo(() => new URLSearchParams(location.hash.split("?")[1] ?? ""), []);
+}
+
+/** The worker's usual platform, work, city and vehicle, remembered on this device only. */
+type Profile = { platform: Platform; work: WorkType; city: City; vehicle: Vehicle };
+
+function savedProfile(params: URLSearchParams): Profile {
+  let saved: Partial<Record<keyof Profile, unknown>> = {};
+  try {
+    saved = JSON.parse(store.get("profile") ?? "{}") as typeof saved;
+  } catch {
+    /* corrupt or missing: use defaults */
+  }
+  const choose = <T extends string>(list: readonly T[], name: keyof Profile, fallback: T): T => {
+    const fromLink = params.get(name);
+    if (isOneOf(list, fromLink)) return fromLink;
+    return isOneOf(list, saved[name]) ? (saved[name] as T) : fallback;
+  };
+  const platform = choose(PLATFORMS, "platform", "swiggy");
+  const work = choose(PLATFORM_WORK[platform], "work", PLATFORM_WORK[platform][0]!);
+  return { platform, work, city: choose(CITIES, "city", "bengaluru"), vehicle: choose(VEHICLES, "vehicle", "petrol_bike") };
 }
 
 function PublishResult({ receipt, error }: { receipt: Receipt | null; error: string | null }) {
@@ -24,45 +52,44 @@ function PublishResult({ receipt, error }: { receipt: Receipt | null; error: str
   );
 }
 
-export function Log() {
+/** Platform and kind of work, kept consistent: changing the platform keeps the work only if offered. */
+function PlatformWork({ profile, setProfile }: { profile: Profile; setProfile: (p: Profile) => void }) {
+  return (
+    <>
+      <Field label="platform">
+        <VocabSelect
+          list={PLATFORMS}
+          value={profile.platform}
+          onChange={(x) => x && setProfile({ ...profile, platform: x, work: PLATFORM_WORK[x].includes(profile.work) ? profile.work : PLATFORM_WORK[x][0]! })}
+        />
+      </Field>
+      <Field label="work"><VocabSelect list={PLATFORM_WORK[profile.platform]} value={profile.work} onChange={(x) => x && setProfile({ ...profile, work: x })} /></Field>
+      <Field label="city"><VocabSelect list={CITIES} value={profile.city} onChange={(x) => x && setProfile({ ...profile, city: x })} /></Field>
+    </>
+  );
+}
+
+/** Shared tail of both forms: privacy columns, lifetime, one-time wallet and the publish button. */
+function PublishPanel(props: {
+  publicPreview: ReactNode;
+  sealedDescription: string;
+  sealedFields?: ReactNode;
+  passphrase: string;
+  setPassphrase: (p: string) => void;
+  expiresInDays: Lifetime;
+  setExpiresInDays: (d: Lifetime) => void;
+  valid: boolean;
+  build: (sealed: Awaited<ReturnType<typeof seal>> | undefined) => CreateEntityParameters;
+  sealedContent: () => Parameters<typeof seal>[0];
+  defaultOneOff?: boolean;
+}) {
   const { wallet, ensureGas, bump, createOneOff } = useArkiv();
-  const { t, v } = useI18n();
-  const params = useQueryParams();
-  const [oneOff, setOneOff] = useState(false);
-  const fromParam = <T extends string>(list: readonly T[], name: string, fallback: T): T => {
-    const value = params.get(name);
-    return isOneOf(list, value) ? value : fallback;
-  };
-  const initialPlatform = fromParam(PLATFORMS, "platform", "instagram");
-  const initialFormat = fromParam(FORMATS, "format", "reel");
-  const [form, setForm] = useState({
-    category: fromParam(CATEGORIES, "category", "tea_coffee"),
-    platform: initialPlatform,
-    format: PLATFORM_FORMATS[initialPlatform].includes(initialFormat) ? initialFormat : PLATFORM_FORMATS[initialPlatform][0]!,
-    lang: "hinglish" as (typeof LANGUAGES)[number],
-    tier: "tier2" as (typeof TIERS)[number],
-    season: "none" as (typeof SEASONS)[number],
-    tone: "festive" as (typeof TONES)[number],
-    cta: "whatsapp_us" as (typeof CTAS)[number],
-    offer: "none" as (typeof OFFERS)[number],
-    spendInr: "",
-    revenueInr: "",
-    orders: "",
-    note: "",
-    days: "7",
-    expiresInDays: 90 as (typeof EXPIRY_CHOICES_DAYS)[number],
-    passphrase: "",
-  });
-  const parent = params.get("parent") as Hex | null;
-  const set = <K extends keyof typeof form>(key: K) => (value: (typeof form)[K]) => setForm((f) => ({ ...f, [key]: value }));
+  const { t } = useI18n();
+  const [oneOff, setOneOff] = useState(props.defaultOneOff ?? false);
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const spend = Number(form.spendInr);
-  const revenue = Number(form.revenueInr);
-  const valid = spend > 0 && revenue >= 0 && form.revenueInr !== "";
-  const sealing = form.passphrase.length > 0;
+  const sealing = props.passphrase.length > 0;
 
   async function publish() {
     setBusy(true);
@@ -70,21 +97,14 @@ export function Log() {
     setReceipt(null);
     try {
       if (!wallet && !oneOff) throw new Error(t("connectFirst"));
-      if (sealing && form.passphrase.length < MIN_PASSPHRASE_LENGTH) throw new Error(t("passTooShort", { n: MIN_PASSPHRASE_LENGTH }));
-      const input: ExperimentInput = {
-        category: form.category, platform: form.platform, format: form.format, lang: form.lang, tier: form.tier,
-        season: form.season, tone: form.tone, cta: form.cta, offer: form.offer,
-        spendInr: spend, revenueInr: revenue, days: Number(form.days), expiresInDays: form.expiresInDays,
-        parent: parent ?? undefined,
-        sealed: sealing ? await seal({ spendInr: spend, revenueInr: revenue, orders: form.orders ? Number(form.orders) : undefined, note: form.note || undefined }, form.passphrase) : undefined,
-      };
-      const params = experimentCreate(input);
+      if (sealing && props.passphrase.length < MIN_PASSPHRASE_LENGTH) throw new Error(t("passTooShort", { n: MIN_PASSPHRASE_LENGTH }));
+      const params = props.build(sealing ? await seal(props.sealedContent(), props.passphrase) : undefined);
       // A one-time wallet is created only now, after validation, so failed forms leave no stray keys.
       const publisher = oneOff ? createOneOff() : wallet!;
       await ensureGas(publisher.address);
       const result = await publisher.client.createEntity(params);
       setReceipt({ txHash: result.txHash, keys: [result.entityKey] });
-      setForm((f) => ({ ...f, passphrase: "" }));
+      props.setPassphrase("");
       bump();
     } catch (cause) {
       setError(explainError(cause));
@@ -94,50 +114,20 @@ export function Log() {
   }
 
   return (
-    <section>
-      <h2>{t("navLog")}</h2>
-      <WalletBar />
-      {parent && <p className="card">{t("variantOf").split("{key}")[0]}<EntityLink entityKey={parent} />{t("variantOf").split("{key}")[1]}</p>}
-      <div className="form-grid">
-        <Field label="category"><VocabSelect list={CATEGORIES} value={form.category} onChange={(x) => x && set("category")(x)} /></Field>
-        <Field label="platform">
-          <VocabSelect
-            list={PLATFORMS}
-            value={form.platform}
-            onChange={(x) => {
-              if (!x) return;
-              // Keep the format if the new platform sells it, otherwise switch to its first format.
-              setForm((f) => ({ ...f, platform: x, format: PLATFORM_FORMATS[x].includes(f.format) ? f.format : PLATFORM_FORMATS[x][0]! }));
-            }}
-          />
-        </Field>
-        <Field label="format"><VocabSelect list={PLATFORM_FORMATS[form.platform]} value={form.format} onChange={(x) => x && set("format")(x)} /></Field>
-        <Field label="lang"><VocabSelect list={LANGUAGES} value={form.lang} onChange={(x) => x && set("lang")(x)} /></Field>
-        <Field label="tier"><VocabSelect list={TIERS} value={form.tier} onChange={(x) => x && set("tier")(x)} /></Field>
-        <Field label="season"><VocabSelect list={SEASONS} value={form.season} onChange={(x) => x && set("season")(x)} /></Field>
-        <Field label="tone"><VocabSelect list={TONES} value={form.tone} onChange={(x) => x && set("tone")(x)} /></Field>
-        <Field label="cta"><VocabSelect list={CTAS} value={form.cta} onChange={(x) => x && set("cta")(x)} /></Field>
-        <Field label="offer"><VocabSelect list={OFFERS} value={form.offer} onChange={(x) => x && set("offer")(x)} /></Field>
-        <Field label="spend"><input inputMode="numeric" value={form.spendInr} onChange={(e) => set("spendInr")(e.target.value.replace(/[^\d.]/g, ""))} placeholder="3500" /></Field>
-        <Field label="revenue"><input inputMode="numeric" value={form.revenueInr} onChange={(e) => set("revenueInr")(e.target.value.replace(/[^\d.]/g, ""))} placeholder="9100" /></Field>
-        <Field label="days"><input inputMode="numeric" value={form.days} onChange={(e) => set("days")(e.target.value.replace(/\D/g, ""))} /></Field>
-      </div>
-
+    <>
       <fieldset className="privacy">
         <legend>{t("privacyLegend")}</legend>
         <div className="columns">
           <div>
             <h4>{t("publicTitle")}</h4>
-            <p className="small">{[`${v(form.platform)} · ${v(form.format)}`, v(form.category), v(form.tier), v(form.lang), form.season !== "none" && v(form.season), v(form.tone), v(form.cta), form.offer !== "none" && v(form.offer), t("daysShort", { n: form.days || "?" })].filter(Boolean).join(", ")}</p>
-            <p className="small">{t("spendBandIs")} <b>{valid ? SPEND_BAND_LABELS[spendBand(spend)] : "—"}</b> · {t("roiRounded")} <b>{valid ? <Roi value={roiPct(spend, revenue)} /> : "—"}</b></p>
+            {props.publicPreview}
             <p className="small muted">{t("publicNote")}</p>
           </div>
           <div>
             <h4>{t("sealedSection")}</h4>
-            <p className="small">{t("sealedDesc", { s: form.spendInr || "…", r: form.revenueInr || "…" })}</p>
-            <input placeholder={t("ordersPh")} inputMode="numeric" value={form.orders} onChange={(e) => set("orders")(e.target.value.replace(/\D/g, ""))} />
-            <input placeholder={t("notePh")} maxLength={200} value={form.note} onChange={(e) => set("note")(e.target.value)} />
-            <input type="password" placeholder={t("passMin", { label: t("passphrase"), n: MIN_PASSPHRASE_LENGTH })} value={form.passphrase} onChange={(e) => set("passphrase")(e.target.value)} autoComplete="new-password" />
+            <p className="small">{props.sealedDescription}</p>
+            {props.sealedFields}
+            <input type="password" placeholder={t("passMin", { label: t("passphrase"), n: MIN_PASSPHRASE_LENGTH })} value={props.passphrase} onChange={(e) => props.setPassphrase(e.target.value)} autoComplete="new-password" />
           </div>
           <div>
             <h4>{t("neverTitle")}</h4>
@@ -145,20 +135,163 @@ export function Log() {
           </div>
         </div>
         <Field label="expiry">
-          <select value={form.expiresInDays} onChange={(e) => set("expiresInDays")(Number(e.target.value) as (typeof EXPIRY_CHOICES_DAYS)[number])}>
+          <select value={props.expiresInDays} onChange={(e) => props.setExpiresInDays(Number(e.target.value) as Lifetime)}>
             {EXPIRY_CHOICES_DAYS.map((d) => <option key={d} value={d}>{d} {t("daysUnit")}</option>)}
           </select>
         </Field>
         <p className="small muted">{t("expiryNote")}</p>
       </fieldset>
-
       <label className="check">
         <input type="checkbox" checked={oneOff} onChange={(e) => setOneOff(e.target.checked)} /> {t("oneOffLabel")}
       </label>
       {oneOff && <p className="small muted">{t("oneOffHelp")}</p>}
-      <button disabled={(!wallet && !oneOff) || !valid || busy} onClick={publish}>{busy ? t("publishing") : t("publish")}</button>
+      <button disabled={(!wallet && !oneOff) || !props.valid || busy} onClick={publish}>{busy ? t("publishing") : t("publish")}</button>
       <PublishResult receipt={receipt} error={error} />
+    </>
+  );
+}
+
+const digits = (value: string) => value.replace(/[^\d.]/g, "");
+
+function ShiftForm({ profile, setProfile }: { profile: Profile; setProfile: (p: Profile) => void }) {
+  const { t, v } = useI18n();
+  const month = useMonth();
+  const [period, setPeriod] = useState(recentPeriods()[0]!);
+  const [gross, setGross] = useState("");
+  const [costs, setCosts] = useState("");
+  const [hours, setHours] = useState("");
+  const [incentive, setIncentive] = useState<(typeof INCENTIVES)[number]>("none");
+  const [orders, setOrders] = useState("");
+  const [note, setNote] = useState("");
+  const [passphrase, setPassphrase] = useState("");
+  const [expiresInDays, setExpiresInDays] = useState<Lifetime>(365);
+
+  const g = Number(gross), c = Number(costs || "0"), h = Number(hours);
+  const valid = gross !== "" && g >= 0 && c >= 0 && h > 0 && h <= 24;
+  const input = { ...profile, period, grossInr: g, costsInr: c, hours: h, incentive, expiresInDays, demo: false };
+
+  return (
+    <>
+      <div className="form-grid">
+        <PlatformWork profile={profile} setProfile={setProfile} />
+        <Field label="vehicle"><VocabSelect list={VEHICLES} value={profile.vehicle} onChange={(x) => x && setProfile({ ...profile, vehicle: x })} /></Field>
+        <label className="field">
+          <span>{t("month")}</span>
+          <select value={period} onChange={(e) => setPeriod(Number(e.target.value))}>{recentPeriods().map((p) => <option key={p} value={p}>{month(p)}</option>)}</select>
+        </label>
+        <Field label="incentive"><VocabSelect list={INCENTIVES} value={incentive} onChange={(x) => x && setIncentive(x)} /></Field>
+        <Field label="gross"><input inputMode="decimal" value={gross} onChange={(e) => setGross(digits(e.target.value))} placeholder="1180" /></Field>
+        <Field label="costs"><input inputMode="decimal" value={costs} onChange={(e) => setCosts(digits(e.target.value))} placeholder="240" /></Field>
+        <Field label="hours"><input inputMode="decimal" value={hours} onChange={(e) => setHours(digits(e.target.value))} placeholder="10" /></Field>
+      </div>
+      <PublishPanel
+        publicPreview={
+          <>
+            <p className="small">{[`${v(profile.platform)} · ${v(profile.work)}`, v(profile.city), v(profile.vehicle), month(period), `${t("incentive")}: ${v(incentive)}`].join(", ")}</p>
+            <p className="small">
+              {t("hoursBandIs")} <b>{valid ? HOURS_BAND_LABELS[hoursBand(h)] : "—"}</b> · {t("netRounded")} <b>{valid ? <Hourly value={netHourly(g, c, h)} /> : "—"}</b> · {t("costShareIs")} <b>{valid ? `${costPct(g, c)}%` : "—"}</b>
+            </p>
+          </>
+        }
+        sealedDescription={t("sealedDescShift", { g: gross || "…", c: costs || "…" })}
+        sealedFields={
+          <>
+            <input placeholder={t("ordersPh")} inputMode="numeric" value={orders} onChange={(e) => setOrders(e.target.value.replace(/\D/g, ""))} />
+            <input placeholder={t("notePh")} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
+          </>
+        }
+        passphrase={passphrase}
+        setPassphrase={setPassphrase}
+        expiresInDays={expiresInDays}
+        setExpiresInDays={setExpiresInDays}
+        valid={valid}
+        build={(sealed) => shiftCreate({ ...input, sealed })}
+        sealedContent={() => ({ grossInr: g, costsInr: c, hours: h, orders: orders ? Number(orders) : undefined, note: note || undefined })}
+      />
       <CsvImport />
+    </>
+  );
+}
+
+function IncidentForm({ profile, setProfile, params }: { profile: Profile; setProfile: (p: Profile) => void; params: URLSearchParams }) {
+  const { t, v } = useI18n();
+  const month = useMonth();
+  const parent = params.get("parent");
+  const validParent = parent && /^0x[0-9a-fA-F]{64}$/.test(parent) ? (parent as Hex) : undefined;
+  const [type, setType] = useState(isOneOf(INCIDENT_TYPES, params.get("type")) ? (params.get("type") as (typeof INCIDENT_TYPES)[number]) : "id_blocked");
+  const [period, setPeriod] = useState(recentPeriods()[0]!);
+  const [daysLost, setDaysLost] = useState("0");
+  const [reasonGiven, setReasonGiven] = useState(false);
+  const [appealed, setAppealed] = useState(false);
+  const [resolved, setResolved] = useState(false);
+  const [note, setNote] = useState("");
+  const [passphrase, setPassphrase] = useState("");
+  const [expiresInDays, setExpiresInDays] = useState<Lifetime>(365);
+  const days = Number(daysLost || "0");
+  const valid = Number.isInteger(days) && days >= 0 && days <= MAX_DAYS_LOST;
+  const yesNo = (b: boolean) => (b ? t("yes") : t("no"));
+
+  // Incident reports default to a fresh one-time wallet (defaultOneOff below): a report should not be
+  // linkable to the worker's earnings history, or to their other reports, by wallet address.
+  return (
+    <>
+      {validParent && <p className="card">{t("updateOf").split("{key}")[0]}<EntityLink entityKey={validParent} />{t("updateOf").split("{key}")[1]}</p>}
+      <div className="form-grid">
+        <Field label="incidentType"><VocabSelect list={INCIDENT_TYPES} value={type} onChange={(x) => x && setType(x)} /></Field>
+        <PlatformWork profile={profile} setProfile={setProfile} />
+        <label className="field">
+          <span>{t("month")}</span>
+          <select value={period} onChange={(e) => setPeriod(Number(e.target.value))}>{recentPeriods().map((p) => <option key={p} value={p}>{month(p)}</option>)}</select>
+        </label>
+        <Field label="daysLost"><input inputMode="numeric" value={daysLost} onChange={(e) => setDaysLost(e.target.value.replace(/\D/g, ""))} /></Field>
+      </div>
+      <label className="check"><input type="checkbox" checked={reasonGiven} onChange={(e) => setReasonGiven(e.target.checked)} /> {t("reasonGiven")}</label>
+      <label className="check"><input type="checkbox" checked={appealed} onChange={(e) => setAppealed(e.target.checked)} /> {t("appealed")}</label>
+      <label className="check"><input type="checkbox" checked={resolved} onChange={(e) => setResolved(e.target.checked)} /> {t("resolved")}</label>
+      <PublishPanel
+        publicPreview={
+          <p className="small">
+            {[v(type), `${v(profile.platform)} · ${v(profile.work)}`, v(profile.city), month(period), t("daysShort", { n: days }),
+              `${t("reasonGiven")}: ${yesNo(reasonGiven)}`, `${t("appealed")}: ${yesNo(appealed)}`, `${t("resolved")}: ${yesNo(resolved)}`].join(", ")}
+          </p>
+        }
+        sealedDescription={t("sealedDescIncident")}
+        sealedFields={<textarea rows={3} placeholder={t("notePh")} maxLength={1_000} value={note} onChange={(e) => setNote(e.target.value)} />}
+        passphrase={passphrase}
+        setPassphrase={setPassphrase}
+        expiresInDays={expiresInDays}
+        setExpiresInDays={setExpiresInDays}
+        valid={valid}
+        build={(sealed) => incidentCreate({
+          platform: profile.platform, work: profile.work, city: profile.city, type, period, daysLost: days,
+          reasonGiven, appealed, resolved, expiresInDays, parent: validParent, demo: false, sealed,
+        })}
+        sealedContent={() => ({ note: note || undefined })}
+        defaultOneOff
+      />
+    </>
+  );
+}
+
+export function Log() {
+  const { t } = useI18n();
+  const params = useQueryParams();
+  const [tab, setTab] = useState<"shift" | "incident">(params.get("tab") === "incident" || params.has("parent") ? "incident" : "shift");
+  const [profile, setProfileState] = useState(() => savedProfile(params));
+  const setProfile = (next: Profile) => {
+    setProfileState(next);
+    store.set("profile", JSON.stringify(next));
+  };
+
+  return (
+    <section>
+      <h2>{t("navLog")}</h2>
+      <WalletBar />
+      <div className="tabs" role="tablist">
+        <button role="tab" aria-selected={tab === "shift"} className={tab === "shift" ? "" : "secondary"} onClick={() => setTab("shift")}>{t("tabShift")}</button>
+        <button role="tab" aria-selected={tab === "incident"} className={tab === "incident" ? "" : "secondary"} onClick={() => setTab("incident")}>{t("tabIncident")}</button>
+      </div>
+      {tab === "shift" ? <ShiftForm profile={profile} setProfile={setProfile} /> : <IncidentForm profile={profile} setProfile={setProfile} params={params} />}
     </section>
   );
 }
@@ -170,7 +303,7 @@ function CsvImport() {
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const parsed = text.trim() ? parseExperimentsCsv(text, 90) : null;
+  const parsed = text.trim() ? parseShiftsCsv(text, 365) : null;
 
   async function importRows() {
     if (!wallet || !parsed) return;
@@ -181,7 +314,7 @@ function CsvImport() {
       const keys: Hex[] = [];
       let txHash: Hex | null = null;
       for (let i = 0; i < parsed.rows.length; i += MAX_BATCH) {
-        const result = await wallet.client.executeBatch({ creates: parsed.rows.slice(i, i + MAX_BATCH).map(experimentCreate) });
+        const result = await wallet.client.executeBatch({ creates: parsed.rows.slice(i, i + MAX_BATCH).map(shiftCreate) });
         keys.push(...result.createdEntities);
         txHash = result.txHash;
       }

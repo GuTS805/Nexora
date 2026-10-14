@@ -25,7 +25,7 @@ Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 cha
 - **Expected (from the word "extend"):** `extendEntity({ expires: ExpirationTime.fromDays(30) })` adds 30 days to the current expiry.
 - **Actual:** it sets the expiry to *now + 30 days*. Take an entity created with 365 days of life: "extend by 30 days" resolves to a block earlier than its current expiry and reverts with `ExpiryNotExtended`.
 - **Reproduce:** create an entity with `ExpirationTime.fromDays(365)`, then call `extendEntity({ entityKey, expires: ExpirationTime.fromDays(30) })`. `npm run e2e` does exactly this.
-- **Live (14 Oct 2026, [`e2e-report.md`](e2e-report.md)):** the call reverted with *"entity 0x27e48aa8…b834b2 already expires at block 16336370, so extending it to 1864372 would shorten its life"*. The message is clear once you see it, but nothing in the API name or JSDoc warns you first. The same run extended a 7-day entity with `atBlock(current + 30 days)`: expiry 870762 → 2166762.
+- **Live (14 Oct 2026, reproduced in every [`e2e-report.md`](e2e-report.md) run since):** the call reverted with *"entity 0xd24130ab…b44dd0 already expires at block 16348151, so extending it to 1876153 would shorten its life"*. The message is clear once you see it, but nothing in the API name or JSDoc warns you first. The same run extended a 7-day entity with `atBlock(current + 30 days)`: expiry 882542 → 2178542.
 - **Our workaround:** [`web/src/pages/Entity.tsx`](../web/src/pages/Entity.tsx) uses `ExpirationTime.atBlock(entity.expiresAt + 30 × 43_200n)`.
 - **Suggested fix:** add `ExpirationTime.extendBy(lifetime)` (relative to the current expiry), or rename the parameter to `newExpiry`. Either way, document the semantics on `extendEntity`'s JSDoc.
 
@@ -60,7 +60,7 @@ Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 cha
   | one `str('…')` literal over 128 bytes | `str values are limited to 128 bytes of UTF-8` |
 
   So a query may hold at most **64 predicates** and **8 192 bytes**. The errors name neither number, and the SDK does not check either before sending.
-- **Why it matters:** "show me results from these wallets" is a natural `OR` over `$creator`, and it breaks at about 60 wallets. Before we measured this, our *My data* page silently capped its wallet list at 25, which hid results from a seller's 26th one-time wallet onwards.
+- **Why it matters:** "show me results from these wallets" is a natural `OR` over `$creator`, and it breaks at about 60 wallets. Before we measured this, our *My data* page silently capped its wallet list at 25, which hid entries from a user's 26th one-time wallet onwards.
 - **Reproduce:**
   ```
   node -e 'const a=i=>"0x"+i.toString(16).padStart(40,"0");
@@ -69,7 +69,7 @@ Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 cha
       params:["app = str(\x27nexora\x27) AND ("+Array.from({length:n},(_,i)=>"$creator = addr("+a(i+1)+")").join(" OR ")+")",{limit:1}]})})
       .then(r=>r.json()).then(j=>console.log(n+1,"predicates:",j.error?.message??"ok"))'
   ```
-- **Our workaround:** [`ledger/src/queries.ts`](../ledger/src/queries.ts) caps one query at `MAX_OR_BRANCHES = 25` `$creator` or `$key` branches (at most 39 predicates and about 2 KB with every filter set). `fetchExperiments` splits longer lists into several queries and merges the results. A test checks the heaviest filter against both limits.
+- **Our workaround:** [`ledger/src/queries.ts`](../ledger/src/queries.ts) caps one query at `MAX_OR_BRANCHES = 25` `$creator` or `$key` branches (at most 36 predicates and about 2 KB with every filter set). The fetch functions split longer lists into several queries and merge the results. A test checks the heaviest filter against both limits.
 - **Suggested fix:** a "Limits" table on the network page covering page size, predicates per query, query bytes, payload bytes (`MAX_PAYLOAD_BYTES = 128 KiB`, also only in source), attribute count (`MAX_ATTRIBUTES = 32`) and string length (128 bytes). Put the limit in the error message (`query has 65 predicates, max 64`), and validate in the SDK's query builder so the error appears before a network round trip. An `IN` operator (`$creator IN (…)`) would make the common case one predicate.
 
 ## F5. Entity URL format on the block explorer is undocumented (status: live)
@@ -126,12 +126,12 @@ Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 cha
 
 | What | Result |
 | --- | --- |
-| One `createEntity` (a Nexora experiment, 12 attributes) | 141 392 gas, 0.00014 GLM |
-| `executeBatch` with 20 creates | 2 827 840 gas, 0.0028 GLM (no saving per entity over single creates, but one signature and one confirmation) |
-| Read-after-write | queryable 686 ms after the receipt, in the same block |
-| 25-branch `$creator` `OR` query | ok, 1 641 characters |
+| One `createEntity` (a Nexora shift entry, 12 attributes) | 140 672 gas, 0.00014 GLM |
+| `executeBatch` with 20 creates | 2 813 440 gas, 0.0028 GLM (no saving per entity over single creates, but one signature and one confirmation) |
+| Read-after-write | queryable 700 ms after the receipt, in the same block |
+| 25-branch `$creator` `OR` query | ok, 1 636 characters |
 | F2 revert | confirmed, see F2 |
 | Patch on a `readonly` entity | refused: *"was created readonly, so its contents can never change. Its expiry can still be extended, and it can be transferred or deleted"* |
 | Batch delete of 22 entities | one transaction, none queryable afterwards |
 
-The seed run behind the Proof page (`arkiv/evidence.json`) wrote 105 experiments, 4 variants, a sealed row and a trust list, and recorded a permissionless extension and an owner delete. `npx tsx ledger/cli.ts verify` re-checks all 11 steps against the chain.
+The seed run behind the Proof page (`arkiv/evidence.json`) wrote 159 days of earnings (15 of them from the deliberate spammer), 14 incidents with 2 linked follow-ups, a sealed day and a trust list, and recorded a permissionless extension, a refused readonly patch and an owner delete. `npx tsx ledger/cli.ts verify` re-checks all 10 steps against the chain.

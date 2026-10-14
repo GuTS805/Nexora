@@ -1,11 +1,14 @@
 import type { PublicArkivClient } from "@arkiv-network/sdk";
-import { fetchExperiments, fetchTrustList, fetchTrustLists, type ExperimentFilters } from "@nexora/ledger";
+import {
+  fetchEntries, fetchIncidents, fetchShifts, fetchTrustList, fetchTrustLists,
+  type EntryFilters, type IncidentFilters, type ShiftFilters,
+} from "@nexora/ledger";
 import type { Hex } from "viem";
 
 /**
  * A 30-second in-memory cache for reads. The public RPC gives each visitor IP a small query budget
  * (friction F6); without this, switching between pages re-runs the same queries. Writes call
- * `clearReads()` so a visitor always sees their own new entity.
+ * `clearReads()` so a visitor always sees their own new entry.
  */
 const TTL = 30_000;
 const entries = new Map<string, { at: number; value: Promise<unknown> }>();
@@ -25,8 +28,14 @@ export function clearReads(): void {
 
 const id = (client: PublicArkivClient) => (client.transport as { url?: string }).url ?? "default";
 
-export const readExperiments = (client: PublicArkivClient, filters: ExperimentFilters, maxItems = 200) =>
-  cached(`exp|${id(client)}|${maxItems}|${JSON.stringify(filters)}`, () => fetchExperiments(client, filters, maxItems));
+export const readShifts = (client: PublicArkivClient, filters: ShiftFilters, maxItems = 400) =>
+  cached(`shift|${id(client)}|${maxItems}|${JSON.stringify(filters)}`, () => fetchShifts(client, filters, maxItems));
+
+export const readIncidents = (client: PublicArkivClient, filters: IncidentFilters, maxItems = 400) =>
+  cached(`incident|${id(client)}|${maxItems}|${JSON.stringify(filters)}`, () => fetchIncidents(client, filters, maxItems));
+
+export const readEntries = (client: PublicArkivClient, filters: EntryFilters, maxItems = 400) =>
+  cached(`entry|${id(client)}|${maxItems}|${JSON.stringify(filters)}`, () => fetchEntries(client, filters, maxItems));
 
 export const readTrustLists = (client: PublicArkivClient) => cached(`lists|${id(client)}`, () => fetchTrustLists(client));
 

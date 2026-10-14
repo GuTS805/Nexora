@@ -4,7 +4,7 @@ export function appUrl(hash: string): string {
 }
 
 /**
- * wa.me opens WhatsApp (app on phones, web on desktop) with the text pre-filled and lets the seller
+ * wa.me opens WhatsApp (app on phones, web on desktop) with the text pre-filled and lets the worker
  * pick a contact or group. Nothing passes through a Nexora server.
  */
 export function whatsappUrl(text: string): string {

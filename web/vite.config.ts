@@ -81,7 +81,7 @@ export default defineConfig(({ mode }) => {
     // Relative asset paths: the build runs from any static host or IPFS gateway.
     base: "./",
     // Preact's React-compatible runtime: same components, about a fifth of the size — it matters on
-    // the slow mobile connections many sellers use.
+    // the slow mobile connections many riders use.
     resolve: {
       alias: {
         "react-dom/client": "preact/compat/client",

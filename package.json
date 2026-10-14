@@ -2,7 +2,7 @@
   "name": "nexora",
   "private": true,
   "version": "0.2.0",
-  "description": "An open, censorship-resistant ledger of ad experiments for Indian small sellers, stored on Arkiv.",
+  "description": "An open, censorship-resistant ledger of what gig work in India really pays, written by workers and stored on Arkiv.",
   "license": "MIT",
   "type": "module",
   "workspaces": [

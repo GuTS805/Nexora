@@ -1,5 +1,5 @@
 import { readTrustList } from "./cache.ts";
-import { SPEND_BAND_LABELS, explainError, explorerAddress, explorerEntity, explorerTx, type Experiment, type TrustList } from "@nexora/ledger";
+import { HOURS_BAND_LABELS, explainError, explorerAddress, explorerEntity, explorerTx, type Entry, type Incident, type Shift, type TrustList } from "@nexora/ledger";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Address, Hex } from "viem";
 import { useArkiv } from "./arkiv.tsx";
@@ -53,8 +53,15 @@ export function ExplorerEntity({ entityKey }: { entityKey: Hex }) {
   return <a href={explorerEntity(entityKey)} target="_blank" rel="noreferrer">{t("explorer")}</a>;
 }
 
-export function Roi({ value }: { value: number }) {
-  return <span className={value > 0 ? "roi up" : value < 0 ? "roi down" : "roi"}>{value > 0 ? "+" : ""}{value}%</span>;
+/** Take-home per logged-in hour, after costs. */
+export function Hourly({ value }: { value: number }) {
+  const { t } = useI18n();
+  return <span className={value > 0 ? "amount up" : value < 0 ? "amount down" : "amount"}>{t("perHour", { n: value })}</span>;
+}
+
+/** A signed percentage change, e.g. month on month. */
+export function Change({ value }: { value: number }) {
+  return <span className={value > 0 ? "amount up" : value < 0 ? "amount down" : "amount"}>{value > 0 ? "+" : ""}{value}%</span>;
 }
 
 export function WhatsAppButton({ text }: { text: string }) {
@@ -93,23 +100,40 @@ export function QueryBox({ query, block, cli, rejected }: { query: string; block
   );
 }
 
-export function ExperimentCard({ e, trusted, block }: { e: Experiment; trusted?: boolean | undefined; block?: bigint | undefined }) {
-  const { t, v } = useI18n();
-  // Arkiv's nominal block time is 2 s, so 43,200 blocks ≈ one day.
-  const daysLeft = block !== undefined ? Math.max(0, Math.round(Number(e.expiresAt - block) / 43_200)) : undefined;
+// Arkiv's nominal block time is 2 s, so 43,200 blocks ≈ one day.
+const daysLeft = (expiresAt: bigint, block?: bigint) => (block !== undefined ? Math.max(0, Math.round(Number(expiresAt - block) / 43_200)) : undefined);
+
+function CardBadges({ e, block }: { e: Entry; block?: bigint | undefined }) {
+  const { t } = useI18n();
+  const left = daysLeft(e.expiresAt, block);
   return (
-    <article className="card experiment">
+    <>
+      {e.demo && <span className="badge">{t("synthetic")}</span>}
+      {e.sealed && <span className="badge" title={t("sealedTitle")}>{t("sealedBadge")}</span>}
+      {left !== undefined && <span className="badge" title={t("expiresTitle")}>⏳ {t("daysShort", { n: left })}</span>}
+    </>
+  );
+}
+
+/** "202610" → "Oct 2026" / "अक्टू॰ 2026", in the reader's language. */
+export function useMonth() {
+  const { lang } = useI18n();
+  return (period: number) => new Date(Math.floor(period / 100), (period % 100) - 1, 1).toLocaleDateString(lang === "hi" ? "hi-IN" : "en-IN", { month: "short", year: "numeric" });
+}
+
+export function ShiftCard({ e, trusted, block }: { e: Shift; trusted?: boolean | undefined; block?: bigint | undefined }) {
+  const { t, v } = useI18n();
+  const month = useMonth();
+  return (
+    <article className="card entry">
       <header>
-        <strong>{v(e.platform)} · {v(e.format)}</strong>
-        <Roi value={e.roiPct} />
+        <strong>{v(e.platform)} · {v(e.work)}</strong>
+        <Hourly value={e.netHourly} />
       </header>
       <p className="tags">
-        <span>{v(e.category)}</span><span>{v(e.tier)}</span><span>{v(e.lang)}</span>
-        {e.season !== "none" && <span>{v(e.season)}</span>}
-        <span>{SPEND_BAND_LABELS[e.spendBand]}</span><span>{t("daysShort", { n: e.days })}</span>
-        {e.demo && <span className="badge">{t("synthetic")}</span>}
-        {e.sealed && <span className="badge" title={t("sealedTitle")}>{t("sealedBadge")}</span>}
-        {daysLeft !== undefined && <span className="badge" title={t("expiresTitle")}>⏳ {t("daysShort", { n: daysLeft })}</span>}
+        <span>{v(e.city)}</span><span>{v(e.vehicle)}</span><span>{HOURS_BAND_LABELS[e.hoursBand]}</span>
+        <span>{t("colCosts")} {e.costPct}%</span><span>{month(e.period)}</span>
+        <CardBadges e={e} block={block} />
       </p>
       <footer>
         <Addr address={e.creator} trusted={trusted} />
@@ -117,6 +141,34 @@ export function ExperimentCard({ e, trusted, block }: { e: Experiment; trusted?:
       </footer>
     </article>
   );
+}
+
+export function IncidentCard({ e, trusted, block, updates, resolved = e.resolved }: { e: Incident; trusted?: boolean | undefined; block?: bigint | undefined; updates?: number | undefined; resolved?: boolean | undefined }) {
+  const { t, v } = useI18n();
+  const month = useMonth();
+  return (
+    <article className="card entry incident">
+      <header>
+        <strong>{v(e.type)}</strong>
+        <span className={resolved ? "badge ok" : "badge warn"}>{resolved ? t("resolvedBadge") : t("openBadge")}</span>
+      </header>
+      <p className="tags">
+        <span>{v(e.platform)} · {v(e.work)}</span><span>{v(e.city)}</span><span>{month(e.period)}</span>
+        {e.daysLost > 0 && <span>{t("daysShort", { n: e.daysLost })}</span>}
+        {!e.reasonGiven && <span>{t("noReasonBadge")}</span>}
+        {updates !== undefined && updates > 0 && <span>{t("updates", { n: updates })}</span>}
+        <CardBadges e={e} block={block} />
+      </p>
+      <footer>
+        <Addr address={e.creator} trusted={trusted} />
+        <EntityLink entityKey={e.key} />
+      </footer>
+    </article>
+  );
+}
+
+export function EntryCard({ e, trusted, block }: { e: Entry; trusted?: boolean | undefined; block?: bigint | undefined }) {
+  return e.kind === "shift" ? <ShiftCard e={e} trusted={trusted} block={block} /> : <IncidentCard e={e} trusted={trusted} block={block} />;
 }
 
 /** Where results come from: everyone, only my wallet, or the members of a trust list. */

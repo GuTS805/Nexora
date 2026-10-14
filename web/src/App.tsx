@@ -3,9 +3,10 @@ import type { Hex } from "viem";
 import { useI18n } from "./i18n.tsx";
 import { store } from "./storage.ts";
 import { About } from "./pages/About.tsx";
-import { Advisor } from "./pages/Advisor.tsx";
+import { Compare } from "./pages/Compare.tsx";
 import { Entity } from "./pages/Entity.tsx";
 import { Explore } from "./pages/Explore.tsx";
+import { Incidents } from "./pages/Incidents.tsx";
 import { Log } from "./pages/Log.tsx";
 import { Mine } from "./pages/Mine.tsx";
 import { Proof } from "./pages/Proof.tsx";
@@ -37,7 +38,7 @@ export function App() {
     store.set("theme", lightTheme ? "light" : "dark");
   }, [lightTheme]);
   const nav: [string, string][] = [
-    ["/", t("navExplore")], ["/advisor", t("navAdvisor")], ["/log", t("navLog")],
+    ["/", t("navExplore")], ["/compare", t("navCompare")], ["/log", t("navLog")], ["/incidents", t("navIncidents")],
     ["/mine", t("navMine")], ["/trust", t("navTrust")], ["/proof", t("navProof")], ["/about", t("navAbout")],
   ];
   const entity = /^\/e\/(0x[0-9a-fA-F]{64})$/.exec(route)?.[1] as Hex | undefined;
@@ -64,8 +65,9 @@ export function App() {
       </header>
       <main>
         {entity ? <Entity entityKey={entity} /> :
-          route === "/advisor" ? <Advisor key={query} /> :
+          route === "/compare" ? <Compare key={query} /> :
           route === "/log" ? <Log key={query} /> :
+          route === "/incidents" ? <Incidents key={query} /> :
           route === "/mine" ? <Mine /> :
           route === "/trust" ? <Trust /> :
           route === "/about" ? <About /> :

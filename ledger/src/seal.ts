@@ -1,10 +1,10 @@
 /**
- * Client-side sealing for the exact figures a seller does not want to publish.
+ * Client-side sealing for the exact figures and notes a worker does not want to publish.
  *
  * The passphrase never leaves the device. What reaches Arkiv is AES-256-GCM ciphertext under a key
  * derived with PBKDF2-SHA256; GCM's tag means a tampered blob fails to open instead of decrypting
- * to garbage. A short passphrase can still be brute-forced offline — the UI enforces a minimum
- * length and says so, and the sealed fields are business figures, never personal data.
+ * to garbage. A short passphrase can still be brute-forced offline, so the UI enforces a minimum
+ * length, says so, and tells workers never to seal their name, phone number or rider ID.
  */
 
 export const SEAL_ALG = "AES-256-GCM";
@@ -21,10 +21,14 @@ export type SealedBox = {
   ct: string;
 };
 
-/** What a seller may seal. Free text lives only here, encrypted, never in an attribute. */
-export type PrivateFigures = {
-  spendInr: number;
-  revenueInr: number;
+/**
+ * What a worker may seal: a day's exact figures, or the details of an incident. Free text lives only
+ * here, encrypted, never in an attribute.
+ */
+export type PrivateDetails = {
+  grossInr?: number;
+  costsInr?: number;
+  hours?: number;
   orders?: number;
   note?: string;
 };
@@ -59,19 +63,19 @@ async function deriveKey(passphrase: string, salt: Uint8Array<ArrayBuffer>, iter
   );
 }
 
-export async function seal(figures: PrivateFigures, passphrase: string): Promise<SealedBox> {
+export async function seal(details: PrivateDetails, passphrase: string): Promise<SealedBox> {
   if (passphrase.length < MIN_PASSPHRASE_LENGTH) {
     throw new Error(`Passphrase must be at least ${MIN_PASSPHRASE_LENGTH} characters.`);
   }
   const salt = globalThis.crypto.getRandomValues(new Uint8Array(16));
   const iv = globalThis.crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(passphrase, salt, SEAL_ITERATIONS);
-  const plaintext = new TextEncoder().encode(JSON.stringify(figures));
+  const plaintext = new TextEncoder().encode(JSON.stringify(details));
   const ct = new Uint8Array(await subtle().encrypt({ name: "AES-GCM", iv }, key, plaintext));
   return { alg: SEAL_ALG, kdf: SEAL_KDF, iter: SEAL_ITERATIONS, salt: toBase64(salt), iv: toBase64(iv), ct: toBase64(ct) };
 }
 
-export async function unseal(box: SealedBox, passphrase: string): Promise<PrivateFigures> {
+export async function unseal(box: SealedBox, passphrase: string): Promise<PrivateDetails> {
   if (box.alg !== SEAL_ALG || box.kdf !== SEAL_KDF) throw new Error("Unsupported sealed box.");
   if (!Number.isInteger(box.iter) || box.iter < 100_000 || box.iter > 5_000_000) {
     throw new Error("Sealed box has an implausible iteration count.");
@@ -83,7 +87,7 @@ export async function unseal(box: SealedBox, passphrase: string): Promise<Privat
   } catch {
     throw new Error("Wrong passphrase, or the sealed data was altered.");
   }
-  return JSON.parse(new TextDecoder().decode(plaintext)) as PrivateFigures;
+  return JSON.parse(new TextDecoder().decode(plaintext)) as PrivateDetails;
 }
 
 export function isSealedBox(value: unknown): value is SealedBox {

@@ -3,36 +3,55 @@ import { bool, i32, key as keyAttr, str } from "@arkiv-network/sdk/attr";
 import type { CreateEntityParameters, PatchEntityParameters } from "@arkiv-network/sdk";
 import { getAddress, isAddress, isHex, type Address, type Hex } from "viem";
 import {
-  APP, CATEGORIES, CTAS, EXPIRY_CHOICES_DAYS, FORMATS, KIND, LANGUAGES, MAX_DAYS, MAX_NAME_LENGTH,
-  MAX_TRUST_MEMBERS, OFFERS, PLATFORMS, ROI_MAX, ROI_MIN, ROI_STEP, SCHEMA_VERSION, SEASONS,
-  SPEND_BANDS_INR, TIERS, TONES, TRUST_LIST_DAYS, isOneOf, roiPct, spendBand,
-  type Category, type Cta, type Format, type Language, type Offer, type Platform, type Season,
-  type Tier, type Tone,
+  APP, CITIES, COST_STEP, EXPIRY_CHOICES_DAYS, HOURS_BANDS, INCENTIVES, INCIDENT_TYPES, KIND, MAX_DAY_INR,
+  MAX_DAYS_LOST, MAX_HOURS, MAX_NAME_LENGTH, MAX_TRUST_MEMBERS, NET_MAX, NET_MIN, NET_STEP, PLATFORMS,
+  SCHEMA_VERSION, TRUST_LIST_DAYS, VEHICLES, WORK_TYPES, costPct, hoursBand, isOneOf, isPeriod, netHourly,
+  type City, type Incentive, type IncidentType, type Platform, type Vehicle, type WorkType,
 } from "./schema.ts";
 import { isSealedBox, type SealedBox } from "./seal.ts";
 
-/** What a seller fills in. Exact rupee figures are turned into a band and a rounded ROI here. */
-export type ExperimentInput = {
-  category: Category;
+type Lifetime = (typeof EXPIRY_CHOICES_DAYS)[number];
+
+/** What a worker fills in for one day. Exact rupees and hours become a band and a rounded rate here. */
+export type ShiftInput = {
   platform: Platform;
-  format: Format;
-  lang: Language;
-  tier: Tier;
-  season: Season;
-  tone: Tone;
-  cta: Cta;
-  offer: Offer;
-  spendInr: number;
-  revenueInr: number;
-  days: number;
-  expiresInDays: (typeof EXPIRY_CHOICES_DAYS)[number];
+  work: WorkType;
+  city: City;
+  vehicle: Vehicle;
+  /** Month worked, YYYYMM. */
+  period: number;
+  /** Everything the app paid for the day: order pay, incentives, tips. */
+  grossInr: number;
+  /** The day's fuel or charging, maintenance, phone data. */
+  costsInr: number;
+  /** Logged-in hours, including time spent waiting for orders. */
+  hours: number;
+  incentive: Incentive;
+  expiresInDays: Lifetime;
+  demo?: boolean | undefined;
+  sealed?: SealedBox | undefined;
+};
+
+/** What a worker fills in when something happened to them at work. */
+export type IncidentInput = {
+  platform: Platform;
+  work: WorkType;
+  city: City;
+  type: IncidentType;
+  period: number;
+  /** Days without work because of it (0 if none). */
+  daysLost: number;
+  reasonGiven: boolean;
+  appealed: boolean;
+  resolved: boolean;
+  expiresInDays: Lifetime;
+  /** An update to an earlier incident (e.g. "unblocked after 6 days"), or the same thing happening to someone else. */
   parent?: Hex | undefined;
   demo?: boolean | undefined;
   sealed?: SealedBox | undefined;
 };
 
-/** One experiment as read back from Arkiv, after validation. */
-export type Experiment = {
+type Meta = {
   key: Hex;
   creator: Address;
   owner: Address;
@@ -40,26 +59,45 @@ export type Experiment = {
   createdAt: bigint | undefined;
   readonly: boolean;
   communityCanExtend: boolean;
-  category: Category;
-  platform: Platform;
-  format: Format;
-  lang: Language;
-  tier: Tier;
-  season: Season;
-  spendBand: number;
-  roiPct: number;
-  days: number;
-  tone: Tone;
-  cta: Cta;
-  offer: Offer;
-  parent: Hex | null;
   demo: boolean;
   sealed: SealedBox | null;
 };
 
+/** One day's earnings as read back from Arkiv, after validation. */
+export type Shift = Meta & {
+  kind: "shift";
+  platform: Platform;
+  work: WorkType;
+  city: City;
+  vehicle: Vehicle;
+  period: number;
+  hoursBand: number;
+  netHourly: number;
+  costPct: number;
+  incentive: Incentive;
+};
+
+/** One incident as read back from Arkiv, after validation. */
+export type Incident = Meta & {
+  kind: "incident";
+  platform: Platform;
+  work: WorkType;
+  city: City;
+  type: IncidentType;
+  period: number;
+  daysLost: number;
+  reasonGiven: boolean;
+  appealed: boolean;
+  resolved: boolean;
+  parent: Hex | null;
+};
+
+export type Entry = Shift | Incident;
+
 export type TrustListInput = {
   name: string;
-  scope: Category | "all";
+  /** Which work the list vouches for, or all of it. */
+  scope: WorkType | "all";
   description: string;
   members: Address[];
 };
@@ -86,6 +124,8 @@ export type RawEntity = {
 
 export type Decoded<T> = { ok: true; value: T } | { ok: false; key: string; reason: string };
 
+type Attribute = ReturnType<typeof str> | ReturnType<typeof i32> | ReturnType<typeof bool> | ReturnType<typeof keyAttr>;
+
 const MAX_PAYLOAD = 4_096;
 
 function encodeJson(value: unknown): Uint8Array {
@@ -94,60 +134,108 @@ function encodeJson(value: unknown): Uint8Array {
   return bytes;
 }
 
-export function validateExperimentInput(input: ExperimentInput): void {
-  const enums: [readonly string[], unknown, string][] = [
-    [CATEGORIES, input.category, "category"], [PLATFORMS, input.platform, "platform"],
-    [FORMATS, input.format, "format"], [LANGUAGES, input.lang, "language"], [TIERS, input.tier, "tier"],
-    [SEASONS, input.season, "season"], [TONES, input.tone, "tone"], [CTAS, input.cta, "cta"],
-    [OFFERS, input.offer, "offer"],
-  ];
+function checkEnums(enums: [readonly string[], unknown, string][]): void {
   for (const [list, value, name] of enums) {
     if (!isOneOf(list, value)) throw new Error(`Unknown ${name}: ${String(value)}`);
   }
-  if (!(Number.isFinite(input.spendInr) && input.spendInr > 0 && input.spendInr <= 1e9)) {
-    throw new Error("Spend must be a positive rupee amount.");
+}
+
+function checkCommon(input: { period: number; expiresInDays: number; demo?: boolean | undefined }): void {
+  if (!isPeriod(input.period)) throw new Error("Month must be a valid YYYYMM between 2024 and 2030.");
+  if (!(EXPIRY_CHOICES_DAYS as readonly number[]).includes(input.expiresInDays)) throw new Error("Pick one of the offered lifetimes.");
+}
+
+export function validateShiftInput(input: ShiftInput): void {
+  checkEnums([
+    [PLATFORMS, input.platform, "platform"], [WORK_TYPES, input.work, "work type"], [CITIES, input.city, "city"],
+    [VEHICLES, input.vehicle, "vehicle"], [INCENTIVES, input.incentive, "incentive"],
+  ]);
+  checkCommon(input);
+  if (!(Number.isFinite(input.hours) && input.hours > 0 && input.hours <= MAX_HOURS)) {
+    throw new Error(`Hours must be more than 0 and at most ${MAX_HOURS}.`);
   }
-  if (!(Number.isFinite(input.revenueInr) && input.revenueInr >= 0 && input.revenueInr <= 1e10)) {
-    throw new Error("Revenue must be zero or a positive rupee amount.");
+  if (!(Number.isFinite(input.grossInr) && input.grossInr >= 0 && input.grossInr <= MAX_DAY_INR)) {
+    throw new Error(`Earnings must be between ₹0 and ₹${MAX_DAY_INR.toLocaleString("en-IN")} for one day.`);
   }
-  if (!(Number.isInteger(input.days) && input.days >= 1 && input.days <= MAX_DAYS)) {
-    throw new Error(`Duration must be 1–${MAX_DAYS} whole days.`);
+  if (!(Number.isFinite(input.costsInr) && input.costsInr >= 0 && input.costsInr <= MAX_DAY_INR)) {
+    throw new Error(`Costs must be between ₹0 and ₹${MAX_DAY_INR.toLocaleString("en-IN")} for one day.`);
   }
-  if (!(EXPIRY_CHOICES_DAYS as readonly number[]).includes(input.expiresInDays)) {
-    throw new Error("Pick one of the offered lifetimes.");
+}
+
+export function validateIncidentInput(input: IncidentInput): void {
+  checkEnums([
+    [PLATFORMS, input.platform, "platform"], [WORK_TYPES, input.work, "work type"], [CITIES, input.city, "city"],
+    [INCIDENT_TYPES, input.type, "incident type"],
+  ]);
+  checkCommon(input);
+  if (!(Number.isInteger(input.daysLost) && input.daysLost >= 0 && input.daysLost <= MAX_DAYS_LOST)) {
+    throw new Error(`Days without work must be a whole number from 0 to ${MAX_DAYS_LOST}.`);
+  }
+  for (const [value, name] of [[input.reasonGiven, "reasonGiven"], [input.appealed, "appealed"], [input.resolved, "resolved"]] as const) {
+    if (typeof value !== "boolean") throw new Error(`${name} must be true or false.`);
   }
   if (input.parent !== undefined && !(isHex(input.parent) && input.parent.length === 66)) {
     throw new Error("Parent must be a 32-byte entity key.");
   }
 }
 
+// readonly: a published entry can never be silently rewritten, not even by its author, so nobody
+// can be pressured into "correcting" it. permissionlessExtension: anyone who finds an entry useful
+// (a union, a researcher, another worker) can keep it alive past the lifetime its author chose.
+const ENTRY_FLAGS = { readonly: true, permissionlessExtension: true } as const;
+
 /**
- * Builds the exact `createEntity` parameters for an experiment. Shared by the web app, the CLI and
- * the seed script so all three write byte-identical shapes.
+ * Builds the exact `createEntity` parameters for one day's earnings. Shared by the web app, the CLI
+ * and the seed script so all three write byte-identical shapes.
  */
-export function experimentCreate(input: ExperimentInput): CreateEntityParameters {
-  validateExperimentInput(input);
-  const attributes: Record<string, ReturnType<typeof str> | ReturnType<typeof i32> | ReturnType<typeof bool> | ReturnType<typeof keyAttr>> = {
+export function shiftCreate(input: ShiftInput): CreateEntityParameters {
+  validateShiftInput(input);
+  const attributes: Record<string, Attribute> = {
     app: str(APP),
     v: i32(SCHEMA_VERSION),
-    kind: str(KIND.experiment),
-    category: str(input.category),
+    kind: str(KIND.shift),
     platform: str(input.platform),
-    format: str(input.format),
-    lang: str(input.lang),
-    tier: str(input.tier),
-    season: str(input.season),
-    spend_band: i32(spendBand(input.spendInr)),
-    roi_pct: i32(roiPct(input.spendInr, input.revenueInr)),
+    work: str(input.work),
+    city: str(input.city),
+    vehicle: str(input.vehicle),
+    period: i32(input.period),
+    hours_band: i32(hoursBand(input.hours)),
+    net_hourly: i32(netHourly(input.grossInr, input.costsInr, input.hours)),
+    cost_pct: i32(costPct(input.grossInr, input.costsInr)),
+    demo: bool(Boolean(input.demo)),
+  };
+  const payload: Record<string, unknown> = { v: SCHEMA_VERSION, incentive: input.incentive };
+  if (input.sealed) payload.sealed = input.sealed;
+  return {
+    payload: encodeJson(payload),
+    contentType: "application/json",
+    attributes,
+    expires: ExpirationTime.fromDays(input.expiresInDays),
+    flags: ENTRY_FLAGS,
+  };
+}
+
+/** Builds the exact `createEntity` parameters for an incident. */
+export function incidentCreate(input: IncidentInput): CreateEntityParameters {
+  validateIncidentInput(input);
+  const attributes: Record<string, Attribute> = {
+    app: str(APP),
+    v: i32(SCHEMA_VERSION),
+    kind: str(KIND.incident),
+    platform: str(input.platform),
+    work: str(input.work),
+    city: str(input.city),
+    type: str(input.type),
+    period: i32(input.period),
+    days_lost: i32(input.daysLost),
     demo: bool(Boolean(input.demo)),
   };
   if (input.parent) attributes.parent = keyAttr(input.parent);
   const payload: Record<string, unknown> = {
     v: SCHEMA_VERSION,
-    tone: input.tone,
-    cta: input.cta,
-    offer: input.offer,
-    days: input.days,
+    reasonGiven: input.reasonGiven,
+    appealed: input.appealed,
+    resolved: input.resolved,
   };
   if (input.sealed) payload.sealed = input.sealed;
   return {
@@ -155,9 +243,7 @@ export function experimentCreate(input: ExperimentInput): CreateEntityParameters
     contentType: "application/json",
     attributes,
     expires: ExpirationTime.fromDays(input.expiresInDays),
-    // readonly: a published result can never be silently rewritten after others relied on it.
-    // permissionlessExtension: anyone who finds a result useful can keep it alive.
-    flags: { readonly: true, permissionlessExtension: true },
+    flags: ENTRY_FLAGS,
   };
 }
 
@@ -177,46 +263,19 @@ function parseJson(raw: RawEntity): Record<string, unknown> | null {
   }
 }
 
-/**
- * Validates an entity against the contract. Anyone can write entities that claim `app = nexora`,
- * so nothing is trusted until it passes here; failures are counted and shown, not hidden.
- */
-export function decodeExperiment(raw: RawEntity): Decoded<Experiment> {
-  const keyText = raw.key ?? "unknown";
-  const fail = (reason: string): Decoded<Experiment> => ({ ok: false, key: keyText, reason });
-  if (!raw.key || !raw.creator || !raw.owner || raw.expiresAt === undefined) return fail("missing metadata");
-  if (attrValue(raw, "app", "str") !== APP || attrValue(raw, "kind", "str") !== KIND.experiment) return fail("not an experiment");
-  if (attrValue(raw, "v", "i32") !== SCHEMA_VERSION) return fail("unsupported schema version");
-
-  const s = (name: string) => attrValue(raw, name, "str");
-  const category = s("category"), platform = s("platform"), format = s("format");
-  const lang = s("lang"), tier = s("tier"), season = s("season");
-  if (!isOneOf(CATEGORIES, category)) return fail("bad category");
-  if (!isOneOf(PLATFORMS, platform)) return fail("bad platform");
-  if (!isOneOf(FORMATS, format)) return fail("bad format");
-  if (!isOneOf(LANGUAGES, lang)) return fail("bad language");
-  if (!isOneOf(TIERS, tier)) return fail("bad tier");
-  if (!isOneOf(SEASONS, season)) return fail("bad season");
-
-  const band = attrValue(raw, "spend_band", "i32");
-  const roi = attrValue(raw, "roi_pct", "i32");
-  if (typeof band !== "number" || band < 0 || band > SPEND_BANDS_INR.length) return fail("bad spend band");
-  if (typeof roi !== "number" || roi < ROI_MIN || roi > ROI_MAX || roi % ROI_STEP !== 0) return fail("bad roi");
+/** Checks shared by every entry kind. Returns the metadata, or a reason to reject the entity. */
+function decodeMeta(raw: RawEntity, kind: string): { meta: Omit<Meta, "sealed">; payload: Record<string, unknown>; sealed: SealedBox | null } | string {
+  if (!raw.key || !raw.creator || !raw.owner || raw.expiresAt === undefined) return "missing metadata";
+  if (attrValue(raw, "app", "str") !== APP || attrValue(raw, "kind", "str") !== kind) return `not a ${kind}`;
+  if (attrValue(raw, "v", "i32") !== SCHEMA_VERSION) return "unsupported schema version";
+  if (!isPeriod(attrValue(raw, "period", "i32"))) return "bad month";
   const demo = attrValue(raw, "demo", "bool");
-  if (typeof demo !== "boolean") return fail("bad demo flag");
-  const parentCell = raw.attributes?.parent;
-  if (parentCell && parentCell.type !== "key") return fail("bad parent");
-
+  if (typeof demo !== "boolean") return "bad demo flag";
   const payload = parseJson(raw);
-  if (!payload || payload.v !== SCHEMA_VERSION) return fail("bad payload");
-  const { tone, cta, offer, days, sealed } = payload;
-  if (!isOneOf(TONES, tone) || !isOneOf(CTAS, cta) || !isOneOf(OFFERS, offer)) return fail("bad creative fields");
-  if (typeof days !== "number" || !Number.isInteger(days) || days < 1 || days > MAX_DAYS) return fail("bad duration");
-  if (sealed !== undefined && !isSealedBox(sealed)) return fail("bad sealed box");
-
+  if (!payload || payload.v !== SCHEMA_VERSION) return "bad payload";
+  if (payload.sealed !== undefined && !isSealedBox(payload.sealed)) return "bad sealed box";
   return {
-    ok: true,
-    value: {
+    meta: {
       key: raw.key,
       creator: getAddress(raw.creator),
       owner: getAddress(raw.owner),
@@ -224,16 +283,84 @@ export function decodeExperiment(raw: RawEntity): Decoded<Experiment> {
       createdAt: raw.createdAt,
       readonly: raw.creationFlags?.readonly ?? false,
       communityCanExtend: raw.creationFlags?.permissionlessExtension ?? false,
-      category, platform, format, lang, tier, season,
-      spendBand: band,
-      roiPct: roi,
-      days,
-      tone, cta, offer,
-      parent: parentCell ? (parentCell.value as Hex) : null,
       demo,
-      sealed: (sealed as SealedBox | undefined) ?? null,
+    },
+    payload,
+    sealed: (payload.sealed as SealedBox | undefined) ?? null,
+  };
+}
+
+function decodePlace(raw: RawEntity): { platform: Platform; work: WorkType; city: City } | string {
+  const platform = attrValue(raw, "platform", "str");
+  const work = attrValue(raw, "work", "str");
+  const city = attrValue(raw, "city", "str");
+  if (!isOneOf(PLATFORMS, platform)) return "bad platform";
+  if (!isOneOf(WORK_TYPES, work)) return "bad work type";
+  if (!isOneOf(CITIES, city)) return "bad city";
+  return { platform, work, city };
+}
+
+/**
+ * Validates an entity against the contract. Anyone can write entities that claim `app = nexora`,
+ * so nothing is trusted until it passes here; failures are counted and shown, not hidden.
+ */
+export function decodeShift(raw: RawEntity): Decoded<Shift> {
+  const fail = (reason: string): Decoded<Shift> => ({ ok: false, key: raw.key ?? "unknown", reason });
+  const base = decodeMeta(raw, KIND.shift);
+  if (typeof base === "string") return fail(base);
+  const place = decodePlace(raw);
+  if (typeof place === "string") return fail(place);
+  const vehicle = attrValue(raw, "vehicle", "str");
+  if (!isOneOf(VEHICLES, vehicle)) return fail("bad vehicle");
+  const band = attrValue(raw, "hours_band", "i32");
+  const net = attrValue(raw, "net_hourly", "i32");
+  const cost = attrValue(raw, "cost_pct", "i32");
+  if (typeof band !== "number" || !Number.isInteger(band) || band < 0 || band > HOURS_BANDS.length) return fail("bad hours band");
+  if (typeof net !== "number" || net < NET_MIN || net > NET_MAX || net % NET_STEP !== 0) return fail("bad hourly earnings");
+  if (typeof cost !== "number" || cost < 0 || cost > 100 || cost % COST_STEP !== 0) return fail("bad cost share");
+  const incentive = base.payload.incentive;
+  if (!isOneOf(INCENTIVES, incentive)) return fail("bad incentive");
+  return {
+    ok: true,
+    value: {
+      ...base.meta, sealed: base.sealed, kind: "shift", ...place, vehicle,
+      period: attrValue(raw, "period", "i32") as number,
+      hoursBand: band, netHourly: net, costPct: cost, incentive,
     },
   };
+}
+
+export function decodeIncident(raw: RawEntity): Decoded<Incident> {
+  const fail = (reason: string): Decoded<Incident> => ({ ok: false, key: raw.key ?? "unknown", reason });
+  const base = decodeMeta(raw, KIND.incident);
+  if (typeof base === "string") return fail(base);
+  const place = decodePlace(raw);
+  if (typeof place === "string") return fail(place);
+  const type = attrValue(raw, "type", "str");
+  if (!isOneOf(INCIDENT_TYPES, type)) return fail("bad incident type");
+  const daysLost = attrValue(raw, "days_lost", "i32");
+  if (typeof daysLost !== "number" || !Number.isInteger(daysLost) || daysLost < 0 || daysLost > MAX_DAYS_LOST) return fail("bad days lost");
+  const parentCell = raw.attributes?.parent;
+  if (parentCell && parentCell.type !== "key") return fail("bad parent");
+  const { reasonGiven, appealed, resolved } = base.payload;
+  if (typeof reasonGiven !== "boolean" || typeof appealed !== "boolean" || typeof resolved !== "boolean") return fail("bad incident details");
+  return {
+    ok: true,
+    value: {
+      ...base.meta, sealed: base.sealed, kind: "incident", ...place, type,
+      period: attrValue(raw, "period", "i32") as number,
+      daysLost, reasonGiven, appealed, resolved,
+      parent: parentCell ? (parentCell.value as Hex) : null,
+    },
+  };
+}
+
+/** Decodes a shift or an incident, whichever the entity claims to be. */
+export function decodeEntry(raw: RawEntity): Decoded<Entry> {
+  const kind = attrValue(raw, "kind", "str");
+  if (kind === KIND.shift) return decodeShift(raw);
+  if (kind === KIND.incident) return decodeIncident(raw);
+  return { ok: false, key: raw.key ?? "unknown", reason: "not a Nexora entry" };
 }
 
 function normaliseMembers(members: readonly unknown[]): Address[] {
@@ -256,7 +383,7 @@ function normaliseMembers(members: readonly unknown[]): Address[] {
 function validateTrustInput(input: TrustListInput): TrustListInput {
   const name = input.name.trim();
   if (name.length < 3 || name.length > MAX_NAME_LENGTH) throw new Error(`Name must be 3–${MAX_NAME_LENGTH} characters.`);
-  if (input.scope !== "all" && !isOneOf(CATEGORIES, input.scope)) throw new Error("Unknown scope.");
+  if (input.scope !== "all" && !isOneOf(WORK_TYPES, input.scope)) throw new Error("Unknown scope.");
   const description = input.description.trim();
   if (description.length > 280) throw new Error("Description must be at most 280 characters.");
   return { name, scope: input.scope, description, members: normaliseMembers(input.members) };
@@ -300,7 +427,7 @@ export function decodeTrustList(raw: RawEntity): Decoded<TrustList> {
   try {
     const clean = validateTrustInput({
       name: String(attrValue(raw, "name", "str") ?? ""),
-      scope: attrValue(raw, "scope", "str") as Category | "all",
+      scope: attrValue(raw, "scope", "str") as WorkType | "all",
       description: typeof payload.description === "string" ? payload.description : "",
       members: payload.members as Address[],
     });

@@ -28,8 +28,8 @@ type ArkivState = {
   /** Makes sure a wallet (the connected one by default) can pay for one more write; asks the sponsor if not. */
   ensureGas: (address?: Address) => Promise<string>;
   /**
-   * One-time wallets: a fresh key per published result, so results cannot be linked by `$creator`.
-   * Keys stay in this browser so the seller can still extend or delete those results later.
+   * One-time wallets: a fresh key per published entry, so entries cannot be linked by `$creator`.
+   * Keys stay in this browser so the worker can still extend or delete those entries later.
    */
   oneOffWallets: () => Connected[];
   createOneOff: () => Connected;

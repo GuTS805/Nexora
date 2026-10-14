@@ -1,7 +1,7 @@
 {
   "name": "Nexora Ledger",
   "short_name": "Nexora",
-  "description": "What actually worked for sellers like you: an open ledger of ad experiments by Indian small sellers, on Arkiv.",
+  "description": "What delivery and ride work really pays: an open ledger of earnings and incidents written by Indian gig workers, on Arkiv.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

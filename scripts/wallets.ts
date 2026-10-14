@@ -12,7 +12,7 @@ import { tiramisu } from "@arkiv-network/sdk/chains";
 import { formatEther, parseEther } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { arkivHttp, readClient } from "../ledger/src/index.ts";
-import { ENV_FILE, SEED_KEY_NAMES, SPONSOR_KEY_NAME, loadEnv, requireKey } from "./env.ts";
+import { ENV_FILE, SEED_KEY_NAMES, SPAMMER_KEY_NAME, SPONSOR_KEY_NAME, loadEnv, requireKey } from "./env.ts";
 
 
 loadEnv();
@@ -21,7 +21,7 @@ const SEED_TARGET = parseEther(process.env.SEED_FUND_GLM ?? "0.05");
 const existing = existsSync(ENV_FILE) ? readFileSync(ENV_FILE, "utf8") : "";
 const roles: [string, string][] = [
   [SPONSOR_KEY_NAME, "sponsor: gas sponsor for visitors' burner wallets + funds seed wallets"],
-  ...SEED_KEY_NAMES.map((name, i) => [name, `seed publisher ${i + 1}: synthetic demo sellers`] as [string, string]),
+  ...SEED_KEY_NAMES.map((name, i) => [name, name === SPAMMER_KEY_NAME ? `seed worker ${i + 1}: deliberate spammer (synthetic)` : `seed worker ${i + 1}: synthetic demo worker`] as [string, string]),
 ];
 for (const [name] of roles) {
   if (!process.env[name]) {

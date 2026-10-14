@@ -3,8 +3,8 @@ import { addr, bool, i32, key as keyAttr, str } from "@arkiv-network/sdk/attr";
 import { tiramisu } from "@arkiv-network/sdk/chains";
 import { and, eq, gte, lte, or, type Expression } from "@arkiv-network/sdk/query";
 import { custom, http, webSocket, type Address, type Hex } from "viem";
-import { decodeExperiment, decodeTrustList, type Experiment, type RawEntity, type TrustList } from "./codec.ts";
-import { APP, KIND, SCHEMA_VERSION, type Category, type Format, type Language, type Platform, type Season, type Tier } from "./schema.ts";
+import { decodeEntry, decodeIncident, decodeShift, decodeTrustList, type Decoded, type Entry, type Incident, type RawEntity, type Shift, type TrustList } from "./codec.ts";
+import { APP, KIND, SCHEMA_VERSION, type City, type IncidentType, type Platform, type Vehicle, type WorkType } from "./schema.ts";
 
 export const TIRAMISU_RPC = tiramisu.rpcUrls.default.http[0];
 export const TIRAMISU_WS = tiramisu.rpcUrls.default.webSocket[0];
@@ -133,57 +133,58 @@ export function liveClient(wsUrl: string = defaultWsUrl()): PublicArkivClient {
   return createPublicClient({ chain: tiramisu, transport: webSocket(wsUrl) });
 }
 
-export type ExperimentFilters = {
-  category?: Category | undefined;
+/** Filters every entry kind shares. */
+export type EntryFilters = {
   platform?: Platform | undefined;
-  format?: Format | undefined;
-  lang?: Language | undefined;
-  tier?: Tier | undefined;
-  season?: Season | undefined;
-  /** Inclusive spend-band range. */
-  minBand?: number | undefined;
-  maxBand?: number | undefined;
-  minRoi?: number | undefined;
+  work?: WorkType | undefined;
+  city?: City | undefined;
+  /** Inclusive month range, YYYYMM. */
+  minPeriod?: number | undefined;
+  maxPeriod?: number | undefined;
   includeDemo?: boolean | undefined;
-  /** Only experiments whose `$creator` is one of these. Empty list → nothing; undefined → anyone. */
+  /** Only entries whose `$creator` is one of these. Empty list → nothing; undefined → anyone. */
   creators?: readonly Address[] | undefined;
-  /** Only variants of this experiment. */
-  parent?: Hex | undefined;
   /** Only these entity keys — e.g. the batch of keys a live feed just saw created. */
   keys?: readonly Hex[] | undefined;
+};
+
+export type ShiftFilters = EntryFilters & {
+  vehicle?: Vehicle | undefined;
+  /** Only days that paid at least this much per logged-in hour, after costs. */
+  minHourly?: number | undefined;
+};
+
+export type IncidentFilters = EntryFilters & {
+  type?: IncidentType | undefined;
+  /** Only updates to (or "same here" reports of) this incident. */
+  parent?: Hex | undefined;
 };
 
 /**
  * Most `OR` branches one predicate carries. The Tiramisu node rejects a query with more than 64
  * predicates ("query has too many predicates") or longer than 8192 bytes ("query is too long");
- * neither limit is documented (friction F4). A full experiment filter uses at most 14 predicates,
- * so 25 `$creator`/`$key` branches (about 1.6 KB) stay well inside both. Longer lists are split
- * into several queries by `fetchExperiments`.
+ * neither limit is documented (friction F4). A full filter uses at most 12 predicates, so 25
+ * `$creator`/`$key` branches (about 1.6 KB) stay well inside both. Longer lists are split into
+ * several queries by the fetch functions.
  */
 export const MAX_OR_BRANCHES = 25;
 
 const base = (kind: string) => [eq("app", str(APP)), eq("kind", str(kind)), eq("v", i32(SCHEMA_VERSION))];
 
 /**
- * Turns UI filters into an Arkiv predicate. Authorship filters use the engine-set `$creator`, which
- * no writer can forge — never a self-declared attribute.
+ * The clauses every entry filter shares. Authorship filters use the engine-set `$creator`, which no
+ * writer can forge — never a self-declared attribute.
  */
-export function experimentPredicate(filters: ExperimentFilters = {}): Expression {
-  const clauses: Expression[] = base(KIND.experiment);
+function common(clauses: Expression[], filters: EntryFilters): Expression {
   const match = (name: string, value: string | undefined) => {
     if (value) clauses.push(eq(name, str(value)));
   };
-  match("category", filters.category);
   match("platform", filters.platform);
-  match("format", filters.format);
-  match("lang", filters.lang);
-  match("tier", filters.tier);
-  match("season", filters.season);
-  if (filters.minBand !== undefined) clauses.push(gte("spend_band", i32(filters.minBand)));
-  if (filters.maxBand !== undefined) clauses.push(lte("spend_band", i32(filters.maxBand)));
-  if (filters.minRoi !== undefined) clauses.push(gte("roi_pct", i32(filters.minRoi)));
+  match("work", filters.work);
+  match("city", filters.city);
+  if (filters.minPeriod !== undefined) clauses.push(gte("period", i32(filters.minPeriod)));
+  if (filters.maxPeriod !== undefined) clauses.push(lte("period", i32(filters.maxPeriod)));
   if (!filters.includeDemo) clauses.push(eq("demo", bool(false)));
-  if (filters.parent) clauses.push(eq("parent", keyAttr(filters.parent)));
   if (filters.keys) {
     if (filters.keys.length === 0) throw new Error("Key filter is empty.");
     if (filters.keys.length > MAX_OR_BRANCHES) throw new Error(`At most ${MAX_OR_BRANCHES} keys per query.`);
@@ -195,6 +196,26 @@ export function experimentPredicate(filters: ExperimentFilters = {}): Expression
     clauses.push(or(filters.creators.map((creator) => eq("$creator", addr(creator)))));
   }
   return and(clauses);
+}
+
+export function shiftPredicate(filters: ShiftFilters = {}): Expression {
+  const clauses = base(KIND.shift);
+  if (filters.vehicle) clauses.push(eq("vehicle", str(filters.vehicle)));
+  if (filters.minHourly !== undefined) clauses.push(gte("net_hourly", i32(filters.minHourly)));
+  return common(clauses, filters);
+}
+
+export function incidentPredicate(filters: IncidentFilters = {}): Expression {
+  const clauses = base(KIND.incident);
+  if (filters.type) clauses.push(eq("type", str(filters.type)));
+  if (filters.parent) clauses.push(eq("parent", keyAttr(filters.parent)));
+  return common(clauses, filters);
+}
+
+/** Shifts and incidents together, e.g. everything one wallet published, or a live feed's new keys. */
+export function entryPredicate(filters: EntryFilters = {}): Expression {
+  const clauses = [eq("app", str(APP)), or([eq("kind", str(KIND.shift)), eq("kind", str(KIND.incident))]), eq("v", i32(SCHEMA_VERSION))];
+  return common(clauses, filters);
 }
 
 export function trustListPredicate(curator?: Address): Expression {
@@ -235,15 +256,17 @@ function chunks<T>(list: readonly T[] | undefined): (readonly T[] | undefined)[]
 }
 
 /**
- * Reads experiments matching the filters. Creator or key lists longer than `MAX_OR_BRANCHES` are
- * queried in slices, one after another, and merged; `query` then holds one line per slice.
+ * Runs a predicate and validates every result. Creator or key lists longer than `MAX_OR_BRANCHES`
+ * are queried in slices, one after another, and merged; `query` then holds one line per slice.
  */
-export async function fetchExperiments(
+async function fetchDecoded<T, F extends EntryFilters>(
   client: PublicArkivClient,
-  filters: ExperimentFilters = {},
-  maxItems = 600,
-): Promise<QueryOutcome<Experiment>> {
-  const items: Experiment[] = [];
+  filters: F,
+  predicate: (filters: F) => Expression,
+  decode: (raw: RawEntity) => Decoded<T>,
+  maxItems: number,
+): Promise<QueryOutcome<T>> {
+  const items: T[] = [];
   const rejected: { key: string; reason: string }[] = [];
   const queries: string[] = [];
   const seen = new Set<string>();
@@ -256,7 +279,7 @@ export async function fetchExperiments(
         truncated = true;
         break;
       }
-      const expression = experimentPredicate({ ...filters, creators, keys });
+      const expression = predicate({ ...filters, creators, keys });
       queries.push(queryText(expression));
       const page = await collect(client, expression, room);
       if (page.blockNumber > blockNumber) blockNumber = page.blockNumber;
@@ -265,7 +288,7 @@ export async function fetchExperiments(
         const key = entity.key ?? "";
         if (key && seen.has(key)) continue;
         seen.add(key);
-        const decoded = decodeExperiment(entity);
+        const decoded = decode(entity);
         if (decoded.ok) items.push(decoded.value);
         else rejected.push({ key: decoded.key, reason: decoded.reason });
       }
@@ -273,6 +296,15 @@ export async function fetchExperiments(
   }
   return { items, rejected, query: queries.join("\n"), blockNumber, truncated };
 }
+
+export const fetchShifts = (client: PublicArkivClient, filters: ShiftFilters = {}, maxItems = 600): Promise<QueryOutcome<Shift>> =>
+  fetchDecoded(client, filters, shiftPredicate, decodeShift, maxItems);
+
+export const fetchIncidents = (client: PublicArkivClient, filters: IncidentFilters = {}, maxItems = 600): Promise<QueryOutcome<Incident>> =>
+  fetchDecoded(client, filters, incidentPredicate, decodeIncident, maxItems);
+
+export const fetchEntries = (client: PublicArkivClient, filters: EntryFilters = {}, maxItems = 600): Promise<QueryOutcome<Entry>> =>
+  fetchDecoded(client, filters, entryPredicate, decodeEntry, maxItems);
 
 export async function fetchTrustLists(client: PublicArkivClient, curator?: Address): Promise<QueryOutcome<TrustList>> {
   const expression = trustListPredicate(curator);
@@ -299,9 +331,9 @@ export async function getEntityOrNull(client: PublicArkivClient, entityKey: Hex)
 
 const GONE = "not found: expired, deleted, or never created";
 
-export async function fetchExperiment(client: PublicArkivClient, entityKey: Hex) {
+export async function fetchEntry(client: PublicArkivClient, entityKey: Hex): Promise<Decoded<Entry>> {
   const entity = await getEntityOrNull(client, entityKey);
-  return entity ? decodeExperiment(entity) : ({ ok: false, key: entityKey, reason: GONE } as const);
+  return entity ? decodeEntry(entity) : { ok: false, key: entityKey, reason: GONE };
 }
 
 export async function fetchTrustList(client: PublicArkivClient, entityKey: Hex) {

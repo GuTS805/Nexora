@@ -9,7 +9,13 @@ import { useI18n } from "../i18n.tsx";
 type Step = { why?: string; tx?: Hex; txs?: Hex[]; key?: Hex; keys?: Hex[]; createTx?: Hex; deleteTx?: Hex; at?: string; [k: string]: unknown };
 
 /** What to read back from chain for each recorded step, and what must hold. */
-const CHECKS: Record<string, { key: (s: Step) => Hex | undefined; expect: string; verify: (e: { creator?: string; owner?: string; creationFlags?: { readonly: boolean; permissionlessExtension: boolean } } | null, s: Step) => boolean }> = {
+type Entity = { creator?: string; owner?: string; creationFlags?: { readonly: boolean; permissionlessExtension: boolean } } | null;
+const readonlyEntry = { key: (s: Step) => s.key ?? s.keys?.[0], expect: "exists, readonly", verify: (e: Entity) => !!e?.creationFlags?.readonly };
+const CHECKS: Record<string, { key: (s: Step) => Hex | undefined; expect: string; verify: (e: Entity, s: Step) => boolean }> = {
+  batch_shifts: readonlyEntry,
+  batch_spammer: readonlyEntry,
+  batch_incidents: readonlyEntry,
+  incident_followup: readonlyEntry,
   sealed_payload: { key: (s) => s.key, expect: "exists, readonly", verify: (e) => !!e?.creationFlags?.readonly },
   trust_list_create: { key: (s) => s.key, expect: "exists, editable by its owner", verify: (e) => e !== null && e.creationFlags?.readonly === false },
   trust_list_patch: { key: (s) => s.key, expect: "exists, edited in place by its owner", verify: (e) => e !== null && e.creationFlags?.readonly === false },

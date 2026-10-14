@@ -20,5 +20,11 @@ export function requireKey(name: string): `0x${string}` {
   return value as `0x${string}`;
 }
 
-export const SEED_KEY_NAMES = ["NEXORA_SEED_KEY_1", "NEXORA_SEED_KEY_2", "NEXORA_SEED_KEY_3", "NEXORA_SEED_KEY_4"] as const;
+/**
+ * Synthetic demo workers. Keys 1–9 behave like honest workers with one consistent profile each
+ * (city, kind of work, vehicle); key 10 is a deliberate spammer. Each key is one `$creator`, so the
+ * "independent workers" counts in the app are counts of these wallets.
+ */
+export const SEED_KEY_NAMES = Array.from({ length: 10 }, (_, i) => `NEXORA_SEED_KEY_${i + 1}`) as readonly string[];
+export const SPAMMER_KEY_NAME = "NEXORA_SEED_KEY_10";
 export const SPONSOR_KEY_NAME = "NEXORA_SPONSOR_KEY";

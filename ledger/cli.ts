@@ -1,25 +1,25 @@
 #!/usr/bin/env -S npx tsx
 /**
- * nexora — read the public ad-experiment ledger straight from Arkiv. No Nexora server, account or
+ * nexora — read the public gig-worker ledger straight from Arkiv. No Nexora server, account or
  * wallet involved: if nexora's website disappeared tomorrow, this still works.
  *
- *   nexora query     [--category tea_coffee] [--platform instagram] [--tier tier2] [--lang hi]
- *                    [--season diwali] [--min-roi 0] [--min-band 1] [--max-band 3] [--demo]
- *                    [--trust <listKey> | --creator <address>] [--json]
- *   nexora recommend --category <c> [--tier <t>] [--demo] [--trust <listKey>]
+ *   nexora earnings  [--platform swiggy] [--work food_delivery] [--city bengaluru] [--vehicle ev_scooter]
+ *                    [--since 202608] [--demo] [--trust <listKey> | --creator <address>] [--json]
+ *   nexora compare   --city <city> [--work <work>] [--vehicle <vehicle>] [--demo] [--trust <listKey>]
+ *   nexora incidents [--platform …] [--city …] [--type id_blocked] [--demo] [--trust <listKey>] [--json]
  *   nexora show      <entityKey>
  *   nexora lists
  *   nexora verify    re-check every feature recorded in arkiv/evidence.json against the chain
- *   nexora watch     live feed of new entities over WebSocket
+ *   nexora watch     live feed of new entries over WebSocket
  *
  *   --rpc <url>      use another Arkiv node (default: Tiramisu public RPC)
  */
 import { readFileSync } from "node:fs";
 import { getAddress, type Address, type Hex } from "viem";
 import {
-  SPEND_BAND_LABELS, explainError, getEntityOrNull, experimentPredicate, fetchExperiment, fetchExperiments,
-  fetchTrustList, fetchTrustLists, liveClient, queryText, readClient, suggest,
-  type ExperimentFilters,
+  HOURS_BAND_LABELS, comparePlatforms, entryPredicate, explainError, fetchEntries, fetchEntry, fetchIncidents,
+  fetchShifts, fetchTrustList, fetchTrustLists, getEntityOrNull, incidentStats, liveClient, queryText, readClient,
+  type EntryFilters, type IncidentFilters, type ShiftFilters,
 } from "./src/index.ts";
 
 const [command = "help", ...rest] = process.argv.slice(2);
@@ -40,77 +40,94 @@ const client = readClient(flag("rpc"));
 const json = (value: unknown) =>
   console.log(JSON.stringify(value, (_, v) => (typeof v === "bigint" ? v.toString() : v), 2));
 
-async function filtersFromFlags(): Promise<ExperimentFilters> {
-  let creators: Address[] | undefined;
+/** Turns --trust or --creator into a `$creator` filter; nothing means everyone. */
+async function creatorsFromFlags(): Promise<Address[] | undefined> {
   const trust = flag("trust");
   if (trust) {
     const list = await fetchTrustList(client, trust as Hex);
     if (!list.ok) throw new Error(`Trust list ${trust} is invalid: ${list.reason}`);
-    creators = list.value.members;
-    console.error(`trust list "${list.value.name}" by ${list.value.creator}: ${creators.length} publishers`);
+    console.error(`trust list "${list.value.name}" by ${list.value.creator}: ${list.value.members.length} workers`);
+    return list.value.members;
   }
   const creator = flag("creator");
-  if (creator) creators = [getAddress(creator)];
-  const minRoi = flag("min-roi");
-  const num = (name: string) => (flag(name) === undefined ? undefined : Number(flag(name)));
+  return creator ? [getAddress(creator)] : undefined;
+}
+
+async function commonFlags(): Promise<EntryFilters> {
+  const since = flag("since");
   return {
-    minBand: num("min-band"),
-    maxBand: num("max-band"),
-    category: flag("category") as ExperimentFilters["category"],
-    platform: flag("platform") as ExperimentFilters["platform"],
-    tier: flag("tier") as ExperimentFilters["tier"],
-    lang: flag("lang") as ExperimentFilters["lang"],
-    season: flag("season") as ExperimentFilters["season"],
-    minRoi: minRoi === undefined ? undefined : Number(minRoi),
+    platform: flag("platform") as EntryFilters["platform"],
+    work: flag("work") as EntryFilters["work"],
+    city: flag("city") as EntryFilters["city"],
+    minPeriod: since === undefined ? undefined : Number(since),
     includeDemo: flags.has("demo"),
-    creators,
+    creators: await creatorsFromFlags(),
   };
 }
 
+const rupees = (n: number) => `₹${n}`;
+
 try {
 switch (command) {
-  case "query": {
-    const filters = await filtersFromFlags();
-    const result = await fetchExperiments(client, filters);
+  case "earnings": {
+    const filters: ShiftFilters = { ...(await commonFlags()), vehicle: flag("vehicle") as ShiftFilters["vehicle"] };
+    const result = await fetchShifts(client, filters);
     if (flags.has("json")) {
       json(result);
       break;
     }
     console.log(`query @ block ${result.blockNumber}:\n  ${result.query}\n`);
-    for (const e of result.items) {
-      console.log(`${e.key}  ${e.category.padEnd(18)} ${`${e.platform}/${e.format}`.padEnd(26)} ${e.tier.padEnd(9)} ${e.lang.padEnd(8)} ${(SPEND_BAND_LABELS[e.spendBand] ?? "").padEnd(9)} ROI ${String(e.roiPct).padStart(5)}%  by ${e.creator}`);
+    for (const s of result.items) {
+      console.log(`${s.key}  ${s.period}  ${`${s.platform}/${s.work}`.padEnd(28)} ${s.city.padEnd(11)} ${s.vehicle.padEnd(12)} ${(HOURS_BAND_LABELS[s.hoursBand] ?? "").padEnd(8)} ${rupees(s.netHourly).padStart(5)}/h  costs ${String(s.costPct).padStart(3)}%  by ${s.creator}`);
     }
     console.log(`\n${result.items.length} valid, ${result.rejected.length} rejected by the contract${result.truncated ? ", truncated" : ""}`);
     break;
   }
-  case "recommend": {
-    const filters = await filtersFromFlags();
-    if (!filters.category) throw new Error("--category is required");
-    const result = await fetchExperiments(client, filters);
-    console.log(`based on ${result.items.length} experiments matching:\n  ${result.query}\n`);
-    for (const s of suggest(result.items)) {
-      if (s.kind === "proven") {
-        const c = s.combo;
-        console.log(`TRY      ${c.platform}/${c.format} — ${c.trustedPublishers} independent sellers, median ROI ${Math.round(c.medianRoi)}%, ${Math.round(c.winRate * 100)}% of runs profitable`);
-        console.log(`         evidence: ${c.evidence.slice(0, 5).join(", ")}${c.evidence.length > 5 ? ", …" : ""}`);
-      } else {
-        console.log(`EXPLORE  ${s.platform}/${s.format} — barely tested neighbour of ${s.basedOn.platform}/${s.basedOn.format}; try with ~10% of budget and publish the result`);
-      }
+  case "compare": {
+    const filters = await commonFlags();
+    if (!filters.city) throw new Error("--city is required");
+    const [shifts, incidents] = await Promise.all([
+      fetchShifts(client, { ...filters, vehicle: flag("vehicle") as ShiftFilters["vehicle"] }),
+      fetchIncidents(client, filters),
+    ]);
+    console.log(`based on ${shifts.items.length} days and ${incidents.items.length} incidents matching:\n  ${shifts.query}\n`);
+    // With --trust, every row already comes from a list member, so every worker counts as trusted.
+    for (const row of comparePlatforms(shifts.items, incidents.items)) {
+      const change = row.monthChangePct === null ? "" : `, ${row.monthChangePct > 0 ? "+" : ""}${row.monthChangePct}% vs last month`;
+      const workers = `${row.trustedWorkers} independent worker${row.trustedWorkers === 1 ? "" : "s"}`;
+      console.log(`${row.confirmed ? "CONFIRMED " : "unconfirmed"} ${`${row.platform}/${row.work}`.padEnd(28)} ${rupees(row.medianHourly)}/h take-home (middle half ${rupees(row.p25Hourly)}–${rupees(row.p75Hourly)}), costs ${row.medianCostPct}%${change} — ${workers}, ${row.shifts} days, ${row.incidents} incidents`);
     }
+    if (!filters.creators) console.log("\nEveryone's wallets count here, and wallets are free. Add --trust <listKey> (see `lists`) to count only workers a union or group vouches for.");
+    break;
+  }
+  case "incidents": {
+    const filters: IncidentFilters = { ...(await commonFlags()), type: flag("type") as IncidentFilters["type"] };
+    const result = await fetchIncidents(client, filters);
+    if (flags.has("json")) {
+      json(result);
+      break;
+    }
+    console.log(`query @ block ${result.blockNumber}:\n  ${result.query}\n`);
+    for (const s of incidentStats(result.items)) {
+      console.log(`${s.type.padEnd(16)} ${String(s.reports).padStart(3)} reports from ${s.workers} workers · median ${s.medianDaysLost} days without work · no reason given in ${Math.round(s.noReasonShare * 100)}% · resolved ${Math.round(s.resolvedShare * 100)}%`);
+    }
+    console.log(`\n${result.items.length} valid, ${result.rejected.length} rejected by the contract`);
     break;
   }
   case "show": {
     const key = positional[0] as Hex | undefined;
     if (!key) throw new Error("usage: nexora show <entityKey>");
-    const decoded = await fetchExperiment(client, key);
+    const decoded = await fetchEntry(client, key);
     if (decoded.ok) {
       json(decoded.value);
-      const children = await fetchExperiments(client, { parent: key, includeDemo: true });
-      console.log(`variants published by others: ${children.items.map((c) => c.key).join(", ") || "none"}`);
+      if (decoded.value.kind === "incident") {
+        const updates = await fetchIncidents(client, { parent: key, includeDemo: true });
+        console.log(`updates and "same here" reports: ${updates.items.map((c) => c.key).join(", ") || "none"}`);
+      }
     } else {
       const list = await fetchTrustList(client, key);
       if (list.ok) json(list.value);
-      else console.log(`not a valid Nexora entity: ${decoded.reason}`);
+      else console.log(`not a valid Nexora entry: ${decoded.reason}`);
     }
     break;
   }
@@ -127,12 +144,12 @@ switch (command) {
         continue;
       }
       const entity = await getEntityOrNull(client, key);
-      const flags = entity?.creationFlags;
+      const entityFlags = entity?.creationFlags;
       const verdict =
         name === "owner_delete" ? entity === null :
-        name === "trust_list_create" || name === "trust_list_patch" ? entity !== null && flags?.readonly === false :
-        name === "permissionless_extend" ? !!flags?.permissionlessExtension && String(step.extendedBy).toLowerCase() !== String(entity?.owner).toLowerCase() :
-        entity !== null && !!flags?.readonly;
+        name === "trust_list_create" || name === "trust_list_patch" ? entity !== null && entityFlags?.readonly === false :
+        name === "permissionless_extend" ? !!entityFlags?.permissionlessExtension && String(step.extendedBy).toLowerCase() !== String(entity?.owner).toLowerCase() :
+        entity !== null && !!entityFlags?.readonly;
       console.log(`${verdict ? "ok  " : "FAIL"} ${name}: ${key}${entity ? ` creator ${entity.creator}` : " (gone)"}`);
     }
     break;
@@ -145,7 +162,7 @@ switch (command) {
   }
   case "watch": {
     const live = liveClient(flag("ws"));
-    console.log(`watching for new Nexora experiments…\n  filter: ${queryText(experimentPredicate({ includeDemo: true }))}`);
+    console.log(`watching for new Nexora entries…\n  filter: ${queryText(entryPredicate({ includeDemo: true }))}`);
     // Events carry no attributes: batch new keys and check them with one $key-filtered query.
     const pending: Hex[] = [];
     live.watchEntityEvents({
@@ -158,8 +175,11 @@ switch (command) {
       const batch = pending.splice(0, 25);
       if (batch.length === 0) return;
       try {
-        const found = await fetchExperiments(client, { keys: batch, includeDemo: true }, 25);
-        for (const e of found.items) console.log(`+ ${e.key} ${e.platform}/${e.format} ROI ${e.roiPct}% by ${getAddress(e.creator)}`);
+        const found = await fetchEntries(client, { keys: batch, includeDemo: true }, 25);
+        for (const e of found.items) {
+          const what = e.kind === "shift" ? `${rupees(e.netHourly)}/h` : e.type;
+          console.log(`+ ${e.key} ${e.kind} ${e.platform}/${e.work} ${e.city} ${what} by ${getAddress(e.creator)}`);
+        }
       } catch (error) {
         console.error(`lookup failed: ${explainError(error)}`);
       }
@@ -167,7 +187,7 @@ switch (command) {
     break;
   }
   default:
-    console.log("commands: query | recommend | show <key> | lists | watch | verify   (see header of ledger/cli.ts)");
+    console.log("commands: earnings | compare --city <c> | incidents | show <key> | lists | watch | verify   (see header of ledger/cli.ts)");
 }
 } catch (error) {
   console.error(`error: ${explainError(error)}`);

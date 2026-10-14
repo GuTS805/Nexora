@@ -1,25 +1,31 @@
-import { readExperiments, readTrustList, readTrustLists } from "../cache.ts";
-import { CATEGORIES, LANGUAGES, PLATFORMS, SEASONS, TIERS, comboStats, fetchExperiments, liveClient, summarise, type TrustList, type Category, type ExperimentFilters, type Language, type Platform, type Season, type Tier } from "@nexora/ledger";
+import { readShifts, readTrustList, readTrustLists } from "../cache.ts";
+import { CITIES, PLATFORMS, VEHICLES, WORK_TYPES, earningsStats, fetchEntries, liveClient, summariseShifts, type City, type EntryFilters, type IncidentFilters, type Platform, type ShiftFilters, type TrustList, type Vehicle, type WorkType } from "@nexora/ledger";
 import { useEffect, useRef, useState } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
-import { ErrorNote, ExperimentCard, Field, QueryBox, Roi, VocabSelect, useAsync, useSource, type Source } from "../components.tsx";
+import { ErrorNote, Field, Hourly, QueryBox, ShiftCard, VocabSelect, useAsync, useMonth, useSource, type Source } from "../components.tsx";
 import { RECOMMENDED_TRUST_LIST } from "../config.ts";
 import { useI18n } from "../i18n.tsx";
 
-export function cliFor(command: string, filters: ExperimentFilters, source: Source): string {
+/** The months the period filter offers: this one and the five before it. */
+export function recentPeriods(now = new Date()): number[] {
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    return d.getFullYear() * 100 + d.getMonth() + 1;
+  });
+}
+
+export function cliFor(command: string, filters: ShiftFilters & IncidentFilters, source: Source): string {
   const parts = ["npx tsx ledger/cli.ts", command];
   const add = (name: string, value: string | number | undefined) => {
     if (value !== undefined && value !== "") parts.push(`--${name} ${value}`);
   };
-  add("category", filters.category);
   add("platform", filters.platform);
-  add("tier", filters.tier);
-  add("lang", filters.lang);
-  add("season", filters.season);
-  add("min-roi", filters.minRoi);
-  add("min-band", filters.minBand);
-  add("max-band", filters.maxBand);
+  add("work", filters.work);
+  add("city", filters.city);
+  add("vehicle", filters.vehicle);
+  add("type", filters.type);
+  add("since", filters.minPeriod);
   if (filters.includeDemo) parts.push("--demo");
   if (source.kind === "list") add("trust", source.key);
   if (source.kind === "mine" && filters.creators?.[0]) add("creator", filters.creators[0]);
@@ -52,7 +58,6 @@ export function SourcePicker({ source, setSource }: { source: Source; setSource:
   );
 }
 
-/** Turns the source choice into a `$creator` filter. */
 /** The suggested trust list (see config.ts), loaded from Arkiv. Null until loaded or if none exists. */
 export function useRecommendedList(): TrustList | null {
   const { reader } = useArkiv();
@@ -65,13 +70,14 @@ export function useRecommendedList(): TrustList | null {
 }
 
 /**
- * When the reader looks at "All sellers", proof still has to come from trusted wallets. Rows from
- * everyone stay visible; only the confirmation count is restricted.
+ * When the reader looks at "All workers", confirmation still has to come from trusted wallets.
+ * Entries from everyone stay visible; only the confirmation count is restricted.
  */
 export function trustedSetFor(source: Source, recommended: TrustList | null): ReadonlySet<string> | undefined {
   return source.kind === "all" && recommended ? new Set(recommended.members) : undefined;
 }
 
+/** Turns the source choice into a `$creator` filter. */
 export function creatorsFor(source: Source, wallet: { address: `0x${string}` } | null, members: readonly `0x${string}`[] | undefined) {
   if (source.kind === "mine") return wallet ? [wallet.address] : [];
   if (source.kind === "list") return members ?? [];
@@ -81,7 +87,7 @@ export function creatorsFor(source: Source, wallet: { address: `0x${string}` } |
 /**
  * Live feed over WebSocket entity events. Events carry no attributes, so instead of one `getEntity`
  * per event (one RPC per entity created anywhere on the chain), new keys are batched and checked
- * with a single `$key`-filtered query every few seconds — only Nexora experiments come back.
+ * with a single `$key`-filtered query every few seconds — only Nexora entries come back.
  */
 function LiveFeed({ onNew }: { onNew: () => void }) {
   const { reader } = useArkiv();
@@ -107,10 +113,13 @@ function LiveFeed({ onNew }: { onNew: () => void }) {
     const timer = setInterval(async () => {
       const batch = pending.current.splice(0, 25);
       if (batch.length === 0) return;
-      const found = await fetchExperiments(reader, { keys: batch, includeDemo: true }, 25).catch(() => null);
+      const found = await fetchEntries(reader, { keys: batch, includeDemo: true } satisfies EntryFilters, 25).catch(() => null);
       if (!found || found.items.length === 0) return;
       setEvents((prev) => [
-        ...found.items.map((e) => ({ key: e.key, text: `${v(e.category)} · ${v(e.platform)} ${v(e.format)} · ${e.roiPct > 0 ? "+" : ""}${e.roiPct}%` })),
+        ...found.items.map((e) => ({
+          key: e.key,
+          text: `${v(e.platform)} · ${v(e.city)} · ${e.kind === "shift" ? t("perHour", { n: e.netHourly }) : v(e.type)}`,
+        })),
         ...prev,
       ].slice(0, 5));
       onNew();
@@ -132,103 +141,113 @@ function LiveFeed({ onNew }: { onNew: () => void }) {
 export function Explore() {
   const { reader, wallet, revision, bump } = useArkiv();
   const { t, v } = useI18n();
-  const [category, setCategory] = useState<Category | "">("");
+  const month = useMonth();
   const [platform, setPlatform] = useState<Platform | "">("");
-  const [tier, setTier] = useState<Tier | "">("");
-  const [lang, setLang] = useState<Language | "">("");
-  const [season, setSeason] = useState<Season | "">("");
+  const [work, setWork] = useState<WorkType | "">("");
+  const [city, setCity] = useState<City | "">("");
+  const [vehicle, setVehicle] = useState<Vehicle | "">("");
+  const [since, setSince] = useState<number | "">("");
   const [includeDemo, setIncludeDemo] = useState(true);
   const [source, setSource, list] = useSource();
 
   const creators = creatorsFor(source, wallet, list?.members);
-  const filters: ExperimentFilters = {
-    category: category || undefined, platform: platform || undefined, tier: tier || undefined,
-    lang: lang || undefined, season: season || undefined, includeDemo, creators,
+  const filters: ShiftFilters = {
+    platform: platform || undefined, work: work || undefined, city: city || undefined, vehicle: vehicle || undefined,
+    minPeriod: since === "" ? undefined : since, includeDemo, creators,
   };
   const waitingForList = source.kind === "list" && !list;
   const result = useAsync(async () => {
     if (waitingForList || (creators && creators.length === 0)) return null;
-    return readExperiments(reader, filters);
-  }, [reader, revision, category, platform, tier, lang, season, includeDemo, source.kind, list?.key, list?.members.length, wallet?.address]);
+    return readShifts(reader, filters);
+  }, [reader, revision, platform, work, city, vehicle, since, includeDemo, source.kind, list?.key, list?.members.length, wallet?.address]);
 
   const items = result.data?.items ?? [];
   const recommended = useRecommendedList();
-  const combos = comboStats(items, { trusted: trustedSetFor(source, recommended) }).slice(0, 8);
-  const stats = summarise(items);
-  const sorted = [...items].sort((a, b) => b.roiPct - a.roiPct).slice(0, 60);
+  const groups = earningsStats(items, { trusted: trustedSetFor(source, recommended) }).slice(0, 10);
+  const stats = summariseShifts(items);
+  const latest = [...items].sort((a, b) => b.period - a.period || b.netHourly - a.netHourly).slice(0, 60);
   // The closing phrase of the tagline is highlighted, in either language.
   const tagline = t("tagline"), accent = t("taglineAccent");
 
   return (
     <section className="explore-page">
       <div className="hero">
-      <div className="hero-copy">
-      <p className="lead">{tagline.endsWith(accent) ? <>{tagline.slice(0, -accent.length)}<em>{accent}</em></> : tagline}</p>
-      <div className="steps">
-        <ol>
-          <li>{t("step1").replace(/^1\.\s*/, "")}</li>
-          <li>{t("step2").replace(/^2\.\s*/, "")}</li>
-          <li>{t("step3").replace(/^3\.\s*/, "")}</li>
-        </ol>
-        <div className="row">
-          <a className="button" href="#/advisor">{t("ctaAdvice")}</a>
-          <a className="button secondary" href="#/log">{t("ctaLog")}</a>
+        <div className="hero-copy">
+          <p className="lead">{tagline.endsWith(accent) ? <>{tagline.slice(0, -accent.length)}<em>{accent}</em></> : tagline}</p>
+          <div className="steps">
+            <ol>
+              <li>{t("step1")}</li>
+              <li>{t("step2")}</li>
+              <li>{t("step3")}</li>
+            </ol>
+            <div className="row">
+              <a className="button" href="#/compare">{t("ctaAdvice")}</a>
+              <a className="button secondary" href="#/log">{t("ctaLog")}</a>
+            </div>
+          </div>
+        </div>
+        <div className="hero-art" aria-hidden="true">
+          <div className="orbit orbit-one" /><div className="orbit orbit-two" />
+          <div className="chart-card chart-back"><i /><i /><i /></div>
+          <div className="chart-card chart-front"><div className="chart-lines"><i /><i /></div><div className="chart-bars"><i /><i /><i /><i /><i /><i /></div><span className="chart-arrow">₹</span></div>
         </div>
       </div>
-      </div>
-      <div className="hero-art" aria-hidden="true">
-        <div className="orbit orbit-one" /><div className="orbit orbit-two" />
-        <div className="chart-card chart-back"><i /><i /><i /></div>
-        <div className="chart-card chart-front"><div className="chart-lines"><i /><i /></div><div className="chart-bars"><i /><i /><i /><i /><i /><i /></div><span className="chart-arrow">↗</span></div>
-      </div>
-      </div>
       <div className="explore-panel">
-      <LiveFeed onNew={bump} />
-      <div className="filters">
-        <Field label="category"><VocabSelect list={CATEGORIES} value={category} onChange={setCategory} any /></Field>
-        <Field label="platform"><VocabSelect list={PLATFORMS} value={platform} onChange={setPlatform} any /></Field>
-        <Field label="tier"><VocabSelect list={TIERS} value={tier} onChange={setTier} any /></Field>
-        <Field label="lang"><VocabSelect list={LANGUAGES} value={lang} onChange={setLang} any /></Field>
-        <Field label="season"><VocabSelect list={SEASONS} value={season} onChange={setSeason} any /></Field>
-        <SourcePicker source={source} setSource={setSource} />
-      </div>
-      <label className="check"><input type="checkbox" checked={includeDemo} onChange={(e) => setIncludeDemo(e.target.checked)} /> {t("showDemo")}</label>
+        <LiveFeed onNew={bump} />
+        <div className="filters">
+          <Field label="city"><VocabSelect list={CITIES} value={city} onChange={setCity} any /></Field>
+          <Field label="work"><VocabSelect list={WORK_TYPES} value={work} onChange={setWork} any /></Field>
+          <Field label="platform"><VocabSelect list={PLATFORMS} value={platform} onChange={setPlatform} any /></Field>
+          <Field label="vehicle"><VocabSelect list={VEHICLES} value={vehicle} onChange={setVehicle} any /></Field>
+          <label className="field">
+            <span>{t("since")}</span>
+            <select value={since} onChange={(e) => setSince(e.target.value === "" ? "" : Number(e.target.value))}>
+              <option value="">{t("any")}</option>
+              {recentPeriods().map((p) => <option key={p} value={p}>{month(p)}</option>)}
+            </select>
+          </label>
+          <SourcePicker source={source} setSource={setSource} />
+        </div>
+        <label className="check"><input type="checkbox" checked={includeDemo} onChange={(e) => setIncludeDemo(e.target.checked)} /> {t("showDemo")}</label>
+        {includeDemo && <p className="small muted">{t("demoDisclaimer")}</p>}
 
-      <ErrorNote error={result.error} />
-      {result.loading && <p className="muted">{t("loading")}</p>}
-      {result.data && (
-        <>
-          <div className="stats">
-            <div><b>{stats.experiments}</b><span>{t("experiments")}</span></div>
-            <div><b>{stats.publishers}</b><span>{t("sellers")}</span></div>
-            <div><b>{Math.round(stats.profitableShare * 100)}%</b><span>{t("profitable")}</span></div>
-          </div>
-          {combos.length > 0 && (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>{t("colCombo")}</th><th>{t("colMedian")}</th><th>{t("colMiddle")}</th><th>{t("colRuns")}</th><th>{t("colSellers")}</th></tr></thead>
-                <tbody>
-                  {combos.map((c) => (
-                    <tr key={`${c.platform}${c.format}`}>
-                      <td>{v(c.platform)} · {v(c.format)}</td>
-                      <td><Roi value={Math.round(c.medianRoi)} /></td>
-                      <td className="muted">{Math.round(c.p25Roi)}% … {Math.round(c.p75Roi)}%</td>
-                      <td>{c.count}</td>
-                      <td>{c.publishers}{c.trustedPublishers < 2 && <span className="badge warn" title={t("unconfirmedTitle")}>{t("unconfirmed")}</span>}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <ErrorNote error={result.error} />
+        {result.loading && <p className="muted">{t("loading")}</p>}
+        {result.data && (
+          <>
+            <div className="stats">
+              <div><b>{stats.shifts}</b><span>{t("days")}</span></div>
+              <div><b>{stats.workers}</b><span>{t("workers")}</span></div>
+              <div><b>₹{stats.medianHourly}</b><span>{t("medianHourly")}</span></div>
             </div>
-          )}
-          <QueryBox query={result.data.query} block={result.data.blockNumber} cli={cliFor("query", filters, source)} rejected={result.data.rejected} />
-          {sorted.length === 0 && <p className="muted">{t("empty")}</p>}
-          <div className="grid">
-            {sorted.map((e) => <ExperimentCard key={e.key} e={e} trusted={source.kind === "list" ? true : undefined} block={result.data?.blockNumber} />)}
-          </div>
-        </>
-      )}
-      {creators && creators.length === 0 && <p className="muted">{t("connectToSeeMine")}</p>}
+            {groups.length > 0 && (
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>{t("colGroup")}</th><th>{t("colMedian")}</th><th>{t("colMiddle")}</th><th>{t("colCosts")}</th><th>{t("colDays")}</th><th>{t("colWorkers")}</th></tr></thead>
+                  <tbody>
+                    {groups.map((g) => (
+                      <tr key={`${g.platform}${g.work}${g.city}`}>
+                        <td>{v(g.platform)} · {v(g.work)} · {g.city ? v(g.city) : ""}</td>
+                        <td><Hourly value={g.medianHourly} /></td>
+                        <td className="muted">₹{g.p25Hourly} … ₹{g.p75Hourly}</td>
+                        <td>{g.medianCostPct}%</td>
+                        <td>{g.shifts}</td>
+                        <td>{g.workers}{!g.confirmed && <span className="badge warn" title={t("unconfirmedTitle")}>{t("unconfirmed")}</span>}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <p className="small muted">{t("takeHomeNote")}</p>
+            <QueryBox query={result.data.query} block={result.data.blockNumber} cli={cliFor("earnings", filters, source)} rejected={result.data.rejected} />
+            {latest.length === 0 && <p className="muted">{t("empty")}</p>}
+            <div className="grid">
+              {latest.map((e) => <ShiftCard key={e.key} e={e} trusted={source.kind === "list" ? true : undefined} block={result.data?.blockNumber} />)}
+            </div>
+          </>
+        )}
+        {creators && creators.length === 0 && <p className="muted">{t("connectToSeeMine")}</p>}
       </div>
     </section>
   );

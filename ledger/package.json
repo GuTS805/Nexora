@@ -1,7 +1,7 @@
 {
   "name": "@nexora/ledger",
   "version": "0.1.0",
-  "description": "Open data contract for Nexora ad-experiment entities on Arkiv: schema, codec, sealing, queries and insights.",
+  "description": "Open data contract for Nexora gig-worker earnings and incident entities on Arkiv: schema, codec, sealing, queries and insights.",
   "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",

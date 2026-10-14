@@ -5,15 +5,18 @@
  *   npm run seed -- --dry   print the steps, write nothing
  *
  * Besides the dataset, the script exercises every Arkiv feature the app claims: batch creates,
- * key-typed lineage, a sealed payload, a trust list created then patched, a permissionless extension
- * by a non-owner, a refused patch on a readonly entity, and an owner delete. Each transaction is
- * recorded in arkiv/evidence.json so the claims can be checked on the explorer.
+ * key-typed lineage (incident follow-ups), a sealed payload, a trust list created then patched, a
+ * permissionless extension by a non-owner, a refused patch on a readonly entity, and an owner delete.
+ * Each transaction is recorded in arkiv/evidence.json so the claims can be checked on the explorer.
  *
- * Every row is synthetic and flagged `demo = true`. Three wallets behave like honest sellers whose
- * results follow one hidden pattern with noise. The fourth behaves like a spammer: it publishes
- * implausible ShareChat wins, so the trust-list filter and the publisher-count dampener have
- * something real to defend against. A trust list curated by the sponsor wallet includes only the honest
- * three.
+ * Every entry is synthetic and flagged `demo = true`. Nine wallets behave like honest workers, each
+ * with one consistent profile (city, kind of work, vehicle). Their take-home is drawn from a hidden
+ * model that depends on the kind of work, the city and the vehicle only, never on the platform, so
+ * the demo says nothing about any real company. Its levels are calibrated to public reporting: the
+ * "Prisoners on Wheels?" survey of app-based drivers and delivery workers in eight Indian cities
+ * (2024), where 43% of cab drivers took home under ₹500 a day after costs and 34% of delivery workers
+ * under ₹10,000 a month. The tenth wallet is a spammer that publishes implausible ₹350–450/hour
+ * days, so the trust list and the independent-worker count have something real to defend against.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -22,19 +25,19 @@ import { tiramisu } from "@arkiv-network/sdk/chains";
 import type { Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
-  CATEGORIES, CTAS, LANGUAGES, PLATFORM_FORMATS, MAX_BATCH, OFFERS, PLATFORMS, SEASONS, TIERS, TONES,
-  EXTEND_DAYS, arkivHttp, experimentCreate, explainError, fetchExperiment, fetchExperiments, fetchTrustList,
-  readClient, seal, trustListCreate, trustListPatch, type ExperimentInput,
+  EXTEND_DAYS, MAX_BATCH, arkivHttp, explainError, fetchEntry, fetchIncidents, fetchShifts, fetchTrustList,
+  incidentCreate, readClient, seal, shiftCreate, trustListCreate, trustListPatch,
+  type City, type IncidentInput, type IncidentType, type Platform, type ShiftInput, type Vehicle, type WorkType,
 } from "../ledger/src/index.ts";
-import { SEED_KEY_NAMES, SPONSOR_KEY_NAME, loadEnv, requireKey } from "./env.ts";
+import { SEED_KEY_NAMES, SPAMMER_KEY_NAME, SPONSOR_KEY_NAME, loadEnv, requireKey } from "./env.ts";
 
 loadEnv();
 const dry = process.argv.includes("--dry");
 
-/** Public on purpose: it unlocks one synthetic demo row so judges can try "Unlock exact figures". */
+/** Public on purpose: it unlocks one synthetic demo day so judges can try "Unlock exact figures". */
 const DEMO_PASSPHRASE = "nexora-demo-2026";
 const EVIDENCE_FILE = resolve(import.meta.dirname, "..", "arkiv", "evidence.json");
-type Evidence = { recommendedTrustList: Hex | null; features: Record<string, Record<string, unknown>> } & Record<string, unknown>;
+type Evidence = { recommendedTrustList: Hex | null; wallets: Record<string, string>; features: Record<string, Record<string, unknown>> } & Record<string, unknown>;
 const readEvidence = (): Evidence => JSON.parse(readFileSync(EVIDENCE_FILE, "utf8")) as Evidence;
 const writeEvidence = (value: Evidence) =>
   writeFileSync(EVIDENCE_FILE, `${JSON.stringify(value, (_, v) => (typeof v === "bigint" ? v.toString() : v), 2)}\n`);
@@ -49,63 +52,112 @@ function rng(seed: number) {
   };
 }
 const pick = <T,>(r: () => number, list: readonly T[]) => list[Math.floor(r() * list.length)] as T;
+const between = (r: () => number, lo: number, hi: number) => lo + r() * (hi - lo);
 
-/** The hidden "market" the honest sellers sample from. Nobody reading Arkiv sees this table. */
-function trueRoi(e: Omit<ExperimentInput, "revenueInr" | "expiresInDays">, r: () => number): number {
-  let roi = -20;
-  const rural = e.tier === "tier3" || e.tier === "rural";
-  if (e.platform === "whatsapp" && (e.format === "status" || e.format === "broadcast")) roi += rural ? 140 : 60;
-  if (e.platform === "instagram" && e.format === "reel") roi += e.tier === "metro" || e.tier === "tier1" ? 120 : 70;
-  if (e.platform === "youtube" && e.format === "long_video" && e.category === "coaching_tuition") roi += 160;
-  if (e.platform === "google_search" && e.format === "search_text") roi += e.category === "coaching_tuition" || e.category === "mobile_accessories" ? 110 : 20;
-  if (e.platform === "meesho" && e.format === "listing_boost") roi += ["ethnic_apparel", "sarees_textiles", "jewellery"].includes(e.category) ? 90 : 10;
-  if (e.platform === "facebook" && e.format === "carousel") roi += 30;
-  if (e.lang === "hi" || e.lang === "hinglish" || (e.lang !== "en" && rural)) roi += 25;
-  if (e.season !== "none") roi += ["sarees_textiles", "jewellery", "snacks_sweets", "handicrafts"].includes(e.category) ? 60 : 15;
-  if (e.offer === "cod" && rural) roi += 30;
-  if (e.offer === "combo" || e.offer === "free_shipping") roi += 15;
-  return roi + (r() - 0.5) * 120;
-}
+type Profile = { city: City; vehicle: Vehicle; gigs: [Platform, WorkType][] };
 
+/** One profile per honest wallet. Overlaps are deliberate: a figure needs two workers to be confirmed. */
+const PROFILES: Profile[] = [
+  { city: "bengaluru", vehicle: "petrol_bike", gigs: [["swiggy", "food_delivery"], ["zomato", "food_delivery"]] },
+  { city: "bengaluru", vehicle: "ev_scooter", gigs: [["swiggy", "food_delivery"], ["zomato", "food_delivery"], ["zepto", "grocery_delivery"]] },
+  { city: "bengaluru", vehicle: "petrol_bike", gigs: [["rapido", "bike_taxi"], ["uber", "bike_taxi"]] },
+  { city: "bengaluru", vehicle: "petrol_bike", gigs: [["blinkit", "grocery_delivery"], ["zepto", "grocery_delivery"]] },
+  { city: "delhi_ncr", vehicle: "petrol_bike", gigs: [["zomato", "food_delivery"], ["swiggy", "food_delivery"]] },
+  { city: "delhi_ncr", vehicle: "ev_scooter", gigs: [["zomato", "food_delivery"], ["blinkit", "grocery_delivery"]] },
+  { city: "delhi_ncr", vehicle: "car", gigs: [["uber", "cab"], ["ola", "cab"]] },
+  { city: "delhi_ncr", vehicle: "car", gigs: [["uber", "cab"], ["rapido", "cab"]] },
+  { city: "jaipur", vehicle: "petrol_bike", gigs: [["zomato", "food_delivery"], ["swiggy", "food_delivery"]] },
+];
 
-function honestRows(seed: number, count: number): ExperimentInput[] {
+const PERIODS = [202608, 202609, 202610] as const;
+const SHIFTS_PER_MONTH = [5, 5, 6] as const;
+
+/** The hidden model. Nobody reading Arkiv sees this table, and the platform is not in it. */
+const NET_PER_HOUR: Record<WorkType, number> = {
+  food_delivery: 70, grocery_delivery: 80, parcel_delivery: 70, cab: 55, bike_taxi: 65, auto: 65, home_services: 150,
+};
+const CITY_FACTOR: Partial<Record<City, number>> = { jaipur: 0.75, lucknow: 0.75, indore: 0.75 };
+const COST_PER_HOUR: Record<Vehicle, number> = { bicycle: 2, ev_scooter: 8, petrol_bike: 22, auto: 30, car: 55, none: 5 };
+
+function honestShifts(profile: Profile, seed: number): ShiftInput[] {
   const r = rng(seed);
-  return Array.from({ length: count }, () => {
-    const platform = pick(r, PLATFORMS.filter((p) => p !== "sharechat"));
-    const base = {
-      category: pick(r, CATEGORIES.filter((c) => c !== "other")),
-      platform,
-      format: pick(r, PLATFORM_FORMATS[platform]),
-      lang: pick(r, LANGUAGES),
-      tier: pick(r, TIERS),
-      season: r() < 0.6 ? "none" as const : pick(r, SEASONS),
-      tone: pick(r, TONES),
-      cta: pick(r, CTAS),
-      offer: pick(r, OFFERS),
-      spendInr: Math.round(300 + r() ** 2 * 40_000),
-      days: 3 + Math.floor(r() * 25),
-      demo: true,
-    };
-    const roi = trueRoi(base, r);
-    return { ...base, revenueInr: Math.max(0, Math.round(base.spendInr * (1 + roi / 100))), expiresInDays: r() < 0.5 ? 90 : 365 };
+  const rows: ShiftInput[] = [];
+  PERIODS.forEach((period, m) => {
+    for (let i = 0; i < SHIFTS_PER_MONTH[m]!; i++) {
+      const [platform, work] = pick(r, profile.gigs);
+      const driving = work === "cab" || work === "bike_taxi" || work === "auto";
+      const hours = Math.round(between(r, driving ? 10 : 8, driving ? 14 : 12) * 2) / 2;
+      const net = NET_PER_HOUR[work] * (CITY_FACTOR[profile.city] ?? 1) * (1 + (r() - 0.5) * 0.35);
+      const costsInr = Math.round(COST_PER_HOUR[profile.vehicle] * hours * between(r, 0.8, 1.2));
+      const roll = r();
+      rows.push({
+        platform, work, city: profile.city, vehicle: profile.vehicle, period,
+        grossInr: Math.round(net * hours + costsInr), costsInr, hours,
+        incentive: roll < 0.45 ? "met" : roll < 0.8 ? "missed" : "none",
+        expiresInDays: 365, demo: true,
+      });
+    }
   });
+  return rows;
 }
 
-function spamRows(count: number): ExperimentInput[] {
+function spamShifts(count: number): ShiftInput[] {
   const r = rng(404);
-  return Array.from({ length: count }, () => ({
-    category: pick(r, ["tea_coffee", "beauty_ayurveda", "ethnic_apparel"] as const),
-    platform: "sharechat" as const, format: "static_image" as const, lang: "hi" as const,
-    tier: pick(r, TIERS), season: "none" as const, tone: "urgency" as const, cta: "dm_us" as const,
-    offer: "none" as const, spendInr: 500, revenueInr: 5_000 + Math.round(r() * 1_000), days: 2,
-    demo: true, expiresInDays: 30 as const,
+  return Array.from({ length: count }, (_, i) => ({
+    platform: "rapido" as const, work: "bike_taxi" as const, city: "bengaluru" as const, vehicle: "petrol_bike" as const,
+    period: PERIODS[i % PERIODS.length]!, grossInr: Math.round(between(r, 3_500, 4_500)) + 200, costsInr: 200, hours: 10,
+    incentive: "met" as const, expiresInDays: 90 as const, demo: true,
   }));
+}
+
+const INCIDENT_WEIGHTS: [IncidentType, number][] = [
+  ["id_blocked", 30], ["pay_cut", 15], ["incentive_cut", 15], ["penalty", 15],
+  ["payout_delayed", 10], ["unsafe_pressure", 10], ["deactivated", 3], ["harassment", 2],
+];
+
+function weighted(r: () => number): IncidentType {
+  let roll = r() * INCIDENT_WEIGHTS.reduce((sum, [, w]) => sum + w, 0);
+  for (const [type, w] of INCIDENT_WEIGHTS) {
+    roll -= w;
+    if (roll < 0) return type;
+  }
+  return "id_blocked";
+}
+
+function honestIncidents(profile: Profile, seed: number, first?: IncidentType): IncidentInput[] {
+  const r = rng(seed);
+  const count = 1 + Math.floor(r() * 3);
+  return Array.from({ length: count }, (_, i) => {
+    const type = i === 0 && first ? first : weighted(r);
+    const [platform, work] = pick(r, profile.gigs);
+    const daysLost = type === "id_blocked" ? 1 + Math.floor(r() * 10) : type === "deactivated" ? 30 + Math.floor(r() * 61) : 0;
+    const resolvedChance = type === "id_blocked" ? 0.5 : type === "payout_delayed" ? 0.7 : 0.2;
+    return {
+      platform, work, city: profile.city, type, period: pick(r, PERIODS), daysLost,
+      reasonGiven: r() < 0.3, appealed: r() < 0.6,
+      // The follow-up step resolves the first block of worker 5 later, so it starts unresolved.
+      resolved: i === 0 && first ? false : r() < resolvedChance,
+      expiresInDays: 365, demo: true,
+    };
+  });
 }
 
 const client = readClient();
 const evidence = readEvidence();
 const account = (name: string) => privateKeyToAccount(requireKey(name));
 const walletFor = (name: string) => createWalletClient({ chain: tiramisu, transport: arkivHttp(), account: account(name) });
+const honest = SEED_KEY_NAMES.filter((name) => name !== SPAMMER_KEY_NAME);
+if (honest.length !== PROFILES.length) throw new Error(`Expected ${PROFILES.length} honest seed keys, found ${honest.length}.`);
+const worker = (i: number) => honest[i]!;
+
+if (!dry) {
+  evidence.wallets = {
+    sponsor: account(SPONSOR_KEY_NAME).address,
+    ...Object.fromEntries(honest.map((name, i) => [`worker${i + 1}`, account(name).address])),
+    spammer: account(SPAMMER_KEY_NAME).address,
+  };
+  writeEvidence(evidence);
+}
 
 /** Runs a step once; its on-chain result is recorded in arkiv/evidence.json and skipped next time. */
 async function step(name: string, why: string, run: () => Promise<Record<string, unknown>>): Promise<Record<string, unknown> | undefined> {
@@ -121,62 +173,98 @@ async function step(name: string, why: string, run: () => Promise<Record<string,
   const result = { why, ...(await run()), at: new Date().toISOString() };
   evidence.features[name] = result;
   writeEvidence(evidence);
-  console.log(`+ ${name}: ${JSON.stringify(result, (_, v) => (typeof v === "bigint" ? v.toString() : v))}`);
+  console.log(`+ ${name}: ${JSON.stringify(result, (_, v) => (typeof v === "bigint" ? v.toString() : v)).slice(0, 400)}`);
   return result;
 }
 
 /**
- * Publishes `rows` from one wallet in batches. Resumable: rows this wallet already has on chain (from
- * a run that stopped half-way, e.g. out of gas) are counted and skipped, so a rerun never duplicates.
+ * Publishes `rows` from one wallet in batches. Resumable: entries this wallet already has on chain
+ * (from a run that stopped half-way, e.g. out of gas) are counted and skipped, so a rerun never
+ * duplicates.
  */
-async function publishBatches(keyName: string, rows: ExperimentInput[]) {
+async function publishBatches(keyName: string, creates: CreateEntityParameters[], existingKeys: Hex[]) {
   const wallet = walletFor(keyName);
-  const creator = account(keyName).address;
-  const existing = await fetchExperiments(client, { includeDemo: true, creators: [creator] }, 200);
-  const keys: Hex[] = existing.items.map((e) => e.key);
+  const keys = [...existingKeys];
   const txs: Hex[] = [];
-  if (keys.length > 0) console.log(`  ${creator} already has ${keys.length} rows on chain; publishing the remaining ${Math.max(0, rows.length - keys.length)}`);
-  for (let i = keys.length; i < rows.length; i += MAX_BATCH) {
-    const creates: CreateEntityParameters[] = rows.slice(i, i + MAX_BATCH).map(experimentCreate);
-    const result = await wallet.executeBatch({ creates });
+  if (keys.length > 0) console.log(`  ${account(keyName).address} already has ${keys.length} on chain; publishing the remaining ${Math.max(0, creates.length - keys.length)}`);
+  for (let i = keys.length; i < creates.length; i += MAX_BATCH) {
+    const result = await wallet.executeBatch({ creates: creates.slice(i, i + MAX_BATCH) });
     keys.push(...result.createdEntities);
     txs.push(result.txHash);
   }
-  return { creator, entities: keys.length, keys, txs };
+  return { keys, txs };
 }
 
-const honest = SEED_KEY_NAMES.slice(0, 3);
-const LIST_NAME = "Nexora demo: honest seed sellers";
-const LIST_DESCRIPTION = "Synthetic demo. Includes seed publishers 1–3; excludes seed publisher 4, which publishes implausible results on purpose.";
+async function publishShifts(keyName: string, rows: ShiftInput[]) {
+  const creator = account(keyName).address;
+  const existing = await fetchShifts(client, { includeDemo: true, creators: [creator] }, 200);
+  return { creator, ...(await publishBatches(keyName, rows.map(shiftCreate), existing.items.map((s) => s.key))) };
+}
 
-const seller1 = await step("batch_seed1", "executeBatch: 30 synthetic experiments from honest seller 1", () => publishBatches(honest[0]!, honestRows(1000, 30)));
-await step("batch_seed2", "executeBatch: 30 synthetic experiments from honest seller 2", () => publishBatches(honest[1]!, honestRows(1001, 30)));
-await step("batch_seed3", "executeBatch: 30 synthetic experiments from honest seller 3", () => publishBatches(honest[2]!, honestRows(1002, 30)));
-await step("batch_spammer", "executeBatch: 15 implausible ShareChat wins from the deliberate spammer", () => publishBatches(SEED_KEY_NAMES[3], spamRows(15)));
+async function publishIncidents(keyName: string, rows: IncidentInput[]) {
+  const creator = account(keyName).address;
+  const existing = await fetchIncidents(client, { includeDemo: true, creators: [creator] }, 200);
+  return { creator, ...(await publishBatches(keyName, rows.map(incidentCreate), existing.items.filter((i) => !i.parent).map((i) => i.key))) };
+}
 
-const parents = ((seller1?.keys as Hex[] | undefined) ?? []).slice(0, 4);
+const LIST_NAME = "Nexora demo: honest seed workers";
+const LIST_DESCRIPTION = "Synthetic demo. Includes seed workers 1–9; excludes seed wallet 10, which publishes implausible earnings on purpose.";
 
-await step("lineage_variants", "key-typed parent attribute: seller 2 publishes variants of seller 1's results", async () => {
-  if (parents.length === 0) throw new Error("seller 1 keys missing");
-  const children = honestRows(77, parents.length).map((row, i) => ({ ...row, parent: parents[i] }));
-  const result = await walletFor(honest[1]!).executeBatch({ creates: children.map(experimentCreate) });
-  const check = await fetchExperiments(client, { includeDemo: true, parent: parents[0] }, 5);
-  return { parents, keys: result.createdEntities, tx: result.txHash, query: check.query, foundByParentQuery: check.items.length };
+const shifts = await step("batch_shifts", "executeBatch: 16 synthetic days of earnings from each of nine honest workers", async () => {
+  const perWorker = [];
+  for (let i = 0; i < PROFILES.length; i++) perWorker.push(await publishShifts(worker(i), honestShifts(PROFILES[i]!, 1000 + i)));
+  return {
+    creators: perWorker.map((w) => w.creator),
+    entities: perWorker.reduce((n, w) => n + w.keys.length, 0),
+    keys: perWorker.flatMap((w) => w.keys),
+    txs: perWorker.flatMap((w) => w.txs),
+  };
 });
 
-await step("sealed_payload", "client-side AES-256-GCM sealed figures in the payload (demo passphrase is public on purpose)", async () => {
-  const sealed = await seal({ spendInr: 4_200, revenueInr: 11_760, orders: 37, note: "synthetic demo row" }, DEMO_PASSPHRASE);
-  const [row] = honestRows(55, 1);
-  const result = await walletFor(honest[2]!).createEntity(experimentCreate({ ...row!, sealed }));
+await step("batch_spammer", "executeBatch: 15 implausible ₹350–450/hour days from the deliberate spammer", async () => {
+  const result = await publishShifts(SPAMMER_KEY_NAME, spamShifts(15));
+  return { creator: result.creator, entities: result.keys.length, keys: result.keys, txs: result.txs };
+});
+
+await step("batch_incidents", "executeBatch: 1–3 synthetic incidents (ID blocks, pay cuts, penalties…) from each honest worker", async () => {
+  const perWorker = [];
+  for (let i = 0; i < PROFILES.length; i++) {
+    perWorker.push(await publishIncidents(worker(i), honestIncidents(PROFILES[i]!, 2000 + i, i === 4 ? "id_blocked" : undefined)));
+  }
+  return {
+    creators: perWorker.map((w) => w.creator),
+    entities: perWorker.reduce((n, w) => n + w.keys.length, 0),
+    keys: perWorker.flatMap((w) => w.keys),
+    txs: perWorker.flatMap((w) => w.txs),
+  };
+});
+
+await step("incident_followup", "key-typed parent attribute: worker 5 posts that their ID block was lifted, worker 6 reports the same thing happened to them", async () => {
+  // Found by query rather than by position, so a resumed run still picks worker 5's ID block.
+  const blocks = await fetchIncidents(client, { includeDemo: true, creators: [account(worker(4)).address], type: "id_blocked" }, 20);
+  const o = blocks.items.find((i) => !i.parent);
+  if (!o) throw new Error("worker 5's ID block report is missing");
+  const parent = o.key;
+  const base = { platform: o.platform, work: o.work, city: o.city, type: o.type, period: o.period, reasonGiven: false, expiresInDays: 365 as const, demo: true, parent };
+  const update = await walletFor(worker(4)).createEntity(incidentCreate({ ...base, daysLost: 6, appealed: true, resolved: true }));
+  const sameHere = await walletFor(worker(5)).createEntity(incidentCreate({ ...base, daysLost: 3, appealed: false, resolved: false }));
+  const check = await fetchIncidents(client, { includeDemo: true, parent }, 5);
+  return { parent, keys: [update.entityKey, sameHere.entityKey], txs: [update.txHash, sameHere.txHash], query: check.query, foundByParentQuery: check.items.length };
+});
+
+await step("sealed_payload", "client-side AES-256-GCM sealed exact figures in the payload (demo passphrase is public on purpose)", async () => {
+  const [row] = honestShifts(PROFILES[2]!, 55);
+  const sealed = await seal({ grossInr: row!.grossInr, costsInr: row!.costsInr, hours: row!.hours, orders: 19, note: "synthetic demo day" }, DEMO_PASSPHRASE);
+  const result = await walletFor(worker(2)).createEntity(shiftCreate({ ...row!, sealed }));
   return { key: result.entityKey, tx: result.txHash, demoPassphrase: DEMO_PASSPHRASE };
 });
 
-const list = await step("trust_list_create", "trust list entity curated by the sponsor wallet; starts with sellers 1 and 2", async () => {
+const list = await step("trust_list_create", "trust list entity curated by the sponsor wallet; starts with workers 1–8", async () => {
   const result = await walletFor(SPONSOR_KEY_NAME).createEntity(trustListCreate({
     name: LIST_NAME,
     scope: "all",
     description: LIST_DESCRIPTION,
-    members: [account(honest[0]!).address, account(honest[1]!).address],
+    members: honest.slice(0, 8).map((name) => account(name).address),
   }));
   return { key: result.entityKey, tx: result.txHash };
 });
@@ -185,7 +273,7 @@ if (list?.key && !dry) {
   writeEvidence(evidence);
 }
 
-await step("trust_list_patch", "patchEntity by the owner: the curator adds seller 3 to the list", async () => {
+await step("trust_list_patch", "patchEntity by the owner: the curator adds worker 9", async () => {
   const key = list?.key as Hex;
   const result = await walletFor(SPONSOR_KEY_NAME).patchEntity(trustListPatch(key, {
     name: LIST_NAME,
@@ -197,35 +285,38 @@ await step("trust_list_patch", "patchEntity by the owner: the curator adds selle
   return { key, tx: result.txHash, membersAfter: after.ok ? after.value.members.length : null };
 });
 
-await step("permissionless_extend", "extendEntity by a NON-owner (the sponsor) on seller 1's entity, allowed by permissionlessExtension", async () => {
-  const key = parents[0]!;
-  const before = await fetchExperiment(client, key);
+const firstShift = (shifts?.keys as Hex[] | undefined)?.[0];
+const secondShift = (shifts?.keys as Hex[] | undefined)?.[1];
+
+await step("permissionless_extend", "extendEntity by a NON-owner (the sponsor) on worker 1's entry, allowed by permissionlessExtension", async () => {
+  if (!firstShift) throw new Error("worker 1's entries are missing");
+  const before = await fetchEntry(client, firstShift);
   if (!before.ok) throw new Error(before.reason);
   const target = before.value.expiresAt + BigInt(EXTEND_DAYS * 43_200);
-  const result = await walletFor(SPONSOR_KEY_NAME).extendEntity({ entityKey: key, expires: ExpirationTime.atBlock(target) });
+  const result = await walletFor(SPONSOR_KEY_NAME).extendEntity({ entityKey: firstShift, expires: ExpirationTime.atBlock(target) });
   return {
-    key, owner: before.value.owner, extendedBy: account(SPONSOR_KEY_NAME).address, tx: result.txHash,
+    key: firstShift, owner: before.value.owner, extendedBy: account(SPONSOR_KEY_NAME).address, tx: result.txHash,
     expiresBefore: before.value.expiresAt.toString(), expiresAfter: result.expiresAt.toString(),
   };
 });
 
-await step("readonly_enforced", "patchEntity on a readonly experiment must be refused, even for its owner", async () => {
-  const key = parents[1]!;
-  const [row] = honestRows(66, 1);
-  const attempt = experimentCreate(row!);
+await step("readonly_enforced", "patchEntity on a readonly entry must be refused, even for its owner", async () => {
+  if (!secondShift) throw new Error("worker 1's entries are missing");
+  const [row] = honestShifts(PROFILES[0]!, 66);
+  const attempt = shiftCreate(row!);
   try {
-    const result = await walletFor(honest[0]!).patchEntity({ entityKey: key, payload: attempt.payload, contentType: attempt.contentType, set: attempt.attributes });
-    return { key, unexpected: "patch succeeded", tx: result.txHash };
+    const result = await walletFor(worker(0)).patchEntity({ entityKey: secondShift, payload: attempt.payload, contentType: attempt.contentType, set: attempt.attributes });
+    return { key: secondShift, unexpected: "patch succeeded", tx: result.txHash };
   } catch (error) {
-    return { key, refused: true, error: explainError(error) };
+    return { key: secondShift, refused: true, error: explainError(error) };
   }
 });
 
-await step("owner_delete", "deleteEntity by the owner: seller 2 publishes a mistaken row and removes it", async () => {
-  const [row] = honestRows(88, 1);
-  const created = await walletFor(honest[1]!).createEntity(experimentCreate({ ...row!, expiresInDays: 7 }));
-  const deleted = await walletFor(honest[1]!).deleteEntity({ entityKey: created.entityKey });
-  const gone = await fetchExperiments(client, { includeDemo: true, keys: [created.entityKey] }, 1);
+await step("owner_delete", "deleteEntity by the owner: worker 2 publishes a mistaken day and removes it", async () => {
+  const [row] = honestShifts(PROFILES[1]!, 88);
+  const created = await walletFor(worker(1)).createEntity(shiftCreate({ ...row!, expiresInDays: 7 }));
+  const deleted = await walletFor(worker(1)).deleteEntity({ entityKey: created.entityKey });
+  const gone = await fetchShifts(client, { includeDemo: true, keys: [created.entityKey] }, 1);
   return { key: created.entityKey, createTx: created.txHash, deleteTx: deleted.txHash, stillQueryable: gone.items.length > 0 };
 });
 

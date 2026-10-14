@@ -1,7 +1,7 @@
-import { readExperiments } from "../cache.ts";
+import { readEntries } from "../cache.ts";
 import { useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
-import { ErrorNote, ExperimentCard, QueryBox, WalletBar, useAsync } from "../components.tsx";
+import { EntryCard, ErrorNote, QueryBox, WalletBar, useAsync } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
 import { store } from "../storage.ts";
 
@@ -9,9 +9,9 @@ export function Mine() {
   const { reader, wallet, revision, connectBurner, oneOffWallets } = useArkiv();
   const { t } = useI18n();
   const oneOffs = oneOffWallets().map((w) => w.address);
-  // $creator OR over the main wallet and every one-time wallet; fetchExperiments splits long lists.
+  // $creator OR over the main wallet and every one-time wallet; long lists are split into several queries.
   const creators = [...(wallet ? [wallet.address] : []), ...oneOffs];
-  const result = useAsync(async () => (creators.length ? readExperiments(reader, { creators, includeDemo: true }) : null), [reader, creators.join(","), revision]);
+  const result = useAsync(async () => (creators.length ? readEntries(reader, { creators, includeDemo: true }) : null), [reader, creators.join(","), revision]);
   const [showKey, setShowKey] = useState(false);
   const [importKey, setImportKey] = useState("");
 
@@ -50,10 +50,10 @@ export function Mine() {
       <ErrorNote error={result.error} />
       {result.data && (
         <>
-          <QueryBox query={result.data.query} block={result.data.blockNumber} cli={`npx tsx ledger/cli.ts query --demo --creator ${wallet?.address}`} />
+          <QueryBox query={result.data.query} block={result.data.blockNumber} cli={`npx tsx ledger/cli.ts earnings --demo --creator ${wallet?.address ?? creators[0]}`} />
           {oneOffs.length > 0 && <p className="small muted">{t("oneOffCount", { n: oneOffs.length })}</p>}
           {result.data.items.length === 0 && <p className="muted">{t("mineEmpty")} <a href="#/log">{t("navLog")}</a></p>}
-          <div className="grid">{result.data.items.map((e) => <ExperimentCard key={e.key} e={e} block={result.data?.blockNumber} />)}</div>
+          <div className="grid">{result.data.items.map((e) => <EntryCard key={e.key} e={e} block={result.data?.blockNumber} />)}</div>
         </>
       )}
       {(wallet?.mode === "burner" || oneOffs.length > 0) && (

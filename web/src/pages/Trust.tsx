@@ -1,5 +1,5 @@
 import { readTrustLists } from "../cache.ts";
-import { explainError, CATEGORIES, MAX_TRUST_MEMBERS, trustListCreate, trustListPatch, type Category, type TrustList } from "@nexora/ledger";
+import { explainError, MAX_TRUST_MEMBERS, WORK_TYPES, trustListCreate, trustListPatch, type TrustList, type WorkType } from "@nexora/ledger";
 import { useState } from "react";
 import type { Address, Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
@@ -10,7 +10,7 @@ function Editor({ existing, onDone }: { existing?: TrustList; onDone: () => void
   const { wallet, ensureGas, bump } = useArkiv();
   const { t, v } = useI18n();
   const [name, setName] = useState(existing?.name ?? "");
-  const [scope, setScope] = useState<Category | "all">(existing?.scope ?? "all");
+  const [scope, setScope] = useState<WorkType | "all">(existing?.scope ?? "all");
   const [description, setDescription] = useState(existing?.description ?? "");
   const [members, setMembers] = useState(existing?.members.join("\n") ?? "");
   const [busy, setBusy] = useState(false);
@@ -44,9 +44,9 @@ function Editor({ existing, onDone }: { existing?: TrustList; onDone: () => void
         <label className="field"><span>{t("listName")}</span><input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("listNamePh")} /></label>
         <label className="field">
           <span>{t("listScope")}</span>
-          <select value={scope} onChange={(e) => setScope(e.target.value as Category | "all")}>
-            <option value="all">{t("allCategories")}</option>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{v(c)}</option>)}
+          <select value={scope} onChange={(e) => setScope(e.target.value as WorkType | "all")}>
+            <option value="all">{t("allWork")}</option>
+            {WORK_TYPES.map((w) => <option key={w} value={w}>{v(w)}</option>)}
           </select>
         </label>
       </div>
@@ -80,7 +80,7 @@ export function Trust() {
             <article key={list.key} className="card">
               <h3>{list.name}</h3>
               <p className="small">{list.description}</p>
-              <p className="small">{t("curator")} <Addr address={list.creator} /> · {list.scope === "all" ? t("allCategories") : v(list.scope)} · {t("membersCount", { n: list.members.length })} · <ExplorerEntity entityKey={list.key} /></p>
+              <p className="small">{t("curator")} <Addr address={list.creator} /> · {list.scope === "all" ? t("allWork") : v(list.scope)} · {t("membersCount", { n: list.members.length })} · <ExplorerEntity entityKey={list.key} /></p>
               <p className="small">{list.members.map((m) => <span key={m}><Addr address={m} /> </span>)}</p>
               {wallet?.address.toLowerCase() === list.owner.toLowerCase() && <button className="secondary" onClick={() => setEditing(list)}>{t("editMembers")}</button>}
             </article>

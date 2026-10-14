@@ -10,7 +10,7 @@ import { tiramisu } from "@arkiv-network/sdk/chains";
 import { custom, getAddress, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it } from "vitest";
-import { experimentCreate, seal, trustListCreate, trustListPatch, type ExperimentInput } from "../src/index.ts";
+import { incidentCreate, seal, shiftCreate, trustListCreate, trustListPatch, type ShiftInput } from "../src/index.ts";
 
 // Anvil's well-known test key #0: public, never funded on Tiramisu, used only to sign locally.
 const account = privateKeyToAccount("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80");
@@ -41,10 +41,9 @@ const transport = custom({
 });
 const wallet = createWalletClient({ chain: tiramisu, transport, account });
 
-const input: ExperimentInput = {
-  category: "sarees_textiles", platform: "meesho", format: "listing_boost", lang: "hinglish", tier: "tier3",
-  season: "wedding", tone: "festive", cta: "shop_now", offer: "cod", spendInr: 6_000, revenueInr: 15_000,
-  days: 10, expiresInDays: 90, demo: true,
+const input: ShiftInput = {
+  platform: "zomato", work: "food_delivery", city: "jaipur", vehicle: "ev_scooter", period: 202610,
+  grossInr: 900, costsInr: 60, hours: 9, incentive: "missed", expiresInDays: 90, demo: true,
 };
 
 /** Resolves when the SDK got as far as sending; rejects with the SDK's own error otherwise. */
@@ -61,19 +60,21 @@ async function reachesSend(run: () => Promise<unknown>) {
 }
 
 describe("SDK accepts every write the app sends", () => {
-  it("createEntity: one experiment, with lineage and a sealed payload", async () => {
-    const sealed = await seal({ spendInr: 6_000, revenueInr: 15_000, orders: 30 }, "correct horse battery");
-    await expect(reachesSend(() => wallet.createEntity(experimentCreate({ ...input, parent: KEY, sealed })))).resolves.toBe(true);
+  it("createEntity: one day's earnings with a sealed payload, and an incident follow-up with lineage", async () => {
+    const sealed = await seal({ grossInr: 900, costsInr: 60, hours: 9, orders: 14 }, "correct horse battery");
+    await expect(reachesSend(() => wallet.createEntity(shiftCreate({ ...input, sealed })))).resolves.toBe(true);
     expect(calls).toContain("eth_sendRawTransaction");
+    const incident = { platform: "zomato", work: "food_delivery", city: "jaipur", type: "id_blocked", period: 202610, daysLost: 3, reasonGiven: false, appealed: true, resolved: true, expiresInDays: 365, parent: KEY, demo: true } as const;
+    await expect(reachesSend(() => wallet.createEntity(incidentCreate(incident)))).resolves.toBe(true);
   });
 
   it("executeBatch: 20 creates in one transaction (CSV import / seed)", async () => {
-    const creates = Array.from({ length: 20 }, (_, i) => experimentCreate({ ...input, spendInr: 1_000 + i }));
+    const creates = Array.from({ length: 20 }, (_, i) => shiftCreate({ ...input, grossInr: 800 + i }));
     await expect(reachesSend(() => wallet.executeBatch({ creates }))).resolves.toBe(true);
   });
 
   it("createEntity + patchEntity: trust list created, then edited with set mutations", async () => {
-    const list = { name: "Surat saree resellers", scope: "sarees_textiles" as const, description: "demo", members: [account.address, getAddress("0x2222222222222222222222222222222222222222")] };
+    const list = { name: "Jaipur delivery riders", scope: "food_delivery" as const, description: "demo", members: [account.address, getAddress("0x2222222222222222222222222222222222222222")] };
     await expect(reachesSend(() => wallet.createEntity(trustListCreate(list)))).resolves.toBe(true);
     await expect(reachesSend(() => wallet.patchEntity(trustListPatch(KEY, list)))).resolves.toBe(true);
   });
