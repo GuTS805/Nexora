@@ -5,7 +5,8 @@
   "buildCommand": "npm run build -w web",
   "outputDirectory": "web/dist",
   "functions": {
-    "api/sponsor.ts": { "maxDuration": 30 }
+    "api/sponsor.ts": { "maxDuration": 30 },
+    "api/read.ts": { "maxDuration": 20 }
   },
   "headers": [
     {

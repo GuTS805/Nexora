@@ -50,7 +50,7 @@ Nexora is a shared, permanent-unless-you-choose-otherwise notebook of ad experim
 - **Harmed today:** a seller whose honest review of an ad network or a marketplace's paid boost is unflattering. Today such reviews live on a platform forum, a consultant's blog or a SaaS dashboard, and the platform or the vendor can delete them. When an ad-analytics startup shuts down, its users' history goes with it.
 - **What changes:**
   - Experiments are Arkiv entities created by the seller's own wallet (`$creator`).
-  - The web app is a static bundle that reads Tiramisu straight from the browser (`ledger/src/queries.ts`, `readClient`). There is **no Nexora backend or database to take down**; the only server code is an optional gas sponsor.
+  - The web app is a static bundle that reads Tiramisu straight from the browser (`ledger/src/queries.ts`, `readClient`). There is **no Nexora backend or database to take down**. The only server code is an optional gas sponsor and a cached read fallback that the browser uses only after the public RPC rate-limits it; deleting both loses no data and breaks no reader.
   - With Nexora's website gone, anyone can run `npx tsx ledger/cli.ts query --demo` or paste the exact query shown in the UI into any Arkiv client.
   - The RPC endpoint is user-configurable (`About → Network`, `--rpc` on the CLI), so blocking one endpoint does not block readers.
   - The build uses relative paths and hash routing, so it runs from any static host or IPFS gateway.

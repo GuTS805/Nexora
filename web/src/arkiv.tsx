@@ -69,11 +69,20 @@ function keyClient(key: `0x${string}`, mode: WalletMode): Connected {
   return { address: account.address, mode, client: createWalletClient({ chain: tiramisu, transport: arkivHttp(store.get("rpc") ?? TIRAMISU_RPC), account }) };
 }
 
+/**
+ * The deployment's cached read endpoint (api/read.ts), used only after the public RPC rate-limits
+ * this visitor. None for the portable file or a custom RPC: those read Arkiv directly, always.
+ */
+function readFallbackUrl(): string | undefined {
+  if (!/^https?:$/.test(location.protocol)) return undefined;
+  return new URL("api/read", location.origin + location.pathname).toString();
+}
+
 export function ArkivProvider({ children }: { children: ReactNode }) {
   const [rpcUrl, setRpc] = useState(() => store.get("rpc") ?? TIRAMISU_RPC);
   const [wallet, setWallet] = useState<Connected | null>(() => (store.get("wallet") === "burner" && store.get("burner") ? burnerClient() : null));
   const [revision, setRevision] = useState(0);
-  const reader = useMemo(() => readClient(rpcUrl), [rpcUrl]);
+  const reader = useMemo(() => readClient(rpcUrl, rpcUrl === TIRAMISU_RPC ? readFallbackUrl() : undefined), [rpcUrl]);
 
   const connectBurner = useCallback(() => {
     const connected = burnerClient();

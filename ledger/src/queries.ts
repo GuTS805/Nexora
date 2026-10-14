@@ -2,7 +2,7 @@ import { createPublicClient, type PublicArkivClient } from "@arkiv-network/sdk";
 import { addr, bool, i32, key as keyAttr, str } from "@arkiv-network/sdk/attr";
 import { tiramisu } from "@arkiv-network/sdk/chains";
 import { and, eq, gte, lte, or, type Expression } from "@arkiv-network/sdk/query";
-import { http, webSocket, type Address, type Hex } from "viem";
+import { custom, http, webSocket, type Address, type Hex } from "viem";
 import { decodeExperiment, decodeTrustList, type Experiment, type RawEntity, type TrustList } from "./codec.ts";
 import { APP, KIND, SCHEMA_VERSION, type Category, type Format, type Language, type Platform, type Season, type Tier } from "./schema.ts";
 
@@ -74,8 +74,52 @@ export function explainError(error: unknown): string {
  * A read-only client. The RPC is a parameter, not a constant: if one endpoint is blocked or goes
  * down, any reader — the web app, the CLI, someone else's script — can point at another node.
  */
-export function readClient(rpcUrl: string = defaultRpcUrl()): PublicArkivClient {
-  return createPublicClient({ chain: tiramisu, transport: arkivHttp(rpcUrl) });
+export function readClient(rpcUrl: string = defaultRpcUrl(), fallbackUrl?: string): PublicArkivClient {
+  return createPublicClient({ chain: tiramisu, transport: fallbackUrl ? withReadFallback(rpcUrl, fallbackUrl) : arkivHttp(rpcUrl) });
+}
+
+/**
+ * Direct reads first, a cached read endpoint second. Every call goes to `rpcUrl`; when an
+ * `arkiv_query` hits the anonymous budget (429), that query and the ones after it go to
+ * `fallbackUrl` (the deployment's `/api/read`) until the budget's `Retry-After` has passed. Only
+ * `arkiv_query` falls back; balance and receipt calls sit in a separate, generous bucket.
+ */
+export function withReadFallback(rpcUrl: string, fallbackUrl: string, fetchFn: typeof fetch = (...args) => fetch(...args)) {
+  const direct = arkivHttp(rpcUrl)({ chain: tiramisu, retryCount: 0 });
+  let fallbackUntil = 0;
+  let retryAfter = 600;
+  const viaFallback = async (params: unknown) => {
+    // A host without the endpoint (a static mirror, a local preview) or a network failure means
+    // there is no fallback: report the original rate limit, not a confusing 404.
+    const unavailable = () => new ArkivRateLimitError(Math.max(1, Math.ceil((fallbackUntil - Date.now()) / 1_000)));
+    const response = await fetchFn(`${fallbackUrl}?q=${encodeURIComponent(JSON.stringify(params))}`).catch(() => null);
+    if (!response) throw unavailable();
+    if (response.status === 429) throw new ArkivRateLimitError(Number(response.headers.get("retry-after")) || undefined);
+    const body = (await response.json().catch(() => null)) as { result?: unknown; error?: { message?: string } } | null;
+    if (!body || typeof body !== "object") throw unavailable();
+    // A node error relayed by the endpoint (e.g. "query is too long") is a real answer: pass it on.
+    if (body.error) throw new Error(body.error.message ?? "Arkiv RPC error");
+    if (!response.ok || !("result" in body)) throw unavailable();
+    return body.result;
+  };
+  return custom(
+    {
+      async request({ method, params }: { method: string; params?: unknown }) {
+        if (method === "arkiv_query" && Date.now() < fallbackUntil) return viaFallback(params);
+        try {
+          return await direct.request({ method, params } as Parameters<typeof direct.request>[0]);
+        } catch (error) {
+          if (method !== "arkiv_query" || !isRateLimited(error)) throw error;
+          for (let e = error as { cause?: unknown } | undefined, depth = 0; e && depth < 6; e = e.cause as typeof e, depth++) {
+            if (e instanceof ArkivRateLimitError && e.retryAfterSeconds) retryAfter = e.retryAfterSeconds;
+          }
+          fallbackUntil = Date.now() + Math.min(retryAfter, 3_600) * 1_000;
+          return viaFallback(params);
+        }
+      },
+    },
+    { retryCount: 0 },
+  );
 }
 
 /** The WebSocket twin of {@link defaultRpcUrl}: `ARKIV_WS_URL` if set, else public Tiramisu. */

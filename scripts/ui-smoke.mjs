@@ -4,7 +4,8 @@
 //
 // Starts `vite preview` and Chrome itself (CHROME_PATH overrides the browser), checks the flows a
 // judge would click, and exits non-zero on any failure or uncaught page error. None of the checks
-// depend on Arkiv returning data, so a rate-limited public RPC cannot make CI flaky.
+// depend on Arkiv returning data, except the share link, which is skipped (not failed) when the
+// public RPC has rate-limited the machine, so a rate-limited RPC cannot make CI flaky.
 import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -55,6 +56,7 @@ children.push(spawn(chrome, ["--headless=new", "--disable-gpu", "--no-sandbox", 
 
 const results = [];
 const errors = [];
+const skipped = [];
 try {
   await waitFor(`${BASE}/`);
   await waitFor(`http://127.0.0.1:${DEBUG}/json/version`);
@@ -112,7 +114,11 @@ try {
 
   await go("#/advisor?ui=en&category=coaching_tuition", 3000);
   check("advisor explains the Sybil risk", await js(`!!document.querySelector(".card.notice")`));
-  check("advisor share link is a wa.me link", await js(`(document.querySelector("a.whatsapp")?.href ?? "").startsWith("https://wa.me/?text=")`));
+  // The share link appears with results, so it needs Arkiv to answer. When the public RPC has
+  // rate-limited this machine (friction F6), record a skip instead of a false failure.
+  const rateLimited = await js(`/rate-limited|query budget/i.test(document.querySelector("main")?.innerText ?? "")`);
+  if (rateLimited) skipped.push("advisor share link (Arkiv RPC rate-limited this IP)");
+  else check("advisor share link is a wa.me link", await js(`(document.querySelector("a.whatsapp")?.href ?? "").startsWith("https://wa.me/?text=")`));
 
   await go("#/proof?ui=hi");
   check("proof page renders in Hindi", await js(`document.querySelector("h2")?.textContent.includes("सबूत")`));
@@ -122,6 +128,7 @@ try {
 }
 
 for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"} ${r.name}${r.detail ? ` (${r.detail})` : ""}`);
+for (const s of skipped) console.log(`SKIP ${s}`);
 if (errors.length) console.log(`page errors:\n${errors.join("\n")}`);
 const failed = results.filter((r) => !r.ok).length + errors.length;
 console.log(failed ? `${failed} problem(s)` : `all ${results.length} checks passed`);

@@ -111,6 +111,8 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
   - 429 responses surface in seconds instead of hanging (`arkivHttp`).
   - The live feed batches lookups into one `$key` query.
   - Keyed RPC URLs can be used server-side.
+  - After a 429, the browser sends that `arkiv_query` to the deployment's [`api/read.ts`](../api/read.ts), whose answers the CDN shares for 30 s, so one classroom or office costs a few upstream queries. It forwards only `arkiv_query` with at most 8 KB of query, and caches budget refusals for 15 s so a burst cannot hammer an exhausted budget.
+- **Residual:** the fallback is a server, so whoever runs it could alter answers. That adds no new trust: the same operator already serves the app's JavaScript. The CLI, the portable file and a custom RPC never use it, so anyone who doubts it can compare directly against Arkiv.
 
 ### T12. Sponsor drain
 

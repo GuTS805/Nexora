@@ -1,5 +1,5 @@
 /**
- * Optional gas sponsor — the only server code in Nexora. It sends a few test GLM to a visitor's
+ * Optional gas sponsor, one of two small server helpers in Nexora (the other is api/read.ts). It sends a few test GLM to a visitor's
  * fresh wallet so they can publish without visiting a faucet first. It never writes entities, never
  * sees a passphrase, and stores nothing: if it is down, publishing still works with faucet GLM and
  * every read path is unaffected.

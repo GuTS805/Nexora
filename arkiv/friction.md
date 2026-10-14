@@ -104,7 +104,8 @@ Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 cha
   - the CLI prints `Arkiv RPC query budget exhausted (HTTP 429 ANON_COST_LIMITED); resets in about 35 min…` and exits 1;
   - the web app shows a translated notice;
   - `ARKIV_RPC_URL` lets the CLI, scripts and sponsor use a keyed URL server-side;
-  - the live feed batches up to 25 new keys into one `$key`-filtered query instead of one `getEntity` per chain event.
+  - the live feed batches up to 25 new keys into one `$key`-filtered query instead of one `getEntity` per chain event;
+  - after a 429 the web app retries that query through [`api/read.ts`](../api/read.ts), a 30 s CDN-cached `arkiv_query` relay, until the `Retry-After` passes. The browser still asks Arkiv first. This is the server-side read path the next suggestion is meant to make unnecessary.
 - **Suggested fix:**
   1. Have the SDK's default transport not sleep on long `Retry-After` values (cap at a few seconds, then throw a typed `RateLimitError` carrying `retryAfter`).
   2. Document the anonymous budget and the cost model, and return the remaining cost budget on every response (e.g. a second `ratelimit` entry), so clients can back off before the hour-long stop.

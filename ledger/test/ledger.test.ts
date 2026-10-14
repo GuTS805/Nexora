@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { getAddress, type Hex } from "viem";
 import {
   bestTraits, comboStats, confidence, decodeExperiment, decodeTrustList, experimentCreate, experimentPredicate,
   parseExperimentsCsv, CSV_TEMPLATE, PLATFORM_FORMATS, queryText, roiPct, seal, spendBand, suggest, trustListCreate,
-  fetchExperiment, fetchExperiments, getEntityOrNull, MAX_OR_BRANCHES, trustListPatch, unseal, type ExperimentInput, type RawEntity,
+  fetchExperiment, fetchExperiments, getEntityOrNull, explainError, isRateLimited, MAX_OR_BRANCHES, withReadFallback, trustListPatch, unseal, type ExperimentInput, type RawEntity,
 } from "../src/index.ts";
 
 const ALICE = getAddress("0x1111111111111111111111111111111111111111");
@@ -224,6 +224,54 @@ describe("trust lists and csv", () => {
     expect(ok.rows).toHaveLength(2);
     const bad = parseExperimentsCsv(CSV_TEMPLATE + "tea_coffee,myspace,reel,hi,tier2,none,festive,shop_now,none,100,200,3\n", 30);
     expect(bad.errors[0]?.line).toBe(4);
+  });
+});
+
+describe("read fallback transport", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("sends arkiv_query to the fallback only after a 429, and keeps other calls direct", async () => {
+    const direct = vi.fn(async (_url: string, init: RequestInit) => {
+      const { method, id } = JSON.parse(init.body as string) as { method: string; id: number };
+      if (method === "arkiv_query") return new Response("{}", { status: 429, headers: { "retry-after": "1200" } });
+      return new Response(JSON.stringify({ jsonrpc: "2.0", id, result: "0x10" }), { headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", direct);
+    const fallback = vi.fn(async (_url: string) => new Response(JSON.stringify({ result: { data: [], blockNumber: "0x10" } })));
+    const transport = withReadFallback("https://rpc.example", "https://app.example/api/read", fallback as unknown as typeof fetch)({});
+
+    await expect(transport.request({ method: "arkiv_query", params: ["v = i32(1)", { limit: 1 }] })).resolves.toEqual({ data: [], blockNumber: "0x10" });
+    expect(fallback.mock.calls[0]![0]).toBe(`https://app.example/api/read?q=${encodeURIComponent(JSON.stringify(["v = i32(1)", { limit: 1 }]))}`);
+
+    // Inside the Retry-After window the next query skips the exhausted RPC entirely.
+    const directQueries = () => direct.mock.calls.filter(([, init]) => (init.body as string).includes("arkiv_query")).length;
+    const before = directQueries();
+    await transport.request({ method: "arkiv_query", params: ["v = i32(2)"] });
+    expect(directQueries()).toBe(before);
+    expect(fallback).toHaveBeenCalledTimes(2);
+
+    // Balance-style calls never use the fallback.
+    await expect(transport.request({ method: "eth_blockNumber" })).resolves.toBe("0x10");
+    expect(fallback).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports an exhausted fallback as the rate limit, not a generic failure", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 429, headers: { "retry-after": "60" } })));
+    const fallback = vi.fn(async () => new Response("{}", { status: 429, headers: { "retry-after": "60" } }));
+    const transport = withReadFallback("https://rpc.example", "https://app.example/api/read", fallback as unknown as typeof fetch)({});
+    const error = await transport.request({ method: "arkiv_query", params: ["v = i32(1)"] }).catch((e: unknown) => e);
+    expect(isRateLimited(error)).toBe(true);
+  });
+
+  it("on a host without the endpoint, shows the rate limit rather than a 404, but relays real node errors", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 429, headers: { "retry-after": "900" } })));
+    const missing = withReadFallback("https://rpc.example", "https://mirror.example/api/read", (async () => new Response("<html>404</html>", { status: 404 })) as unknown as typeof fetch)({});
+    const error = await missing.request({ method: "arkiv_query", params: ["v = i32(1)"] }).catch((e: unknown) => e);
+    expect(isRateLimited(error)).toBe(true);
+    expect(explainError(error)).toMatch(/resets in about 15 min/);
+
+    const relaying = withReadFallback("https://rpc.example", "https://app.example/api/read", (async () => new Response(JSON.stringify({ error: { message: "query is too long" } }))) as unknown as typeof fetch)({});
+    await expect(relaying.request({ method: "arkiv_query", params: ["v = i32(1)"] })).rejects.toThrow("query is too long");
   });
 });
 

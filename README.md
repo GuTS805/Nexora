@@ -34,7 +34,8 @@ ledger/          @nexora/ledger: the MIT data contract (schema, codec, sealing, 
   cli.ts         read the ledger without any Nexora server
   test/          contract tests + every write shape run through the real SDK up to signing
 web/             static React app (Vite); reads Arkiv directly from the browser
-api/sponsor.ts   optional gas sponsor (Vercel function): the only server code
+api/             optional Vercel functions, the only server code: sponsor.ts (gas for new wallets)
+                 and read.ts (cached arkiv_query fallback, used only after the public RPC rate-limits a visitor)
 scripts/         wallets, demo seed (records every feature on chain), end-to-end check, secret check
 examples/        read-without-nexora.mjs: the dataset with only the official SDK
 arkiv/           schema.md, friction.md, evidence.json, e2e-report.md

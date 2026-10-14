@@ -23,7 +23,7 @@ function English() {
       <ul>
         <li>On Arkiv: experiment details from fixed lists (searchable), creative choices, optional encrypted exact figures, trust lists.</li>
         <li>Never on Arkiv: names, phone numbers, shop names, product names, images, ad copy, customer data, passphrases.</li>
-        <li>There is no Nexora database. The only server code is an optional helper that sends a few test GLM to new wallets.</li>
+        <li>There is no Nexora database. The only server code is two optional helpers: one sends a few test GLM to new wallets, and one answers searches from a short cache when Arkiv’s public node has rate-limited your network. Your browser always asks Arkiv directly first.</li>
       </ul>
       <h3>If this website disappears</h3>
       <p>The data does not. Clone the MIT-licensed repository and run <code>npx tsx ledger/cli.ts query --demo</code>, or build the portable single-file version (<code>npm run build:portable -w web</code>) and open <code>nexora.html</code> straight from your phone or laptop. It talks to Arkiv directly.</p>
@@ -52,7 +52,7 @@ function Hindi() {
       <ul>
         <li>Arkiv पर: तय सूचियों वाली प्रयोग की जानकारी (खोजने लायक), विज्ञापन के चुनाव, वैकल्पिक एन्क्रिप्टेड असली आँकड़े, भरोसा सूचियाँ।</li>
         <li>Arkiv पर कभी नहीं: नाम, फ़ोन नंबर, दुकान का नाम, उत्पाद का नाम, फ़ोटो, विज्ञापन का टेक्स्ट, ग्राहकों की जानकारी, पासफ़्रेज़।</li>
-        <li>Nexora का कोई डेटाबेस नहीं है। सर्वर पर सिर्फ़ एक वैकल्पिक मददगार चलता है जो नए वॉलेट को थोड़े टेस्ट GLM भेजता है।</li>
+        <li>Nexora का कोई डेटाबेस नहीं है। सर्वर पर सिर्फ़ दो वैकल्पिक मददगार चलते हैं: एक नए वॉलेट को थोड़े टेस्ट GLM भेजता है, और दूसरा तब छोटे कैश से खोज के जवाब देता है जब Arkiv का पब्लिक नोड आपके नेटवर्क को रोक दे। आपका ब्राउज़र हमेशा पहले सीधे Arkiv से पूछता है।</li>
       </ul>
       <h3>अगर यह वेबसाइट बंद हो जाए</h3>
       <p>तो भी डेटा रहेगा। MIT लाइसेंस वाला कोड लेकर <code>npx tsx ledger/cli.ts query --demo</code> चलाइए, या एक-फ़ाइल वाला वर्ज़न (<code>npm run build:portable -w web</code>) बनाकर <code>nexora.html</code> सीधे अपने फ़ोन या लैपटॉप से खोलिए। यह सीधे Arkiv से बात करती है।</p>
