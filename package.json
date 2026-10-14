@@ -17,6 +17,7 @@
     "cli": "npm run cli -w @nexora/ledger --",
     "seed": "tsx scripts/seed.ts",
     "e2e": "tsx scripts/e2e.ts",
+    "check:secrets": "tsx scripts/check-secrets.ts",
     "wallets": "tsx scripts/wallets.ts"
   },
   "devDependencies": {

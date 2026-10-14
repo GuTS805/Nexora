@@ -1,0 +1,3 @@
+#!/bin/sh
+# Refuse to commit if any secret from .env.local appears in a tracked or staged file.
+exec npm run --silent check:secrets

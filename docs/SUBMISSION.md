@@ -81,6 +81,8 @@ Nexora is a shared, permanent-unless-you-choose-otherwise notebook of ad experim
   - Strict security headers and a CSP are set in `web/vercel.json`.
   - `npm audit` reports 0 vulnerabilities.
 
+The full threat model, with residual risks, is in [`THREAT_MODEL.md`](THREAT_MODEL.md).
+
 ## Why Arkiv (what would break elsewhere)
 
 | Alternative | What breaks |

@@ -7,6 +7,8 @@
 - **Data contract:** [`arkiv/schema.md`](arkiv/schema.md)
 - **Friction report:** [`arkiv/friction.md`](arkiv/friction.md)
 - **Per-track write-up:** [`docs/SUBMISSION.md`](docs/SUBMISSION.md)
+- **Threat model:** [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
+- **On-chain evidence:** [`arkiv/evidence.json`](arkiv/evidence.json) (every feature, with tx hashes) and [`arkiv/e2e-report.md`](arkiv/e2e-report.md)
 
 Built for the Arkiv Global Tour Stop (pre-Devcon 8), 9–18 October 2026. Tracks: Best Indian Use Case, Censorship Resistance, Open Source, Privacy, Security.
 
