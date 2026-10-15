@@ -1,4 +1,4 @@
-import { defaultClientConditions, defineConfig, loadEnv, type Plugin } from "vite";
+import { defaultClientConditions, defaultServerConditions, defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 
@@ -99,6 +99,8 @@ export default defineConfig(({ mode }) => {
       },
     },
     // The portable build is one file; icons and the install manifest only matter when hosted.
+    // Server-side code (the dev API and the tests) resolves nexora-ledger from source too.
+    ssr: { resolve: { conditions: ["nexora-source", ...defaultServerConditions], externalConditions: ["nexora-source"] } },
     publicDir: portable ? false : "public",
     build: {
       target: "es2022",
