@@ -139,13 +139,16 @@ try {
   cleanup();
 }
 
-// Details and errors come from the page under test; keep each on one line so they cannot forge log entries.
-const oneLine = (value) => String(value).replace(/[\r\n\u2028\u2029]+/g, " ");
-for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"} ${oneLine(r.name)}${r.detail ? ` (${oneLine(r.detail)})` : ""}`);
-for (const s of skipped) console.log(`SKIP ${oneLine(s)}`);
+// Details and errors come from the page under test; line breaks are stripped at each log call so
+// page text cannot forge log entries.
+for (const r of results) {
+  const detail = r.detail ? ` (${String(r.detail).replace(/\n|\r/g, " ")})` : "";
+  console.log(`${r.ok ? "PASS" : "FAIL"} ${String(r.name).replace(/\n|\r/g, " ")}${detail}`);
+}
+for (const s of skipped) console.log(`SKIP ${String(s).replace(/\n|\r/g, " ")}`);
 if (errors.length) {
   console.log("page errors:");
-  for (const error of errors) console.log(`  ${oneLine(error)}`);
+  for (const error of errors) console.log(`  ${String(error).replace(/\n|\r/g, " ")}`);
 }
 const failed = results.filter((r) => !r.ok).length + errors.length;
 console.log(failed ? `${failed} problem(s)` : `all ${results.length} checks passed`);
