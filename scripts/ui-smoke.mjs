@@ -7,7 +7,7 @@
 // depend on Arkiv returning data, except the share link, which is skipped (not failed) when the
 // public RPC has rate-limited the machine, so a rate-limited RPC cannot make CI flaky.
 import { spawn } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -16,6 +16,7 @@ const PORT = 4791;
 const DEBUG = 9444;
 const BASE = `http://localhost:${PORT}`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const evidence = JSON.parse(readFileSync(join(root, "arkiv", "evidence.json"), "utf8"));
 
 const chromeCandidates = [
   process.env.CHROME_PATH,
@@ -114,6 +115,7 @@ try {
   await js(`[...document.querySelectorAll(".tabs button")].find(b => b.textContent.includes("Something happened"))?.click()`);
   await sleep(300);
   check("incident reports default to a one-time wallet", await js(`[...document.querySelectorAll("label.check")].find(l => l.textContent.includes("one-time wallet"))?.querySelector("input")?.checked === true`));
+  check("locking an entry is offered, and off unless the worker turns it on", await js(`[...document.querySelectorAll("label.check")].find(l => l.textContent.includes("Lock it"))?.querySelector("input")?.checked === false`));
 
   await go("#/mine?ui=en");
   await js(`document.querySelector("details.card").open = true; [...document.querySelectorAll("details.card button")].find(b => b.textContent.includes("Reveal"))?.click()`);
@@ -129,11 +131,33 @@ try {
   if (rateLimited) skipped.push("compare share link (Arkiv RPC rate-limited this IP)");
   else check("compare share link is a wa.me link", await js(`(document.querySelector("a.whatsapp")?.href ?? "").startsWith("https://wa.me/?text=")`));
 
-  await go("#/incidents?ui=en");
+  await go("#/incidents?ui=en", 3500);
   check("incidents page renders", await js(`document.querySelector("h2")?.textContent.includes("Incidents")`));
+  const limitedHere = async () => js(`/rate-limited|query budget/i.test(document.querySelector("main")?.innerText ?? "")`);
+  if (await limitedHere()) skipped.push("printable union report (Arkiv RPC rate-limited this IP)");
+  else {
+    const report = await js(`({ button: [...document.querySelectorAll("button")].some(b => b.textContent.includes("Print or save as PDF")), rows: document.querySelectorAll(".report-keys li").length, links: [...document.querySelectorAll(".report-keys .mono")].every(s => s.textContent.startsWith("https://tiramisu.explorer.arkiv.network/entity/0x")), hidden: getComputedStyle(document.querySelector(".report-head")).display === "none" })`);
+    check("printable union report lists every report with its explorer link, hidden on screen", report?.button && report.rows > 0 && report.links && report.hidden, JSON.stringify(report));
+  }
+
+  // The locked incident the seed recorded: its page shows the lock and offers a complaint letter.
+  const locked = evidence.features.ownership_lock?.key;
+  await go(`#/e/${locked}?ui=en`, 4000);
+  if (await limitedHere()) skipped.push("complaint letter (Arkiv RPC rate-limited this IP)");
+  else {
+    const page = await js(`({ lockedNote: document.querySelector("table.kv")?.innerText.includes("locked: handed to an address nobody controls"), noDelete: ![...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Delete"), letter: document.querySelector(".letter-text")?.value ?? "" })`);
+    check("a locked entry says nobody can delete it, and offers no delete button", page?.lockedNote && page.noDelete, JSON.stringify({ lockedNote: page?.lockedNote, noDelete: page?.noDelete }));
+    check("complaint letter links the public record and leaves name and ID for the worker", page?.letter.includes(`/entity/${locked}`) && page.letter.includes("[your name]") && page.letter.includes("[your ID]") && page.letter.startsWith("To: The Grievance Officer"), page?.letter.slice(0, 80));
+    await js(`(() => { const s = document.querySelector(".letter select"); s.value = "labour"; s.dispatchEvent(new Event("change", { bubbles: true })); })()`);
+    await sleep(300);
+    const labour = (await js(`document.querySelector(".letter-text")?.value`)) ?? "";
+    check("letter to the labour department leaves Delhi NCR's state blank and links similar reports", labour.startsWith("To: The Labour Department") && labour.includes("[your state]") && labour.includes("#/incidents?platform=zomato&city=delhi_ncr"), labour.slice(0, 80));
+  }
 
   await go("#/proof?ui=hi");
   check("proof page renders in Hindi", await js(`document.querySelector("h2")?.textContent.includes("सबूत")`));
+  const proofRows = await js(`document.querySelectorAll(".proof-table tbody tr").length`);
+  check("proof page lists every recorded step, including the ownership lock", proofRows === Object.keys(evidence.features).length && (await js(`document.querySelector(".proof-table")?.innerText.includes("ownership_lock")`)), `${proofRows} rows`);
   ws.close();
 } finally {
   cleanup();

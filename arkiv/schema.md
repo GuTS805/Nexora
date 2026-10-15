@@ -81,7 +81,7 @@ Incident reports are published from a **fresh one-time wallet by default**, so a
 
 ### Authorship
 
-Authorship is always read from Arkiv's engine-set **`$creator`**, never from an attribute. Writers cannot set or fake it. `$owner` decides who may delete an entity. "Independent workers" in the app means distinct `$creator` wallets, and "confirmed" means at least two of them, counted only among a trust list's members when the reader looks at everyone's entries.
+Authorship is always read from Arkiv's engine-set **`$creator`**, never from an attribute. Writers cannot set or fake it. `$owner` decides who may delete an entity. A **locked** entry has `$owner = 0x000000000000000000000000000000000000dEaD` (an address whose key nobody holds) while `$creator` stays the worker's wallet. Nobody can delete it before it expires, and readers need nothing special to read it. "Independent workers" in the app means distinct `$creator` wallets, and "confirmed" means at least two of them, counted only among a trust list's members when the reader looks at everyone's entries.
 
 ## Entity 3: `trust_list`
 
@@ -128,6 +128,7 @@ Results are paged with the SDK cursor (200 per page): pages read up to 400 entri
 | Log one day | Log my day | `createEntity(shiftCreate(input))` |
 | Log a week | Log my day → CSV | `executeBatch({ creates })`, 20 per transaction |
 | Report an incident, or update one | Log my day → Something happened | `createEntity(incidentCreate(input))`, from a one-time wallet by default; an update sets `parent` |
+| Lock an entry (opt-in, either kind) | Log my day → "Lock it" | `predictEntityKeys({ owner, count: 1 })`, then one `executeBatch({ creates: [{ …params, salt }], ownershipChanges: [{ entityKey, newOwner: 0x…dEaD }] })` ([`createLocked`](../ledger/src/lock.ts)) |
 | Seed demo data | `scripts/seed.ts` | `executeBatch({ creates })` |
 | Keep alive | Entry page, any wallet | `extendEntity({ entityKey, expires: atBlock(…) })` |
 | Delete | Entry page, owner only | `deleteEntity({ entityKey })` |
@@ -139,7 +140,7 @@ Worker names, phone numbers, rider or partner IDs, vehicle numbers, addresses, e
 
 ## Recorded evidence
 
-`npm run seed` performs one transaction per feature above and records its hash and entity keys in [`evidence.json`](evidence.json): batch creates of shifts and incidents, incident follow-ups (lineage), a sealed payload, trust list create and patch, a permissionless extension by a non-owner, a refused patch on a readonly entity, and an owner delete. The recommended trust list is pinned there **by entity key**. `npm run e2e` writes measured gas, latency and limits to [`e2e-report.md`](e2e-report.md).
+`npm run seed` performs one transaction per feature above and records its hash and entity keys in [`evidence.json`](evidence.json): batch creates of shifts and incidents, incident follow-ups (lineage), a sealed payload, trust list create and patch, a permissionless extension by a non-owner, a refused patch on a readonly entity, an owner delete, and a locked incident whose author's own delete was refused. The recommended trust list is pinned there **by entity key**. `npm run e2e` writes measured gas, latency and limits to [`e2e-report.md`](e2e-report.md).
 
 ## Wallets that create entities
 

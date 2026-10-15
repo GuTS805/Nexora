@@ -317,6 +317,17 @@
       "deleteTx": "0x6600ea6254d858d7fc0fc45f6e14bab8d3c6af0dfe7b080ea73bd85fc85044f4",
       "stillQueryable": false,
       "at": "2026-10-14T20:33:45.860Z"
+    },
+    "ownership_lock": {
+      "why": "executeBatch with an ownership change: worker 6 reports a deactivation and hands the entry to 0x…dEaD in the same transaction, so nobody (not even worker 6) can delete it early",
+      "key": "0x0e1f62831dd1eea0886f5942e6fbae9bd3ccf6ff4ce524cc2ae04439b660a422",
+      "tx": "0x1d6f75880d5d5974721cff454ebadbb2ff89cf99bea42b0963cef76b2a7beb8b",
+      "creator": "0xfdF42901392e9D358b5bD761a8fCEF9EA37f2842",
+      "owner": "0x000000000000000000000000000000000000dEaD",
+      "readonly": true,
+      "deleteRefused": true,
+      "refusal": "Transaction failed: entity 0x0e1f6283…60a422 is owned by 0x000000000000000000000000000000000000dEaD, not 0xfdF42901392e9D358b5bD761a8fCEF9EA37f2842",
+      "at": "2026-10-15T08:07:37.424Z"
     }
   }
 }

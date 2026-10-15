@@ -52,7 +52,8 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
 - **Attack:** publish figures, let others rely on them, then quietly edit them; or pressure a worker into editing a critical report.
 - **Mitigation:** entries are created with `readonly: true` ([`ledger/src/codec.ts`](../ledger/src/codec.ts)). An update is a new entry linked by `parent`, so the original stays as written.
 - **Evidence:** the seed step `readonly_enforced` records a refused patch from the owner, and `npm run e2e` re-checks it.
-- **Residual:** the owner can still *delete*. That is intended (privacy), and a pressured worker could be made to delete. `permissionlessExtension` lets others keep an entry alive, but not resurrect a deleted one, and an update pointing at a deleted report simply dangles.
+- **Lock (opt-in):** a worker who expects pressure can lock a report. It is created and handed to `0x…dEaD` in the same transaction ([`ledger/src/lock.ts`](../ledger/src/lock.ts)), so from then on nobody can delete it before its lifetime ends, the author included. The seed step `ownership_lock` records the author's own refused delete.
+- **Residual:** an unlocked entry's owner can still *delete*. That is intended (privacy), and a pressured worker could be made to delete. `permissionlessExtension` lets others keep an entry alive, but not resurrect a deleted one, and an update pointing at a deleted report simply dangles. A locked entry cannot be withdrawn even by a worker who later regrets it, so the app says so before publishing and keeps the lock off by default.
 
 ### T5. Malformed or hostile entities
 

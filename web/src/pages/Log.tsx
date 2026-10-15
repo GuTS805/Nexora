@@ -1,6 +1,6 @@
 import {
   CITIES, CSV_TEMPLATE, EXPIRY_CHOICES_DAYS, HOURS_BAND_LABELS, INCENTIVES, INCIDENT_TYPES, MAX_BATCH, MAX_DAYS_LOST,
-  MIN_PASSPHRASE_LENGTH, PLATFORM_WORK, PLATFORMS, VEHICLES, costPct, explainError, hoursBand, incidentCreate, isOneOf,
+  MIN_PASSPHRASE_LENGTH, PLATFORM_WORK, PLATFORMS, VEHICLES, costPct, createLocked, explainError, hoursBand, incidentCreate, isOneOf,
   netHourly, parseShiftsCsv, seal, shiftCreate, type City, type Platform, type Vehicle, type WorkType,
 } from "nexora-ledger";
 import type { CreateEntityParameters } from "@arkiv-network/sdk";
@@ -83,9 +83,10 @@ function PublishPanel(props: {
   sealedContent: () => Parameters<typeof seal>[0];
   defaultOneOff?: boolean;
 }) {
-  const { wallet, ensureGas, bump, createOneOff } = useArkiv();
+  const { reader, wallet, ensureGas, bump, createOneOff } = useArkiv();
   const { t } = useI18n();
   const [oneOff, setOneOff] = useState(props.defaultOneOff ?? false);
+  const [lock, setLock] = useState(false);
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +103,8 @@ function PublishPanel(props: {
       // A one-time wallet is created only now, after validation, so failed forms leave no stray keys.
       const publisher = oneOff ? createOneOff() : wallet!;
       await ensureGas(publisher.address);
-      const result = await publisher.client.createEntity(params);
+      // Locked: created and handed to 0x…dEaD in one transaction, so nobody can delete it early.
+      const result = lock ? await createLocked(reader, publisher.client, publisher.address, params) : await publisher.client.createEntity(params);
       setReceipt({ txHash: result.txHash, keys: [result.entityKey] });
       props.setPassphrase("");
       bump();
@@ -145,6 +147,10 @@ function PublishPanel(props: {
         <input type="checkbox" checked={oneOff} onChange={(e) => setOneOff(e.target.checked)} /> {t("oneOffLabel")}
       </label>
       {oneOff && <p className="small muted">{t("oneOffHelp")}</p>}
+      <label className="check">
+        <input type="checkbox" checked={lock} onChange={(e) => setLock(e.target.checked)} /> {t("lockLabel")}
+      </label>
+      {lock && <p className="small muted">{t("lockHelp")}</p>}
       <button disabled={(!wallet && !oneOff) || !props.valid || busy} onClick={publish}>{busy ? t("publishing") : t("publish")}</button>
       <PublishResult receipt={receipt} error={error} />
     </>

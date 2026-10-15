@@ -1,11 +1,12 @@
 import { readIncidents, readTrustList } from "../cache.ts";
 import { ExpirationTime } from "@arkiv-network/sdk";
-import { explainError, EXTEND_DAYS, HOURS_BAND_LABELS, blockToDate, fetchEntry, resolvedReports, unseal, type Incident, type PrivateDetails } from "nexora-ledger";
+import { explainError, EXTEND_DAYS, HOURS_BAND_LABELS, blockToDate, fetchEntry, isLocked, resolvedReports, unseal, type Incident, type PrivateDetails } from "nexora-ledger";
 import { useState } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
 import { Addr, EntityLink, ErrorNote, ExplorerEntity, Hourly, IncidentCard, TxLink, WalletBar, WhatsAppButton, useAsync, useMonth } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
+import { ComplaintLetter } from "../letter.tsx";
 import { PlatformLogo } from "../logos.tsx";
 import { appUrl } from "../share.ts";
 
@@ -110,7 +111,7 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
           <tbody>
             <tr><th>{t("kvKey")}</th><td className="mono">{e.key} · <ExplorerEntity entityKey={e.key} /></td></tr>
             <tr><th>{t("kvCreator")}</th><td><Addr address={e.creator} /> <span className="muted small">{t("kvCreatorNote")}</span></td></tr>
-            <tr><th>{t("kvOwner")}</th><td><Addr address={e.owner} /></td></tr>
+            <tr><th>{t("kvOwner")}</th><td><Addr address={e.owner} />{isLocked(e.owner) && <> <span className="badge ok">🔒</span> <span className="muted small">{t("lockedOwner")}</span></>}</td></tr>
             <tr><th>{t("kvExpires")}</th><td>{t("kvExpiresValue", { b: e.expiresAt.toString(), date: expires.toLocaleDateString(locale), now: block.toString() })}</td></tr>
             <tr><th>{t("kvFlags")}</th><td>{e.readonly ? t("flagReadonly") : t("flagEditable")} · {e.communityCanExtend ? t("flagAnyExtend") : t("flagOwnerExtend")}</td></tr>
             {e.kind === "incident" && <tr><th>{t("kvUpdateOf")}</th><td>{e.parent ? <EntityLink entityKey={e.parent} /> : "—"}</td></tr>}
@@ -157,6 +158,8 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
           )}
         </div>
       )}
+
+      {e.kind === "incident" && <ComplaintLetter e={e} updates={updates} details={details} />}
 
       {e.kind === "incident" && (
         <>

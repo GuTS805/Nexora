@@ -4,3 +4,4 @@ export * from "./codec.ts";
 export * from "./queries.ts";
 export * from "./insights.ts";
 export * from "./csv.ts";
+export * from "./lock.ts";

@@ -395,7 +395,11 @@ select option:checked { background-color: var(--accent); color: var(--accent-ink
 /* Open source */
 .gh-link { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); text-decoration: none; font-size: 13px; font-weight: 600; white-space: nowrap; }
 .gh-link:hover { border-color: var(--accent); color: var(--accent); }
-@media (max-width: 760px) { .gh-link span { display: none; } .gh-link { padding: 6px 8px; } }
+/* Below this width the label would push the language button onto a second line; the icon stays. */
+@media (max-width: 1360px) { .gh-link span { display: none; } .gh-link { padding: 6px 8px; } }
+@media (max-width: 1200px) and (min-width: 761px) { .top nav { margin-left: 10px; gap: 2px; } .top nav a { padding: 8px 10px; } .top nav a.active { min-width: 0; } }
+/* Tablets: logo and controls on the first row, the full navigation on its own row below. */
+@media (max-width: 1000px) and (min-width: 761px) { .top { flex-wrap: wrap; } .top nav { order: 10; flex-basis: 100%; margin-left: 0; } }
 .about-open { margin: 0 0 16px; padding: 20px 22px; border: 1px solid var(--accent); border-radius: 14px; background: linear-gradient(135deg, color-mix(in srgb, var(--accent), var(--surface) 88%), var(--surface)); }
 .about-open-head { display: grid; grid-template-columns: 62px 1fr auto; gap: 20px; align-items: center; }
 .about-open-head h3 { margin: 0 0 4px; font-size: 18px; }
@@ -430,4 +434,27 @@ select option:checked { background-color: var(--accent); color: var(--accent-ink
   table.cards td.group { grid-column: 1 / -1; font-size: 15px; }
   table.cards td[data-label]:before { content: attr(data-label); display: block; font-size: 11px; color: var(--muted); }
   table.cards .badge { margin-left: 0; margin-top: 2px; }
+}
+
+/* complaint letter */
+.letter .letter-options { margin: 0.6rem 0; gap: 1rem; }
+.letter .letter-options select { width: auto; max-width: 100%; }
+.letter .letter-text { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; resize: vertical; }
+.letter-where summary { cursor: pointer; font-weight: 600; margin-top: 0.4rem; }
+.letter-where ul { margin: 0.5rem 0 0.4rem; padding-left: 1.2rem; }
+.letter-where li { margin: 0.3rem 0; }
+
+/* printable union report: only the report, black on white */
+.print-only { display: none; }
+@media print {
+  .top, .foot, .filters, label.check, button, .actions, .no-print, .grid, details.query { display: none !important; }
+  .print-only { display: block !important; }
+  * { background: transparent !important; color: #000 !important; box-shadow: none !important; text-shadow: none !important; }
+  body { background: #fff !important; }
+  main { max-width: none; padding: 0; }
+  a { text-decoration: none; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #999 !important; padding: 4px 6px; }
+  .report-keys li { margin: 0 0 6px; break-inside: avoid; }
+  .report-keys .mono { font-size: 9pt; word-break: break-all; }
 }

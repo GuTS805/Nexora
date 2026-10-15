@@ -20,7 +20,7 @@ import { getAddress, type Address, type Hex } from "viem";
 import {
   HOURS_BAND_LABELS, comparePlatforms, entryPredicate, explainError, fetchEntries, fetchEntry, fetchIncidents,
   fetchShifts, fetchTrustList, fetchTrustLists, getEntityOrNull, incidentStats, liveClient, queryText, readClient,
-  fetchRawEntities, type EntryFilters, type IncidentFilters, type ShiftFilters,
+  fetchRawEntities, isLocked, type EntryFilters, type IncidentFilters, type ShiftFilters,
 } from "./src/index.ts";
 import { auditEntities } from "./src/contract.ts";
 
@@ -158,6 +158,7 @@ switch (command) {
       const entityFlags = entity?.creationFlags;
       const verdict =
         name === "owner_delete" ? entity === null :
+        name === "ownership_lock" ? entity !== null && !!entityFlags?.readonly && isLocked(entity.owner ?? "") :
         name === "trust_list_create" || name === "trust_list_patch" ? entity !== null && entityFlags?.readonly === false :
         name === "permissionless_extend" ? !!entityFlags?.permissionlessExtension && String(step.extendedBy).toLowerCase() !== String(entity?.owner).toLowerCase() :
         entity !== null && !!entityFlags?.readonly;

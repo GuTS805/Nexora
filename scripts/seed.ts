@@ -25,7 +25,7 @@ import { tiramisu } from "@arkiv-network/sdk/chains";
 import type { Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
-  EXTEND_DAYS, MAX_BATCH, arkivHttp, explainError, fetchEntry, fetchIncidents, fetchShifts, fetchTrustList,
+  EXTEND_DAYS, MAX_BATCH, arkivHttp, createLocked, explainError, fetchEntry, fetchIncidents, fetchShifts, fetchTrustList,
   incidentCreate, readClient, seal, shiftCreate, trustListCreate, trustListPatch,
   type City, type IncidentInput, type IncidentType, type Platform, type ShiftInput, type Vehicle, type WorkType,
 } from "../ledger/src/index.ts";
@@ -318,6 +318,25 @@ await step("owner_delete", "deleteEntity by the owner: worker 2 publishes a mist
   const deleted = await walletFor(worker(1)).deleteEntity({ entityKey: created.entityKey });
   const gone = await fetchShifts(client, { includeDemo: true, keys: [created.entityKey] }, 1);
   return { key: created.entityKey, createTx: created.txHash, deleteTx: deleted.txHash, stillQueryable: gone.items.length > 0 };
+});
+
+await step("ownership_lock", "executeBatch with an ownership change: worker 6 reports a deactivation and hands the entry to 0x…dEaD in the same transaction, so nobody (not even worker 6) can delete it early", async () => {
+  const author = walletFor(worker(5));
+  const created = await createLocked(client, author, account(worker(5)).address, incidentCreate({
+    platform: "zomato", work: "food_delivery", city: "delhi_ncr", type: "deactivated", period: 202610,
+    daysLost: 0, reasonGiven: false, appealed: true, resolved: false, expiresInDays: 365, demo: true,
+  }));
+  const after = await fetchEntry(client, created.entityKey);
+  if (!after.ok) throw new Error(after.reason);
+  let deleteRefused = false;
+  let refusal = "";
+  try {
+    await author.deleteEntity({ entityKey: created.entityKey });
+  } catch (error) {
+    deleteRefused = true;
+    refusal = explainError(error);
+  }
+  return { key: created.entityKey, tx: created.txHash, creator: after.value.creator, owner: after.value.owner, readonly: after.value.readonly, deleteRefused, refusal };
 });
 
 console.log(dry ? "dry run complete" : "done; evidence written to arkiv/evidence.json");

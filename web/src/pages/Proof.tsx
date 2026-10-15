@@ -1,4 +1,4 @@
-import { explainError, explorerEntity, explorerTx, getEntityOrNull } from "nexora-ledger";
+import { explainError, explorerEntity, explorerTx, getEntityOrNull, isLocked } from "nexora-ledger";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Hex } from "viem";
 import evidence from "../../../arkiv/evidence.json";
@@ -24,6 +24,7 @@ const CHECKS: Record<string, Check> = {
   permissionless_extend: { key: (s) => s.key, expect: ["owner ≠ extender, community extension on", "मालिक ≠ बढ़ाने वाला, कम्युनिटी एक्सटेंशन चालू"], verify: (e, s) => !!e?.creationFlags?.permissionlessExtension && String(s.extendedBy).toLowerCase() !== String(e.owner).toLowerCase() },
   readonly_enforced: { key: (s) => s.key, expect: ["still readonly after the refused patch", "ठुकराए गए पैच के बाद भी readonly"], verify: (e) => !!e?.creationFlags?.readonly },
   owner_delete: { key: (s) => s.key, expect: ["gone after delete", "डिलीट के बाद मौजूद नहीं"], verify: (e) => e === null },
+  ownership_lock: { key: (s) => s.key, expect: ["owned by 0x…dEaD, readonly: nobody can delete it", "मालिक 0x…dEaD, readonly: कोई डिलीट नहीं कर सकता"], verify: (e) => !!e?.creationFlags?.readonly && isLocked(String(e.owner)) },
 };
 
 /** evidence.json is written by the seed script in English; these are the Hindi versions. */
@@ -38,6 +39,7 @@ const WHY_HI: Record<string, string> = {
   permissionless_extend: "permissionlessExtension की वजह से मालिक के अलावा कोई और (स्पॉन्सर) वर्कर 1 की एंट्री की उम्र बढ़ाता है",
   readonly_enforced: "readonly एंट्री पर patchEntity ठुकराया जाना चाहिए, मालिक के लिए भी",
   owner_delete: "मालिक का deleteEntity: वर्कर 2 गलती से डाला दिन हटाता है",
+  ownership_lock: "ओनरशिप बदलने वाला executeBatch: वर्कर 6 ID बंद होने की रिपोर्ट करता है और उसी ट्रांज़ैक्शन में एंट्री 0x…dEaD को सौंप देता है, ताकि कोई भी (वर्कर 6 खुद भी) उसे समय से पहले डिलीट न कर सके",
 };
 
 const ICON_PATHS: Record<string, ReactNode> = {
@@ -51,6 +53,7 @@ const ICON_PATHS: Record<string, ReactNode> = {
   permissionless_extend: <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6" /></>,
   readonly_enforced: <><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></>,
   owner_delete: <><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6" /></>,
+  ownership_lock: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4M12 15v2" /></>,
 };
 
 const External = () => <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>;

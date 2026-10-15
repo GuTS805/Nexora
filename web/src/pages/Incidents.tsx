@@ -1,14 +1,15 @@
 import { readIncidents } from "../cache.ts";
-import { CITIES, INCIDENT_TYPES, PLATFORMS, incidentStats, isOneOf, resolvedReports, type City, type IncidentFilters, type IncidentType, type Platform } from "nexora-ledger";
+import { CITIES, INCIDENT_TYPES, PLATFORMS, explorerEntity, incidentStats, isOneOf, resolvedReports, type City, type IncidentFilters, type IncidentType, type Platform } from "nexora-ledger";
 import { useMemo, useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
-import { ErrorNote, Field, IncidentCard, QueryBox, VocabSelect, useAsync, useSource } from "../components.tsx";
+import { ErrorNote, Field, IncidentCard, QueryBox, VocabSelect, useAsync, useMonth, useSource } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
 import { SourcePicker, cliFor, creatorsFor, trustedSetFor, useRecommendedList } from "./Explore.tsx";
 
 export function Incidents() {
   const { reader, wallet, revision } = useArkiv();
-  const { t, v } = useI18n();
+  const { t, v, lang } = useI18n();
+  const month = useMonth();
   // Links from the Compare page open with a platform and city already chosen.
   const params = useMemo(() => new URLSearchParams(location.hash.split("?")[1] ?? ""), []);
   const [platform, setPlatform] = useState<Platform | "">(isOneOf(PLATFORMS, params.get("platform")) ? (params.get("platform") as Platform) : "");
@@ -35,8 +36,8 @@ export function Incidents() {
 
   return (
     <section>
-      <h2>{t("navIncidents")}</h2>
-      <p className="muted">{t("incidentsIntro")}</p>
+      <h2 className="no-print">{t("navIncidents")}</h2>
+      <p className="muted no-print">{t("incidentsIntro")}</p>
       <div className="filters">
         <Field label="incidentType"><VocabSelect list={INCIDENT_TYPES} value={type} onChange={setType} any /></Field>
         <Field label="platform"><VocabSelect list={PLATFORMS} value={platform} onChange={setPlatform} any /></Field>
@@ -49,6 +50,14 @@ export function Incidents() {
       {result.loading && <p className="muted">{t("loading")}</p>}
       {result.data && (
         <>
+          <div className="print-only report-head">
+            <h2>{t("reportTitle")}</h2>
+            <p>{[type ? v(type) : t("reportAllTypes"), platform ? v(platform) : t("reportAllPlatforms"), city ? v(city) : t("reportAllCities")].join(" · ")}{includeDemo ? ` · ${t("syntheticDemo")}` : ""}</p>
+            <p className="small">{t("reportGenerated", { date: new Date().toLocaleDateString(lang === "hi" ? "hi-IN" : "en-IN") })}</p>
+            <p className="small">{t("reportVerify")}</p>
+            <p className="small mono">{result.data.query}</p>
+          </div>
+          {originals.length > 0 && <button className="secondary no-print" onClick={() => window.print()}>{t("reportPrint")}</button>}
           {stats.length > 0 && (
             <div className="table-wrap">
               <table className="cards">
@@ -70,6 +79,9 @@ export function Incidents() {
           )}
           <QueryBox query={result.data.query} block={result.data.blockNumber} cli={cliFor("incidents", filters, source)} rejected={result.data.rejected} />
           {originals.length === 0 && <p className="muted">{t("empty")}</p>}
+          <ol className="print-only report-keys">
+            {originals.map((e) => <li key={e.key}>{v(e.type)} · {v(e.platform)} · {v(e.city)} · {month(e.period)} · {t("daysLost")}: {e.daysLost}{resolved.has(e.key) ? ` · ${t("resolvedBadge")}` : ""}<br /><span className="mono">{explorerEntity(e.key)}</span></li>)}
+          </ol>
           <div className="grid">
             {originals.map((e) => <IncidentCard key={e.key} e={e} trusted={source.kind === "list" ? true : undefined} block={result.data?.blockNumber} updates={updates.get(e.key)} resolved={resolved.has(e.key)} />)}
           </div>

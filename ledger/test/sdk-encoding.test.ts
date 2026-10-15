@@ -10,7 +10,7 @@ import { tiramisu } from "@arkiv-network/sdk/chains";
 import { custom, getAddress, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it } from "vitest";
-import { incidentCreate, seal, shiftCreate, trustListCreate, trustListPatch, type ShiftInput } from "../src/index.ts";
+import { NOBODY, incidentCreate, seal, shiftCreate, trustListCreate, trustListPatch, type ShiftInput } from "../src/index.ts";
 
 // Anvil's well-known test key #0: public, never funded on Tiramisu, used only to sign locally.
 const account = privateKeyToAccount("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80");
@@ -81,6 +81,13 @@ describe("SDK accepts every write the app sends", () => {
 
   it("extendEntity: keep-alive as an absolute deadline after the current expiry", async () => {
     await expect(reachesSend(() => wallet.extendEntity({ entityKey: KEY, expires: ExpirationTime.atBlock(0x100000n + 30n * 43_200n) }))).resolves.toBe(true);
+  });
+
+  it("executeBatch: a create with a chosen salt plus an ownership change to 0x…dEaD (locked entry)", async () => {
+    await expect(reachesSend(() => wallet.executeBatch({
+      creates: [{ ...shiftCreate(input), salt: 7n }],
+      ownershipChanges: [{ entityKey: KEY, newOwner: NOBODY }],
+    }))).resolves.toBe(true);
   });
 
   it("deleteEntity and batch deletes", async () => {
