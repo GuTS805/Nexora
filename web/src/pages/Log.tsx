@@ -1,15 +1,16 @@
 import {
   CITIES, CSV_TEMPLATE, EXPIRY_CHOICES_DAYS, HOURS_BAND_LABELS, INCENTIVES, INCIDENT_TYPES, MAX_BATCH, MAX_DAYS_LOST,
-  MIN_PASSPHRASE_LENGTH, PLATFORM_WORK, PLATFORMS, VEHICLES, costPct, createLocked, explainError, hoursBand, incidentCreate, isOneOf,
+  MIN_PASSPHRASE_LENGTH, PLATFORM_WORK, PLATFORMS, VEHICLES, costPct, createLocked, explainError, hoursBand, isOneOf,
   netHourly, parseShiftsCsv, seal, shiftCreate, type City, type Platform, type Vehicle, type WorkType,
 } from "nexora-ledger";
-import type { CreateEntityParameters } from "@arkiv-network/sdk";
 import { useMemo, useState, type ReactNode } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
 import { EntityLink, Field, Hourly, TxLink, VocabSelect, WalletBar, useMonth } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
+import { enqueue, formParams, isOffline, type FormEntry } from "../queue.ts";
 import { store } from "../storage.ts";
+import { MicButton } from "../voice.tsx";
 import { recentPeriods } from "./Explore.tsx";
 
 type Receipt = { txHash: Hex; keys: Hex[] };
@@ -79,7 +80,7 @@ function PublishPanel(props: {
   expiresInDays: Lifetime;
   setExpiresInDays: (d: Lifetime) => void;
   valid: boolean;
-  build: (sealed: Awaited<ReturnType<typeof seal>> | undefined) => CreateEntityParameters;
+  entry: (sealed: Awaited<ReturnType<typeof seal>> | undefined) => FormEntry;
   sealedContent: () => Parameters<typeof seal>[0];
   defaultOneOff?: boolean;
 }) {
@@ -89,6 +90,7 @@ function PublishPanel(props: {
   const [lock, setLock] = useState(false);
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [queued, setQueued] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sealing = props.passphrase.length > 0;
 
@@ -96,10 +98,19 @@ function PublishPanel(props: {
     setBusy(true);
     setError(null);
     setReceipt(null);
+    setQueued(false);
     try {
       if (!wallet && !oneOff) throw new Error(t("connectFirst"));
       if (sealing && props.passphrase.length < MIN_PASSPHRASE_LENGTH) throw new Error(t("passTooShort", { n: MIN_PASSPHRASE_LENGTH }));
-      const params = props.build(sealing ? await seal(props.sealedContent(), props.passphrase) : undefined);
+      // Sealing is local, so it works offline too; the passphrase is never part of what is saved.
+      const entry = props.entry(sealing ? await seal(props.sealedContent(), props.passphrase) : undefined);
+      const params = formParams(entry);
+      if (isOffline()) {
+        enqueue(entry, { oneOff, lock });
+        setQueued(true);
+        props.setPassphrase("");
+        return;
+      }
       // A one-time wallet is created only now, after validation, so failed forms leave no stray keys.
       const publisher = oneOff ? createOneOff() : wallet!;
       await ensureGas(publisher.address);
@@ -152,6 +163,7 @@ function PublishPanel(props: {
       </label>
       {lock && <p className="small muted">{t("lockHelp")}</p>}
       <button disabled={(!wallet && !oneOff) || !props.valid || busy} onClick={publish}>{busy ? t("publishing") : t("publish")}</button>
+      {queued && <p className="card success" role="status">{t("offlineSaved")}</p>}
       <PublishResult receipt={receipt} error={error} />
     </>
   );
@@ -178,6 +190,11 @@ function ShiftForm({ profile, setProfile }: { profile: Profile; setProfile: (p: 
 
   return (
     <>
+      <MicButton onDay={(day) => {
+        if (day.grossInr !== undefined) setGross(String(day.grossInr));
+        if (day.costsInr !== undefined) setCosts(String(day.costsInr));
+        if (day.hours !== undefined) setHours(String(day.hours));
+      }} />
       <div className="form-grid">
         <PlatformWork profile={profile} setProfile={setProfile} />
         <Field label="vehicle"><VocabSelect list={VEHICLES} value={profile.vehicle} onChange={(x) => x && setProfile({ ...profile, vehicle: x })} /></Field>
@@ -211,7 +228,7 @@ function ShiftForm({ profile, setProfile }: { profile: Profile; setProfile: (p: 
         expiresInDays={expiresInDays}
         setExpiresInDays={setExpiresInDays}
         valid={valid}
-        build={(sealed) => shiftCreate({ ...input, sealed })}
+        entry={(sealed) => ({ kind: "shift", input: { ...input, sealed } })}
         sealedContent={() => ({ grossInr: g, costsInr: c, hours: h, orders: orders ? Number(orders) : undefined, note: note || undefined })}
       />
       <CsvImport />
@@ -268,10 +285,10 @@ function IncidentForm({ profile, setProfile, params }: { profile: Profile; setPr
         expiresInDays={expiresInDays}
         setExpiresInDays={setExpiresInDays}
         valid={valid}
-        build={(sealed) => incidentCreate({
+        entry={(sealed) => ({ kind: "incident", input: {
           platform: profile.platform, work: profile.work, city: profile.city, type, period, daysLost: days,
           reasonGiven, appealed, resolved, expiresInDays, parent: validParent, demo: false, sealed,
-        })}
+        } })}
         sealedContent={() => ({ note: note || undefined })}
         defaultOneOff
       />

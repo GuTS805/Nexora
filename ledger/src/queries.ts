@@ -3,7 +3,7 @@ import { addr, bool, i32, key as keyAttr, str } from "@arkiv-network/sdk/attr";
 import { tiramisu } from "@arkiv-network/sdk/chains";
 import { and, eq, gte, lte, or, type Expression } from "@arkiv-network/sdk/query";
 import { custom, http, webSocket, type Address, type Hex } from "viem";
-import { decodeEntry, decodeIncident, decodeShift, decodeTrustList, type Decoded, type Entry, type Incident, type RawEntity, type Shift, type TrustList } from "./codec.ts";
+import { decodeEntry, decodeIncident, decodeReply, decodeShift, decodeTrustList, type Decoded, type Entry, type Incident, type RawEntity, type Reply, type Shift, type TrustList } from "./codec.ts";
 import { APP, KIND, SCHEMA_VERSION, type City, type IncidentType, type Platform, type Vehicle, type WorkType } from "./schema.ts";
 
 export const TIRAMISU_RPC = tiramisu.rpcUrls.default.http[0];
@@ -160,6 +160,12 @@ export type IncidentFilters = EntryFilters & {
   parent?: Hex | undefined;
 };
 
+/** Replies to reports. They carry no platform or city: those belong to the report they answer. */
+export type ReplyFilters = Pick<EntryFilters, "includeDemo" | "creators" | "keys"> & {
+  /** Only replies to this report. */
+  parent?: Hex | undefined;
+};
+
 /**
  * Most `OR` branches one predicate carries. The Tiramisu node rejects a query with more than 64
  * predicates ("query has too many predicates") or longer than 8192 bytes ("query is too long");
@@ -208,6 +214,12 @@ export function shiftPredicate(filters: ShiftFilters = {}): Expression {
 export function incidentPredicate(filters: IncidentFilters = {}): Expression {
   const clauses = base(KIND.incident);
   if (filters.type) clauses.push(eq("type", str(filters.type)));
+  if (filters.parent) clauses.push(eq("parent", keyAttr(filters.parent)));
+  return common(clauses, filters);
+}
+
+export function replyPredicate(filters: ReplyFilters = {}): Expression {
+  const clauses = base(KIND.reply);
   if (filters.parent) clauses.push(eq("parent", keyAttr(filters.parent)));
   return common(clauses, filters);
 }
@@ -315,6 +327,9 @@ export const fetchIncidents = (client: PublicArkivClient, filters: IncidentFilte
 
 export const fetchEntries = (client: PublicArkivClient, filters: EntryFilters = {}, maxItems = 600): Promise<QueryOutcome<Entry>> =>
   fetchDecoded(client, filters, entryPredicate, decodeEntry, maxItems);
+
+export const fetchReplies = (client: PublicArkivClient, filters: ReplyFilters = {}, maxItems = 600): Promise<QueryOutcome<Reply>> =>
+  fetchDecoded(client, filters, replyPredicate, decodeReply, maxItems);
 
 export async function fetchTrustLists(client: PublicArkivClient, curator?: Address): Promise<QueryOutcome<TrustList>> {
   const expression = trustListPredicate(curator);

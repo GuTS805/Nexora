@@ -10,7 +10,7 @@ import { tiramisu } from "@arkiv-network/sdk/chains";
 import { custom, getAddress, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it } from "vitest";
-import { NOBODY, incidentCreate, seal, shiftCreate, trustListCreate, trustListPatch, type ShiftInput } from "../src/index.ts";
+import { NOBODY, incidentCreate, replyCreate, seal, shiftCreate, trustListCreate, trustListPatch, type ShiftInput } from "../src/index.ts";
 
 // Anvil's well-known test key #0: public, never funded on Tiramisu, used only to sign locally.
 const account = privateKeyToAccount("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80");
@@ -66,6 +66,10 @@ describe("SDK accepts every write the app sends", () => {
     expect(calls).toContain("eth_sendRawTransaction");
     const incident = { platform: "zomato", work: "food_delivery", city: "jaipur", type: "id_blocked", period: 202610, daysLost: 3, reasonGiven: false, appealed: true, resolved: true, expiresInDays: 365, parent: KEY, demo: true } as const;
     await expect(reachesSend(() => wallet.createEntity(incidentCreate(incident)))).resolves.toBe(true);
+  });
+
+  it("createEntity: a union's reply to a report, linked by a key-typed parent", async () => {
+    await expect(reachesSend(() => wallet.createEntity(replyCreate({ parent: KEY, status: "taken_up", period: 202610, expiresInDays: 365 })))).resolves.toBe(true);
   });
 
   it("executeBatch: 20 creates in one transaction (CSV import / seed)", async () => {

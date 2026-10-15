@@ -24,6 +24,7 @@ const CHECKS: Record<string, Check> = {
   permissionless_extend: { key: (s) => s.key, expect: ["owner ≠ extender, community extension on", "मालिक ≠ बढ़ाने वाला, कम्युनिटी एक्सटेंशन चालू"], verify: (e, s) => !!e?.creationFlags?.permissionlessExtension && String(s.extendedBy).toLowerCase() !== String(e.owner).toLowerCase() },
   readonly_enforced: { key: (s) => s.key, expect: ["still readonly after the refused patch", "ठुकराए गए पैच के बाद भी readonly"], verify: (e) => !!e?.creationFlags?.readonly },
   owner_delete: { key: (s) => s.key, expect: ["gone after delete", "डिलीट के बाद मौजूद नहीं"], verify: (e) => e === null },
+  union_reply: { key: (s) => s.keys?.[0], expect: ["exists, readonly, sent by the trust list's curator", "मौजूद है, readonly, भरोसा सूची चलाने वाले ने भेजा"], verify: (e, s) => !!e?.creationFlags?.readonly && String(e.creator).toLowerCase() === String(s.curator).toLowerCase() },
   ownership_lock: { key: (s) => s.key, expect: ["owned by 0x…dEaD, readonly: nobody can delete it", "मालिक 0x…dEaD, readonly: कोई डिलीट नहीं कर सकता"], verify: (e) => !!e?.creationFlags?.readonly && isLocked(String(e.owner)) },
 };
 
@@ -39,6 +40,7 @@ const WHY_HI: Record<string, string> = {
   permissionless_extend: "permissionlessExtension की वजह से मालिक के अलावा कोई और (स्पॉन्सर) वर्कर 1 की एंट्री की उम्र बढ़ाता है",
   readonly_enforced: "readonly एंट्री पर patchEntity ठुकराया जाना चाहिए, मालिक के लिए भी",
   owner_delete: "मालिक का deleteEntity: वर्कर 2 गलती से डाला दिन हटाता है",
+  union_reply: "key-टाइप parent से जुड़े जवाब: डेमो भरोसा सूची चलाने वाला, यूनियन की जगह, एक ही बैच में तीन रिपोर्ट का जवाब देता है; जवाब से रिपोर्ट नहीं बदलती",
   ownership_lock: "ओनरशिप बदलने वाला executeBatch: वर्कर 6 ID बंद होने की रिपोर्ट करता है और उसी ट्रांज़ैक्शन में एंट्री 0x…dEaD को सौंप देता है, ताकि कोई भी (वर्कर 6 खुद भी) उसे समय से पहले डिलीट न कर सके",
 };
 
@@ -54,6 +56,7 @@ const ICON_PATHS: Record<string, ReactNode> = {
   readonly_enforced: <><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></>,
   owner_delete: <><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6" /></>,
   ownership_lock: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4M12 15v2" /></>,
+  union_reply: <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /><path d="M8 9h8M8 13h5" /></>,
 };
 
 const External = () => <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>;

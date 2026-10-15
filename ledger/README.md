@@ -27,6 +27,8 @@ Every entity is validated before it is used, because anyone can write data that 
 
 To count only workers a union vouches for, pass `creators: list.members` from `fetchTrustList(client, key)`. That filter runs on Arkiv's `$creator`, which no writer can forge.
 
+Replies to a report (from a union, a worker group or the platform) come from `fetchReplies(client, { parent: reportKey })`. `repliesTo(report, replies, trusted?)` leaves out the reporter's own wallet and, given a set of wallets, keeps only theirs.
+
 ## Check (JSON Schema and privacy audit)
 
 ```js
@@ -34,7 +36,7 @@ import { JSON_SCHEMAS, auditEntities, validateEntity } from "nexora-ledger/contr
 import shiftSchema from "nexora-ledger/schema/shift.schema.json" with { type: "json" };
 ```
 
-- `JSON_SCHEMAS` and the files in `schema/` are JSON Schema 2020-12, one per entity kind (`shift`, `incident`, `trust-list`). They are strict: every attribute is listed and nothing else is allowed, because an extra attribute is how a name or phone number would leak.
+- `JSON_SCHEMAS` and the files in `schema/` are JSON Schema 2020-12, one per entity kind (`shift`, `incident`, `reply`, `trust-list`). They are strict: every attribute is listed and nothing else is allowed, because an extra attribute is how a name or phone number would leak.
 - `validateEntity(kind, entity)` checks an entity read from Arkiv, or `createEntity` parameters before you send them.
 - `auditEntities(entities)` runs the public privacy audit. It holds every entry readers would show to the strict schema and scans every clear-text string for phone numbers, email addresses and 12-digit ID numbers.
 
@@ -49,6 +51,8 @@ const params = shiftCreate({
 });
 // await walletClient.createEntity(params)   (an @arkiv-network/sdk wallet client)
 ```
+
+A union answers a report with `replyCreate({ parent: reportKey, status: "taken_up", period: 202610, expiresInDays: 365 })`; statuses are `received`, `taken_up`, `escalated`, `resolved` and `cannot_help`.
 
 Exact rupees and hours never reach the chain. They become an hours band and a take-home-per-hour figure rounded to ₹10. Exact figures go only into an optional sealed box (`seal()`), AES-256-GCM encrypted on the device.
 

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
 import { Change, EntityLink, ErrorNote, Field, Hourly, QueryBox, VocabSelect, WhatsAppButton, useAsync, useSource } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
+import { SpeakButton } from "../voice.tsx";
 import { PlatformLogo } from "../logos.tsx";
 import { appUrl } from "../share.ts";
 import { SourcePicker, cliFor, creatorsFor, trustedSetFor, useRecommendedList } from "./Explore.tsx";
@@ -71,7 +72,10 @@ export function Compare() {
         <>
           <div className="row spread">
             <p className="muted">{t("basedOn", { n: result.data.shifts.items.length, m: new Set(result.data.shifts.items.map((e) => e.creator)).size })}</p>
-            <WhatsAppButton text={shareText(result.data.ranking)} />
+            <span className="row">
+              <SpeakButton text={shareText(result.data.ranking)} />
+              <WhatsAppButton text={shareText(result.data.ranking)} />
+            </span>
           </div>
           {!result.data.ranking.some((r) => r.confirmed) && (
             <p className="card">{t("notEnough")} <a href="#/log">{t("notEnoughLink")}</a> {t("notEnoughEnd")}</p>

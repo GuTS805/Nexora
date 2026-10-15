@@ -112,6 +112,18 @@ try {
   await sleep(500);
   check("test wallet connects", /^0x[0-9a-fA-F]{40}$/.test((await js(`document.querySelector(".walletbar .addr a")?.title`)) ?? ""));
   check("publish enabled for a valid form", await js(`[...document.querySelectorAll("button")].find(b => b.textContent.includes("Publish to Arkiv"))?.disabled === false`));
+  // No network: the day is saved on the device instead of lost, and nothing exact is kept in clear.
+  await send("Network.enable");
+  await send("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+  await sleep(300);
+  await js(`[...document.querySelectorAll("button")].find(b => b.textContent.includes("Publish to Arkiv"))?.click()`);
+  await sleep(1200);
+  const offline = await js(`({ saved: document.querySelector("main")?.innerText.includes("You are offline"), banner: document.querySelector(".card.pending")?.innerText ?? "", stored: localStorage.getItem("nexora.pending") ?? "" })`);
+  check("offline, a day is saved on the phone, already banded, and shown as waiting for the network", offline?.saved && offline.banner.includes("waiting for the network: 1") && offline.stored.includes("net_hourly") && !offline.stored.includes("1187"), JSON.stringify({ saved: offline?.saved, banner: offline?.banner.slice(0, 60) }));
+  await js(`[...document.querySelectorAll(".card.pending button")].find(b => b.textContent.startsWith("Discard"))?.click()`);
+  await sleep(300);
+  check("a saved entry can be discarded before it is sent", await js(`!document.querySelector(".card.pending") && !localStorage.getItem("nexora.pending")`));
+  await send("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   await js(`[...document.querySelectorAll(".tabs button")].find(b => b.textContent.includes("Something happened"))?.click()`);
   await sleep(300);
   check("incident reports default to a one-time wallet", await js(`[...document.querySelectorAll("label.check")].find(l => l.textContent.includes("one-time wallet"))?.querySelector("input")?.checked === true`));
@@ -136,6 +148,8 @@ try {
   const limitedHere = async () => js(`/rate-limited|query budget/i.test(document.querySelector("main")?.innerText ?? "")`);
   if (await limitedHere()) skipped.push("printable union report (Arkiv RPC rate-limited this IP)");
   else {
+    check("incidents say how many reports a union or group replied to", await js(`/\\d+ of \\d+ reports here have a reply/.test(document.querySelector(".answered")?.textContent ?? "")`));
+    check("incidents point workers to e-Shram registration", await js(`document.querySelector(".eshram a")?.href === "https://register.eshram.gov.in/"`));
     const report = await js(`({ button: [...document.querySelectorAll("button")].some(b => b.textContent.includes("Print or save as PDF")), rows: document.querySelectorAll(".report-keys li").length, links: [...document.querySelectorAll(".report-keys .mono")].every(s => s.textContent.startsWith("https://tiramisu.explorer.arkiv.network/entity/0x")), hidden: getComputedStyle(document.querySelector(".report-head")).display === "none" })`);
     check("printable union report lists every report with its explorer link, hidden on screen", report?.button && report.rows > 0 && report.links && report.hidden, JSON.stringify(report));
   }
@@ -147,12 +161,16 @@ try {
   else {
     const page = await js(`({ lockedNote: document.querySelector("table.kv")?.innerText.includes("locked: handed to an address nobody controls"), noDelete: ![...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Delete"), letter: document.querySelector(".letter-text")?.value ?? "" })`);
     check("a locked entry says nobody can delete it, and offers no delete button", page?.lockedNote && page.noDelete, JSON.stringify({ lockedNote: page?.lockedNote, noDelete: page?.noDelete }));
+    const replies = (await js(`document.querySelector(".replies")?.innerText`)) ?? "";
+    check("the union's reply shows on the report, marked as coming from the trust list's curator", replies.includes("Escalated to the labour department or board") && replies.includes("runs the trust list"), replies.slice(0, 120));
     check("complaint letter links the public record and leaves name and ID for the worker", page?.letter.includes(`/entity/${locked}`) && page.letter.includes("[your name]") && page.letter.includes("[your ID]") && page.letter.startsWith("To: The Grievance Officer"), page?.letter.slice(0, 80));
     await js(`(() => { const s = document.querySelector(".letter select"); s.value = "labour"; s.dispatchEvent(new Event("change", { bubbles: true })); })()`);
     await sleep(300);
     const labour = (await js(`document.querySelector(".letter-text")?.value`)) ?? "";
     check("letter to the labour department leaves Delhi NCR's state blank and links similar reports", labour.startsWith("To: The Labour Department") && labour.includes("[your state]") && labour.includes("#/incidents?platform=zomato&city=delhi_ncr"), labour.slice(0, 80));
   }
+
+  check("the hosted app installs an offline shell", await js(`navigator.serviceWorker.getRegistration().then((r) => !!r)`));
 
   await go("#/proof?ui=hi");
   check("proof page renders in Hindi", await js(`document.querySelector("h2")?.textContent.includes("सबूत")`));

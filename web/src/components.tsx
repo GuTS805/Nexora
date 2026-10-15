@@ -1,5 +1,5 @@
 import { readTrustList } from "./cache.ts";
-import { HOURS_BAND_LABELS, explainError, explorerAddress, explorerEntity, explorerTx, type Entry, type Incident, type Shift, type TrustList } from "nexora-ledger";
+import { HOURS_BAND_LABELS, explainError, explorerAddress, explorerEntity, explorerTx, type Entry, type Incident, type ReplyStatus, type Shift, type TrustList } from "nexora-ledger";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Address, Hex } from "viem";
 import { useArkiv } from "./arkiv.tsx";
@@ -144,7 +144,7 @@ export function ShiftCard({ e, trusted, block }: { e: Shift; trusted?: boolean |
   );
 }
 
-export function IncidentCard({ e, trusted, block, updates, resolved = e.resolved }: { e: Incident; trusted?: boolean | undefined; block?: bigint | undefined; updates?: number | undefined; resolved?: boolean | undefined }) {
+export function IncidentCard({ e, trusted, block, updates, resolved = e.resolved, reply }: { e: Incident; trusted?: boolean | undefined; block?: bigint | undefined; updates?: number | undefined; resolved?: boolean | undefined; reply?: ReplyStatus | undefined }) {
   const { t, v } = useI18n();
   const month = useMonth();
   return (
@@ -158,6 +158,7 @@ export function IncidentCard({ e, trusted, block, updates, resolved = e.resolved
         {e.daysLost > 0 && <span>{t("daysShort", { n: e.daysLost })}</span>}
         {!e.reasonGiven && <span>{t("noReasonBadge")}</span>}
         {updates !== undefined && updates > 0 && <span>{t("updates", { n: updates })}</span>}
+        {reply && <span className="reply-tag">{t("replyBadge", { status: v(reply) })}</span>}
         <CardBadges e={e} block={block} />
       </p>
       <footer>

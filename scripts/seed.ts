@@ -6,7 +6,8 @@
  *
  * Besides the dataset, the script exercises every Arkiv feature the app claims: batch creates,
  * key-typed lineage (incident follow-ups), a sealed payload, a trust list created then patched, a
- * permissionless extension by a non-owner, a refused patch on a readonly entity, and an owner delete.
+ * permissionless extension by a non-owner, a refused patch on a readonly entity, an owner delete, a
+ * report locked by handing it to 0x…dEaD, and replies from the trust list's curator to three reports.
  * Each transaction is recorded in arkiv/evidence.json so the claims can be checked on the explorer.
  *
  * Every entry is synthetic and flagged `demo = true`. Nine wallets behave like honest workers, each
@@ -25,8 +26,8 @@ import { tiramisu } from "@arkiv-network/sdk/chains";
 import type { Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
-  EXTEND_DAYS, MAX_BATCH, arkivHttp, createLocked, explainError, fetchEntry, fetchIncidents, fetchShifts, fetchTrustList,
-  incidentCreate, readClient, seal, shiftCreate, trustListCreate, trustListPatch,
+  EXTEND_DAYS, MAX_BATCH, arkivHttp, createLocked, explainError, fetchEntry, fetchIncidents, fetchReplies, fetchShifts, fetchTrustList,
+  incidentCreate, readClient, replyCreate, seal, shiftCreate, trustListCreate, trustListPatch, type ReplyStatus,
   type City, type IncidentInput, type IncidentType, type Platform, type ShiftInput, type Vehicle, type WorkType,
 } from "../ledger/src/index.ts";
 import { SEED_KEY_NAMES, SPAMMER_KEY_NAME, SPONSOR_KEY_NAME, loadEnv, requireKey } from "./env.ts";
@@ -337,6 +338,29 @@ await step("ownership_lock", "executeBatch with an ownership change: worker 6 re
     refusal = explainError(error);
   }
   return { key: created.entityKey, tx: created.txHash, creator: after.value.creator, owner: after.value.owner, readonly: after.value.readonly, deleteRefused, refusal };
+});
+
+await step("union_reply", "replies linked by a key-typed parent: the demo trust list's curator, standing in for a union, answers three reports in one batch; a reply never changes the report", async () => {
+  const curator = account(SPONSOR_KEY_NAME).address;
+  const lockedKey = evidence.features.ownership_lock?.key as Hex | undefined;
+  const blockKey = evidence.features.incident_followup?.parent as Hex | undefined;
+  if (!lockedKey || !blockKey) throw new Error("run the earlier steps first");
+  // A third report, chosen by query so a rerun picks the same one: the first open pay cut or penalty.
+  const others = await fetchIncidents(client, { includeDemo: true, creators: honest.map((name) => account(name).address) }, 200);
+  const third = others.items
+    .filter((i) => !i.parent && !i.resolved && (i.type === "pay_cut" || i.type === "penalty") && i.key !== lockedKey && i.key !== blockKey)
+    .sort((a, b) => a.key.localeCompare(b.key))[0];
+  if (!third) throw new Error("no open pay cut or penalty report to answer");
+  const answers: [Hex, ReplyStatus][] = [[lockedKey, "escalated"], [blockKey, "resolved"], [third.key, "received"]];
+  const result = await walletFor(SPONSOR_KEY_NAME).executeBatch({
+    creates: answers.map(([parent, status]) => replyCreate({ parent, status, period: 202610, expiresInDays: 365, demo: true })),
+  });
+  const check = await fetchReplies(client, { includeDemo: true, parent: lockedKey }, 5);
+  return {
+    curator, keys: result.createdEntities, tx: result.txHash,
+    replies: answers.map(([parent, status], i) => ({ parent, status, key: result.createdEntities[i] })),
+    query: check.query, foundByParentQuery: check.items.length,
+  };
 });
 
 console.log(dry ? "dry run complete" : "done; evidence written to arkiv/evidence.json");

@@ -31,9 +31,10 @@ Platforms hold detailed pay and account records, while workers see only fragment
 
 ### 2. Record work without publishing identity
 
-1. Open **Log my day** and enter pay, costs, and hours. A preview separates public fields, optional encrypted fields, and values kept on the device.
+1. Open **Log my day** and enter pay, costs, and hours, or tap **Say your day** and say them in Hindi or English ("1200 कमाए, 300 का पेट्रोल, 9 घंटे"). A preview separates public fields, optional encrypted fields, and values kept on the device.
 2. Publish one shift or import several through CSV. Public fields contain controlled categories, an hours band, and a take-home rate rounded to ₹10. Exact values can be encrypted in the browser with a passphrase.
 3. Choose an entity lifetime of 7, 30, 90, or 365 days. The entry links to its Tiramisu entity and creation transaction. **My data** finds entries from this browser's wallets.
+4. No network? The entry is saved on the phone exactly as it will be published (banded, sealed details encrypted) and goes out when the connection is back. The hosted app also opens offline.
 
 ### 3. Report an incident and follow up
 
@@ -41,9 +42,10 @@ Platforms hold detailed pay and account records, while workers see only fragment
 2. Publish from a fresh one-time wallet by default, reducing linkage with the worker's other entries.
 3. Post a later update as a new read-only entity linked to the original by a typed `parent` key. The original is not silently rewritten.
 4. Optionally **lock** the report. It is created and handed to `0x…dEaD` in the same transaction, so nobody can pressure the worker, or anyone else, into deleting it before its lifetime ends.
-5. **Turn it into a complaint.** The report's page drafts a letter to the platform's grievance officer, a union, or the state labour department or welfare board. The letter carries the facts and links anyone can use to check the record, and the worker fills in their name and ID only after copying. **Incidents** prints, or saves as PDF, a report for a union: the summary, every entry with its explorer link, and the exact query.
+5. **Turn it into a complaint.** The report's page drafts a letter to the platform's grievance officer, a union, or the state labour department or welfare board. The letter carries the facts and links anyone can use to check the record, and the worker fills in their name and ID only after copying. **Incidents** prints, or saves as PDF, a report for a union: the summary, every entry with its explorer link, and the exact query. Workers who have not yet registered are pointed to [e-Shram](https://register.eshram.gov.in), the Labour Ministry's portal for platform workers' social security schemes.
+6. **Get an answer.** A union, a worker group, or the platform replies with where the report stands: received, taken up, escalated to the labour department or board, resolved, or cannot help. A reply is its own read-only entity linked by `parent`; it never changes the report. The app marks replies from the wallet that runs the recommended trust list, ignores replies from the reporter's own wallet, and shows on **Incidents** how many reports have been answered.
 
-The web UI supports English and Hindi. Reading needs no account or wallet.
+The web UI supports English and Hindi, and can read comparisons, reports, and complaint letters aloud. Reading needs no account or wallet.
 
 ## Architecture
 
@@ -72,9 +74,9 @@ Arkiv is the primary data layer. The static browser app reads it directly throug
 
 ### Data and privacy boundaries
 
-The two main entity kinds are **`shift`** and **`incident`**. Typed attributes hold values needed for filters or ranges, such as city, work type, platform, month, and incident type. Display-only fields and an optional encrypted box live in the payload. Authorship comes from Arkiv's engine-set **`$creator`**, never a self-declared author field.
+The two main entity kinds are **`shift`** and **`incident`**; a **`reply`** records where a report stands. Typed attributes hold values needed for filters or ranges, such as city, work type, platform, month, and incident type. Display-only fields and an optional encrypted box live in the payload. Authorship comes from Arkiv's engine-set **`$creator`**, never a self-declared author field.
 
-Published shifts and incidents use `readonly`. The owner can still delete an entity, unless the worker locked it by handing ownership to `0x…dEaD`. Anyone can pay for a permitted lifetime extension. A separate, editable **`trust_list`** lets groups curate publisher wallets. Nexora validates every entity it reads because anyone can publish data with the same app marker. See the [exact attributes, vocabularies, queries, and lifetimes](arkiv/schema.md).
+Published shifts, incidents, and replies use `readonly`. The owner can still delete an entity, unless the worker locked it by handing ownership to `0x…dEaD`. Anyone can pay for a permitted lifetime extension. A separate, editable **`trust_list`** lets groups curate publisher wallets. Nexora validates every entity it reads because anyone can publish data with the same app marker. See the [exact attributes, vocabularies, queries, and lifetimes](arkiv/schema.md).
 
 **Off Arkiv:** worker names, phone numbers, rider IDs, vehicle numbers, addresses, unencrypted exact earnings, passphrases, and wallet keys. Browser-held keys and preferences stay on that device. Public wallet addresses, timestamps, city, and work patterns can still be correlated; the [threat model](docs/THREAT_MODEL.md) explains this residual risk and the one-time-wallet option.
 
@@ -122,7 +124,7 @@ The same CLI ships in the npm package, so none of this needs a clone: `npx -p ne
 
 1. In the app, open **Log my day**, choose the test wallet, and fund it with test GLM if needed. Inspect the privacy preview before publishing.
 2. Publish a synthetic shift. Open its entity and transaction links, then compare `$creator` with the wallet address.
-3. Open **Proof** or run `npx tsx ledger/cli.ts verify`. Both inspect the recorded [Tiramisu evidence](arkiv/evidence.json), including batch writes, linked incident updates, a sealed payload, a trust-list change, and a non-owner lifetime extension.
+3. Open **Proof** or run `npx tsx ledger/cli.ts verify`. Both inspect the recorded [Tiramisu evidence](arkiv/evidence.json), including batch writes, linked incident updates, a sealed payload, a trust-list change, a non-owner lifetime extension, a locked report, and a union's replies.
 4. Run an independent CLI query above. The [end-to-end report](arkiv/e2e-report.md) records measured Tiramisu behavior; the [friction report](arkiv/friction.md) gives reproducible SDK/RPC observations.
 
 ## Build and deploy

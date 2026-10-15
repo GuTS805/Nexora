@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   JSON_SCHEMAS, auditEntities, findPersonalData, schemaFileName, schemaFileText, toWire, validateEntity, type ContractKind,
 } from "../src/contract.ts";
-import { incidentCreate, seal, shiftCreate, trustListCreate, type RawEntity } from "../src/index.ts";
+import { incidentCreate, replyCreate, seal, shiftCreate, trustListCreate, type RawEntity } from "../src/index.ts";
 import { ALICE, BOB, incident, keyOf, shift } from "./fixtures.ts";
 
 const list = { name: "Bengaluru riders union", scope: "food_delivery" as const, description: "Members we have met.", members: [ALICE, BOB] };
@@ -53,6 +53,7 @@ describe("JSON Schemas", () => {
       ["shift", shiftCreate({ ...shift, sealed, demo: true })],
       ["incident", incidentCreate(incident)],
       ["incident", incidentCreate({ ...incident, parent: keyOf(9), sealed })],
+      ["reply", replyCreate({ parent: keyOf(9), status: "taken_up", period: 202610, expiresInDays: 90 })],
       ["trust_list", trustListCreate(list)],
     ];
     for (const [kind, params] of writes) {
@@ -119,8 +120,9 @@ describe("privacy audit", () => {
       stored(shiftCreate(shift), ALICE, 1),
       stored(incidentCreate(incident), BOB, 2),
       stored(trustListCreate(list), ALICE, 3),
+      stored(replyCreate({ parent: keyOf(2), status: "received", period: 202610, expiresInDays: 30 }), ALICE, 4),
     ]);
-    expect(report).toMatchObject({ checked: 3, shown: { shift: 1, incident: 1, trust_list: 1 }, rejected: [], violations: [], passed: true });
+    expect(report).toMatchObject({ checked: 4, shown: { shift: 1, incident: 1, reply: 1, trust_list: 1 }, rejected: [], violations: [], passed: true });
   });
 
   it("does not judge what readers never show, but fails on a shown entry that breaks the contract", () => {

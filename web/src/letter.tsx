@@ -3,6 +3,10 @@ import { useEffect, useState } from "react";
 import { WhatsAppButton, useMonth } from "./components.tsx";
 import { useI18n, type Lang } from "./i18n.tsx";
 import { appUrl } from "./share.ts";
+import { SpeakButton } from "./voice.tsx";
+
+/** The Labour Ministry's e-Shram registration portal, where platform workers sign up for social security schemes. */
+export const ESHRAM_URL = "https://register.eshram.gov.in";
 
 /**
  * Turns one incident report into a complaint letter the worker can send: to the platform, to a union,
@@ -134,6 +138,7 @@ export const WHERE: Record<Lang, { title: string; points: string[]; notAdvice: s
       "Karnataka (2025 law for platform-based gig workers): complaints about payouts, deductions or termination go first to the platform's internal dispute resolution committee, then to the state's gig workers' welfare board.",
       "Rajasthan (2023 law for platform-based gig workers): grievances about payments and benefits can be filed through the state's online portal or with a designated officer.",
       "Other states are making their own rules. A union can help you raise a case together with other workers.",
+      `Social security: platform workers can register on e-Shram, the Labour Ministry's portal, to be considered for government schemes for them: ${ESHRAM_URL}`,
     ],
     notAdvice: "This is general information, not legal advice. A union or a lawyer can tell you what applies to you.",
   },
@@ -145,6 +150,7 @@ export const WHERE: Record<Lang, { title: string; points: string[]; notAdvice: s
       "कर्नाटक (प्लेटफ़ॉर्म गिग वर्कर्स के लिए 2025 का कानून): पेमेंट, कटौती या काम से हटाने की शिकायत पहले प्लेटफ़ॉर्म की अंदरूनी विवाद समिति के पास जाती है, फिर राज्य के गिग वर्कर्स वेलफ़ेयर बोर्ड के पास।",
       "राजस्थान (प्लेटफ़ॉर्म गिग वर्कर्स के लिए 2023 का कानून): पेमेंट और फ़ायदों से जुड़ी शिकायत राज्य के ऑनलाइन पोर्टल पर या तय अधिकारी के पास दर्ज की जा सकती है।",
       "दूसरे राज्य अपने नियम बना रहे हैं। यूनियन आपकी शिकायत दूसरे वर्कर्स के साथ मिलकर उठाने में मदद कर सकती है।",
+      `सामाजिक सुरक्षा: प्लेटफ़ॉर्म वर्कर्स श्रम मंत्रालय के e-Shram पोर्टल पर रजिस्टर कर सकते हैं, ताकि उनके लिए बनी सरकारी योजनाओं में उनका नाम आ सके: ${ESHRAM_URL}`,
     ],
     notAdvice: "यह आम जानकारी है, कानूनी सलाह नहीं। आप पर क्या लागू होता है, यह यूनियन या वकील बता सकते हैं।",
   },
@@ -204,6 +210,7 @@ export function ComplaintLetter({ e, updates, details }: { e: Incident; updates:
       <div className="actions">
         <button onClick={() => navigator.clipboard?.writeText(text).then(() => setCopied(true), () => setCopied(false))}>{copied ? t("copied") : t("letterCopy")}</button>
         <WhatsAppButton text={text} />
+        <SpeakButton text={text} />
       </div>
       <details className="letter-where">
         <summary>{where.title}</summary>

@@ -1,0 +1,269 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/GuTS805/Nexora/main/arkiv/schema/reply.schema.json",
+  "title": "Nexora reply to a report (v1)",
+  "description": "Where a union, worker group or platform says a report stands. Points at the report through `parent`; never changes it. Closed vocabulary only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contentType",
+    "flags",
+    "attributes",
+    "payload"
+  ],
+  "properties": {
+    "contentType": {
+      "const": "application/json"
+    },
+    "flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "readonly",
+        "permissionlessExtension"
+      ],
+      "properties": {
+        "readonly": {
+          "const": true
+        },
+        "permissionlessExtension": {
+          "const": true
+        }
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "app",
+        "v",
+        "kind",
+        "parent",
+        "status",
+        "period",
+        "demo"
+      ],
+      "properties": {
+        "app": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "str"
+            },
+            "value": {
+              "const": "nexora"
+            }
+          }
+        },
+        "v": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "i32"
+            },
+            "value": {
+              "const": 1
+            }
+          }
+        },
+        "kind": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "str"
+            },
+            "value": {
+              "const": "reply"
+            }
+          }
+        },
+        "parent": {
+          "type": "object",
+          "description": "The incident report this reply is about.",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "key"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{64}$"
+            }
+          }
+        },
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "str"
+            },
+            "value": {
+              "enum": [
+                "received",
+                "taken_up",
+                "escalated",
+                "resolved",
+                "cannot_help"
+              ]
+            }
+          }
+        },
+        "period": {
+          "type": "object",
+          "description": "Month of the reply, YYYYMM.",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "i32"
+            },
+            "value": {
+              "enum": [
+                202401,
+                202402,
+                202403,
+                202404,
+                202405,
+                202406,
+                202407,
+                202408,
+                202409,
+                202410,
+                202411,
+                202412,
+                202501,
+                202502,
+                202503,
+                202504,
+                202505,
+                202506,
+                202507,
+                202508,
+                202509,
+                202510,
+                202511,
+                202512,
+                202601,
+                202602,
+                202603,
+                202604,
+                202605,
+                202606,
+                202607,
+                202608,
+                202609,
+                202610,
+                202611,
+                202612,
+                202701,
+                202702,
+                202703,
+                202704,
+                202705,
+                202706,
+                202707,
+                202708,
+                202709,
+                202710,
+                202711,
+                202712,
+                202801,
+                202802,
+                202803,
+                202804,
+                202805,
+                202806,
+                202807,
+                202808,
+                202809,
+                202810,
+                202811,
+                202812,
+                202901,
+                202902,
+                202903,
+                202904,
+                202905,
+                202906,
+                202907,
+                202908,
+                202909,
+                202910,
+                202911,
+                202912,
+                203001,
+                203002,
+                203003,
+                203004,
+                203005,
+                203006,
+                203007,
+                203008,
+                203009,
+                203010,
+                203011,
+                203012
+              ]
+            }
+          }
+        },
+        "demo": {
+          "type": "object",
+          "description": "True for synthetic demo data.",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "bool"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        }
+      }
+    }
+  }
+}

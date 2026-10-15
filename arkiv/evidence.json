@@ -328,6 +328,36 @@
       "deleteRefused": true,
       "refusal": "Transaction failed: entity 0x0e1f6283…60a422 is owned by 0x000000000000000000000000000000000000dEaD, not 0xfdF42901392e9D358b5bD761a8fCEF9EA37f2842",
       "at": "2026-10-15T08:07:37.424Z"
+    },
+    "union_reply": {
+      "why": "replies linked by a key-typed parent: the demo trust list's curator, standing in for a union, answers three reports in one batch; a reply never changes the report",
+      "curator": "0xf00b81c90dF57B2924A3d165a670FcF656d0e492",
+      "keys": [
+        "0x8518fa23ec9f1c3ed3eeff0b70a6fc6bc307f6478d1bf5f419ad6d873592e5a1",
+        "0xfe340795cd272d98fe3d50cf70fca1f67ca7841a2113d3a41dfcb8e4a2d4ebc9",
+        "0xc8ab454411e262bce72b48a7f886120c429291a7274fa2318ba49a8d669d4035"
+      ],
+      "tx": "0xffb1fbc8859c096ca298a21c198ca6231d6fbbb13fb15fdfd99f631e27b98c38",
+      "replies": [
+        {
+          "parent": "0x0e1f62831dd1eea0886f5942e6fbae9bd3ccf6ff4ce524cc2ae04439b660a422",
+          "status": "escalated",
+          "key": "0x8518fa23ec9f1c3ed3eeff0b70a6fc6bc307f6478d1bf5f419ad6d873592e5a1"
+        },
+        {
+          "parent": "0x6458fd580aee4643ab5f5eeda44dfe1b86e0fa4abf8a1e5dc8815684fd5d7987",
+          "status": "resolved",
+          "key": "0xfe340795cd272d98fe3d50cf70fca1f67ca7841a2113d3a41dfcb8e4a2d4ebc9"
+        },
+        {
+          "parent": "0x1466ef6a60b8de0de62f38f72ac82ce994032e581f18345f8b2f8db1e7b1a9ac",
+          "status": "received",
+          "key": "0xc8ab454411e262bce72b48a7f886120c429291a7274fa2318ba49a8d669d4035"
+        }
+      ],
+      "query": "app = str('nexora') AND kind = str('reply') AND v = i32(1) AND parent = key(0x0e1f62831dd1eea0886f5942e6fbae9bd3ccf6ff4ce524cc2ae04439b660a422)",
+      "foundByParentQuery": 1,
+      "at": "2026-10-15T09:49:54.788Z"
     }
   }
 }

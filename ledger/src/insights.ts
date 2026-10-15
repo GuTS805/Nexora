@@ -1,5 +1,5 @@
 import type { Address, Hex } from "viem";
-import type { Incident, Shift } from "./codec.ts";
+import type { Incident, Reply, Shift } from "./codec.ts";
 import { previousPeriod, type City, type IncidentType, type Platform, type WorkType } from "./schema.ts";
 
 export type InsightOptions = {
@@ -180,6 +180,25 @@ export function resolvedReports(incidents: readonly Incident[]): Set<string> {
     else if (authorOf.get(i.parent) === lower(i.creator)) resolved.add(i.parent);
   }
   return resolved;
+}
+
+/**
+ * Replies to one report, newest first, leaving out any from the reporter's own wallet: a worker
+ * answering their own report is not an answer (their news goes in an update instead). With a
+ * `trusted` set (e.g. the wallets of the union that curates a trust list) only those count.
+ */
+export function repliesTo(report: Pick<Incident, "key" | "creator">, replies: readonly Reply[], trusted?: ReadonlySet<string>): Reply[] {
+  const allowed = trusted ? new Set([...trusted].map(lower)) : undefined;
+  return replies
+    .filter((r) => r.parent === report.key && lower(r.creator) !== lower(report.creator) && (!allowed || allowed.has(lower(r.creator))))
+    .sort((a, b) => Number((b.createdAt ?? 0n) - (a.createdAt ?? 0n)) || b.period - a.period);
+}
+
+/** Keys of original reports that someone other than the reporter (from `trusted`, if given) replied to. */
+export function answeredReports(incidents: readonly Incident[], replies: readonly Reply[], trusted?: ReadonlySet<string>): Set<string> {
+  const answered = new Set<string>();
+  for (const report of incidents) if (!report.parent && repliesTo(report, replies, trusted).length > 0) answered.add(report.key);
+  return answered;
 }
 
 /**

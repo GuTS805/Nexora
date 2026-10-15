@@ -1,14 +1,19 @@
-import { readIncidents, readTrustList } from "../cache.ts";
+import { readIncidents, readReplies } from "../cache.ts";
 import { ExpirationTime } from "@arkiv-network/sdk";
-import { explainError, EXTEND_DAYS, HOURS_BAND_LABELS, blockToDate, fetchEntry, isLocked, resolvedReports, unseal, type Incident, type PrivateDetails } from "nexora-ledger";
+import {
+  explainError, EXTEND_DAYS, HOURS_BAND_LABELS, REPLY_STATUSES, blockToDate, decodeEntry, decodeReply, decodeTrustList, getEntityOrNull,
+  isLocked, periodOf, replyCreate, repliesTo, resolvedReports, unseal, type Incident, type PrivateDetails, type Reply, type ReplyStatus,
+} from "nexora-ledger";
 import { useState } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
-import { Addr, EntityLink, ErrorNote, ExplorerEntity, Hourly, IncidentCard, TxLink, WalletBar, WhatsAppButton, useAsync, useMonth } from "../components.tsx";
+import { Addr, EntityLink, ErrorNote, ExplorerEntity, Field, Hourly, IncidentCard, TxLink, VocabSelect, WalletBar, WhatsAppButton, useAsync, useMonth } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
 import { ComplaintLetter } from "../letter.tsx";
 import { PlatformLogo } from "../logos.tsx";
 import { appUrl } from "../share.ts";
+import { SpeakButton } from "../voice.tsx";
+import { useRecommendedList } from "./Explore.tsx";
 
 const BLOCKS_PER_DAY = 86_400 / 2;
 
@@ -17,20 +22,30 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
   const { t, v, lang } = useI18n();
   const month = useMonth();
   const data = useAsync(async () => {
-    const [decoded, block] = await Promise.all([fetchEntry(reader, entityKey), reader.getBlockNumber()]);
+    const [raw, block] = await Promise.all([getEntityOrNull(reader, entityKey), reader.getBlockNumber()]);
+    const decoded = raw ? decodeEntry(raw) : ({ ok: false, key: entityKey, reason: "not found: expired, deleted, or never created" } as const);
     if (!decoded.ok) {
-      const list = await readTrustList(reader, entityKey);
-      return { kind: "other" as const, block, reason: decoded.reason, list: list.ok ? list.value : null };
+      const list = raw ? decodeTrustList(raw) : null;
+      const reply = raw ? decodeReply(raw) : null;
+      return { kind: "other" as const, block, reason: decoded.reason, list: list?.ok ? list.value : null, reply: reply?.ok ? reply.value : null };
     }
-    // Incidents collect updates ("unblocked after 6 days") and "same here" reports through `parent`.
+    // Incidents collect updates ("unblocked after 6 days") and "same here" reports through `parent`,
+    // and replies from unions or groups the same way.
     let updates: Incident[] = [];
     let updatesQuery = "";
+    let replies: Reply[] = [];
+    let repliesQuery = "";
     if (decoded.value.kind === "incident") {
-      const children = await readIncidents(reader, { parent: entityKey, includeDemo: true });
+      const [children, answers] = await Promise.all([
+        readIncidents(reader, { parent: entityKey, includeDemo: true }),
+        readReplies(reader, { parent: entityKey, includeDemo: true }),
+      ]);
       updates = children.items;
       updatesQuery = children.query;
+      replies = answers.items;
+      repliesQuery = answers.query;
     }
-    return { kind: "entry" as const, block, e: decoded.value, updates, updatesQuery };
+    return { kind: "entry" as const, block, e: decoded.value, updates, updatesQuery, replies, repliesQuery };
   }, [reader, entityKey, revision]);
 
   const [busy, setBusy] = useState<string | null>(null);
@@ -59,7 +74,16 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
   if (!data.data) return null;
 
   if (data.data.kind === "other") {
-    const list = data.data.list;
+    const { list, reply } = data.data;
+    if (reply) {
+      return (
+        <section>
+          <h2>{t("replyBadge", { status: v(reply.status) })}</h2>
+          <p>{t("kvUpdateOf")}: <EntityLink entityKey={reply.parent} /> · {month(reply.period)}{reply.demo && ` · ${t("syntheticDemo")}`}</p>
+          <p><Addr address={reply.creator} /> · <ExplorerEntity entityKey={reply.key} /></p>
+        </section>
+      );
+    }
     if (!list) return <p className="error">{t("notContract", { reason: data.data.reason })}</p>;
     return (
       <section>
@@ -130,6 +154,7 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
           <a className="button secondary" href={`#/log?tab=incident&parent=${e.parent ?? e.key}&platform=${e.platform}&work=${e.work}&city=${e.city}&type=${e.type}`}>{t("postUpdate")}</a>
         )}
         <WhatsAppButton text={shareText} />
+        <SpeakButton text={shareText} />
         {ownerWallet && (
           <button className="danger" disabled={busy !== null} onClick={() => confirm(t("deleteConfirm")) && act("delete", () => ownerWallet.client.deleteEntity({ entityKey: e.key }), ownerWallet.address)}>
             {busy === "delete" ? t("deleting") : t("delete")}
@@ -159,6 +184,8 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
         </div>
       )}
 
+      {e.kind === "incident" && <Replies report={e} replies={data.data.replies} query={data.data.repliesQuery} />}
+
       {e.kind === "incident" && <ComplaintLetter e={e} updates={updates} details={details} />}
 
       {e.kind === "incident" && (
@@ -169,5 +196,79 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
         </>
       )}
     </section>
+  );
+}
+
+/**
+ * Where a union, worker group or the platform says the report stands. Anyone can reply, so a reply
+ * is only marked when its wallet runs the trust list this app recommends; the rest are claims.
+ */
+function Replies({ report, replies, query }: { report: Incident; replies: Reply[]; query: string }) {
+  const { wallet, ensureGas, bump, walletFor } = useArkiv();
+  const { t, v } = useI18n();
+  const month = useMonth();
+  const recommended = useRecommendedList();
+  const [status, setStatus] = useState<ReplyStatus>("received");
+  const [busy, setBusy] = useState(false);
+  const [tx, setTx] = useState<Hex | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const shown = repliesTo(report, replies);
+  // The reporter's own wallet, or a one-time wallet of theirs kept in this browser.
+  const own = walletFor(report.creator) !== null;
+
+  async function send() {
+    if (!wallet) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await ensureGas();
+      const result = await wallet.client.createEntity(replyCreate({ parent: report.key, status, period: periodOf(new Date()), expiresInDays: 365 }));
+      setTx(result.txHash);
+      bump();
+    } catch (cause) {
+      setError(explainError(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card replies">
+      <h3>{t("repliesTitle", { n: shown.length })}</h3>
+      <p className="small muted">{t("repliesIntro")}</p>
+      {shown.length === 0 && <p className="muted">{t("repliesNone")}</p>}
+      {shown.length > 0 && (
+        <ul className="reply-list">
+          {shown.map((r) => {
+            const curator = recommended !== null && recommended.creator.toLowerCase() === r.creator.toLowerCase();
+            return (
+              <li key={r.key}>
+                <span className={r.status === "resolved" ? "badge ok" : r.status === "cannot_help" ? "badge warn" : "badge"}>{v(r.status)}</span>
+                <span className="small muted">{month(r.period)}{r.demo && ` · ${t("syntheticDemo")}`}</span>
+                <Addr address={r.creator} />
+                {curator
+                  ? <span className="badge ok">{t("replyCurator", { name: recommended.name })}</span>
+                  : <span className="badge warn" title={t("replyUnknownTitle")}>{t("unverified")}</span>}
+                <EntityLink entityKey={r.key} />
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <p className="small muted mono">{query}</p>
+      <details className="reply-form">
+        <summary>{t("replyAs")}</summary>
+        <p className="small muted">{t("replyHelp")}</p>
+        {own ? <p className="small">{t("replyOwn")}</p> : (
+          <div className="row">
+            <Field label="replyStatus"><VocabSelect list={REPLY_STATUSES} value={status} onChange={(x) => x && setStatus(x)} /></Field>
+            <button disabled={!wallet || busy} onClick={send}>{busy ? t("publishing") : t("replySend")}</button>
+          </div>
+        )}
+        {!wallet && !own && <p className="small muted">{t("connectFirst")}</p>}
+        {tx && <p className="card success">{t("doneTx")} <TxLink hash={tx} /></p>}
+        {error && <p className="error" role="alert">{error}</p>}
+      </details>
+    </div>
   );
 }

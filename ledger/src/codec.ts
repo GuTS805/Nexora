@@ -5,8 +5,8 @@ import { getAddress, isAddress, isHex, type Address, type Hex } from "viem";
 import {
   APP, CITIES, COST_STEP, EXPIRY_CHOICES_DAYS, HOURS_BANDS, INCENTIVES, INCIDENT_TYPES, KIND, MAX_DAY_INR,
   MAX_DAYS_LOST, MAX_HOURS, MAX_NAME_LENGTH, MAX_TRUST_MEMBERS, NET_MAX, NET_MIN, NET_STEP, PLATFORMS,
-  SCHEMA_VERSION, TRUST_LIST_DAYS, VEHICLES, WORK_TYPES, costPct, hoursBand, isOneOf, isPeriod, netHourly,
-  type City, type Incentive, type IncidentType, type Platform, type Vehicle, type WorkType,
+  REPLY_STATUSES, SCHEMA_VERSION, TRUST_LIST_DAYS, VEHICLES, WORK_TYPES, costPct, hoursBand, isOneOf, isPeriod, netHourly,
+  type City, type Incentive, type IncidentType, type Platform, type ReplyStatus, type Vehicle, type WorkType,
 } from "./schema.ts";
 import { isSealedBox, type SealedBox } from "./seal.ts";
 
@@ -51,6 +51,17 @@ export type IncidentInput = {
   sealed?: SealedBox | undefined;
 };
 
+/** What a union, worker group or platform posts about a report. */
+export type ReplyInput = {
+  /** The incident report this reply is about. */
+  parent: Hex;
+  status: ReplyStatus;
+  /** Month of the reply, YYYYMM. */
+  period: number;
+  expiresInDays: Lifetime;
+  demo?: boolean | undefined;
+};
+
 type Meta = {
   key: Hex;
   creator: Address;
@@ -93,6 +104,14 @@ export type Incident = Meta & {
 };
 
 export type Entry = Shift | Incident;
+
+/** A reply to a report, as read back from Arkiv, after validation. Who sent it is `creator`. */
+export type Reply = Omit<Meta, "sealed"> & {
+  kind: "reply";
+  parent: Hex;
+  status: ReplyStatus;
+  period: number;
+};
 
 export type TrustListInput = {
   name: string;
@@ -179,6 +198,12 @@ export function validateIncidentInput(input: IncidentInput): void {
   }
 }
 
+export function validateReplyInput(input: ReplyInput): void {
+  checkEnums([[REPLY_STATUSES, input.status, "reply status"]]);
+  checkCommon(input);
+  if (!(isHex(input.parent) && input.parent.length === 66)) throw new Error("Parent must be a 32-byte entity key.");
+}
+
 // readonly: a published entry can never be silently rewritten, not even by its author, so nobody
 // can be pressured into "correcting" it. permissionlessExtension: anyone who finds an entry useful
 // (a union, a researcher, another worker) can keep it alive past the lifetime its author chose.
@@ -242,6 +267,29 @@ export function incidentCreate(input: IncidentInput): CreateEntityParameters {
     payload: encodeJson(payload),
     contentType: "application/json",
     attributes,
+    expires: ExpirationTime.fromDays(input.expiresInDays),
+    flags: ENTRY_FLAGS,
+  };
+}
+
+/**
+ * Builds the exact `createEntity` parameters for a reply to a report. Read-only like every entry, so
+ * a group cannot quietly rewrite what it told a worker; anyone can keep it alive longer.
+ */
+export function replyCreate(input: ReplyInput): CreateEntityParameters {
+  validateReplyInput(input);
+  return {
+    payload: encodeJson({ v: SCHEMA_VERSION }),
+    contentType: "application/json",
+    attributes: {
+      app: str(APP),
+      v: i32(SCHEMA_VERSION),
+      kind: str(KIND.reply),
+      parent: keyAttr(input.parent),
+      status: str(input.status),
+      period: i32(input.period),
+      demo: bool(Boolean(input.demo)),
+    },
     expires: ExpirationTime.fromDays(input.expiresInDays),
     flags: ENTRY_FLAGS,
   };
@@ -352,6 +400,20 @@ export function decodeIncident(raw: RawEntity): Decoded<Incident> {
       daysLost, reasonGiven, appealed, resolved,
       parent: parentCell ? (parentCell.value as Hex) : null,
     },
+  };
+}
+
+export function decodeReply(raw: RawEntity): Decoded<Reply> {
+  const fail = (reason: string): Decoded<Reply> => ({ ok: false, key: raw.key ?? "unknown", reason });
+  const base = decodeMeta(raw, KIND.reply);
+  if (typeof base === "string") return fail(base);
+  const status = attrValue(raw, "status", "str");
+  if (!isOneOf(REPLY_STATUSES, status)) return fail("bad reply status");
+  const parent = attrValue(raw, "parent", "key");
+  if (!(typeof parent === "string" && isHex(parent) && parent.length === 66)) return fail("bad parent");
+  return {
+    ok: true,
+    value: { ...base.meta, kind: "reply", parent: parent as Hex, status, period: attrValue(raw, "period", "i32") as number },
   };
 }
 

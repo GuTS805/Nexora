@@ -26,6 +26,9 @@ const VOCAB: Record<string, [string, string]> = {
   id_blocked: ["ID blocked for a while", "ID कुछ समय के लिए ब्लॉक"], deactivated: ["ID permanently deactivated", "ID हमेशा के लिए बंद"],
   pay_cut: ["Pay per order / km cut", "हर ऑर्डर / किलोमीटर का पैसा घटा"], incentive_cut: ["Incentive cut or target raised", "इंसेंटिव घटा या टारगेट बढ़ा"],
   penalty: ["Unexplained penalty or deduction", "बिना वजह जुर्माना या कटौती"], payout_delayed: ["Payout delayed", "पेमेंट में देरी"],
+  received: ["Received, looking into it", "मिल गई, देख रहे हैं"], taken_up: ["Taken up, working on it", "मामला उठाया, इस पर काम चल रहा है"],
+  escalated: ["Escalated to the labour department or board", "श्रम विभाग या बोर्ड तक ले गए"], resolved: ["Resolved", "सुलझ गया"],
+  cannot_help: ["Cannot help with this", "इसमें मदद नहीं कर सकते"],
   unsafe_pressure: ["Unsafe delivery-time pressure", "डिलीवरी टाइम का खतरनाक दबाव"], harassment: ["Abuse or violence at work", "काम पर गाली-गलौज या मारपीट"],
 };
 

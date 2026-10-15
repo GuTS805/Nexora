@@ -5,7 +5,7 @@ SDK: `@arkiv-network/sdk` **0.8.1**. The contract is implemented in [`ledger/src
 
 Every Nexora entity carries `app = "nexora"`, `kind`, and `v = 1`. Readers **must** validate entities against this document before using them: anyone can write an entity that claims `app = "nexora"`. The reference decoder rejects anything outside the vocabularies below, and the UI reports how many entities it rejected.
 
-**Machine-checkable copy.** [`schema/shift.schema.json`](schema/shift.schema.json), [`schema/incident.schema.json`](schema/incident.schema.json) and [`schema/trust-list.schema.json`](schema/trust-list.schema.json) are JSON Schema (2020-12) for each entity kind. They are checked against the entity's content type, creation flags, typed attributes (`{ "type": "str" | "i32" | "bool" | "key", "value": … }`, as the SDK reads them) and decoded JSON payload. They are generated from the same constants as the codec ([`ledger/src/contract.ts`](../ledger/src/contract.ts), `npm run schemas -w nexora-ledger`), and a test fails if the committed files fall behind. They are strict: every attribute is listed and nothing else is allowed. Readers are more forgiving and ignore unknown attributes, so a stricter check is needed.
+**Machine-checkable copy.** [`schema/shift.schema.json`](schema/shift.schema.json), [`schema/incident.schema.json`](schema/incident.schema.json), [`schema/reply.schema.json`](schema/reply.schema.json) and [`schema/trust-list.schema.json`](schema/trust-list.schema.json) are JSON Schema (2020-12) for each entity kind. They are checked against the entity's content type, creation flags, typed attributes (`{ "type": "str" | "i32" | "bool" | "key", "value": … }`, as the SDK reads them) and decoded JSON payload. They are generated from the same constants as the codec ([`ledger/src/contract.ts`](../ledger/src/contract.ts), `npm run schemas -w nexora-ledger`), and a test fails if the committed files fall behind. They are strict: every attribute is listed and nothing else is allowed. Readers are more forgiving and ignore unknown attributes, so a stricter check is needed.
 
 **Public privacy audit.** `nexora audit` (in the CLI and the npm package) reads every entity with `app = "nexora"`, holds each entry readers would show to these schemas, and scans every clear-text string for phone numbers, email addresses and 12-digit ID numbers. It also reports how many incident wallets also wrote earnings, which would let a report be linked to pay. It exits non-zero on any violation. The [audit workflow](../.github/workflows/audit.yml) runs it every day.
 
@@ -70,7 +70,21 @@ Every string attribute comes from a closed list, and there is **no free-text att
 
 Incident reports are published from a **fresh one-time wallet by default**, so a report cannot be linked to the worker's earnings history, or to their other reports, by `$creator`. The key stays in the browser for a later update, extension or delete.
 
-## Creation flags and lifetime (both entry kinds)
+## Entity 3: `reply` (where a report stands)
+
+A union, a worker group or the platform says what happened to a report. A reply is its own entry: it never changes the report, and only the reporter's own update (an `incident` with `parent`) can mark the report resolved.
+
+| Name | Type | Values | Why it is an attribute |
+| --- | --- | --- | --- |
+| `app` `kind` `v` | str, str, i32 | `nexora`, `reply`, `1` | Namespace, entity type, schema version |
+| `parent` | key | entity key of the incident report | `parent = key(…)` finds every reply to one report |
+| `status` | str | `received` `taken_up` `escalated` `resolved` `cannot_help` | Closed vocabulary, so a reply cannot carry a name or a phone number either |
+| `period` | i32 | `YYYYMM` | Month of the reply |
+| `demo` | bool | `true` for synthetic seed data | Default views exclude demo data |
+
+Payload: `{ "v": 1 }`. Anyone can reply, so readers decide whose replies count. The app marks a reply when its `$creator` runs the recommended trust list, and ignores replies from the reporter's own wallet (`repliesTo` in [`insights.ts`](../ledger/src/insights.ts)). Replies are sent from the replier's connected wallet, not a one-time one, because a union wants to be recognisable.
+
+## Creation flags and lifetime (shifts, incidents and replies)
 
 | Setting | Value | Reason |
 | --- | --- | --- |
@@ -83,7 +97,7 @@ Incident reports are published from a **fresh one-time wallet by default**, so a
 
 Authorship is always read from Arkiv's engine-set **`$creator`**, never from an attribute. Writers cannot set or fake it. `$owner` decides who may delete an entity. A **locked** entry has `$owner = 0x000000000000000000000000000000000000dEaD` (an address whose key nobody holds) while `$creator` stays the worker's wallet. Nobody can delete it before it expires, and readers need nothing special to read it. "Independent workers" in the app means distinct `$creator` wallets, and "confirmed" means at least two of them, counted only among a trust list's members when the reader looks at everyone's entries.
 
-## Entity 3: `trust_list`
+## Entity 4: `trust_list`
 
 A curated set of worker wallets that someone vouches for, such as a union, a riders' WhatsApp group, a researcher or one person.
 
@@ -113,6 +127,8 @@ These strings are produced by the SDK's `Expression.toString()`. The UI shows th
 | Any view with a trust list | `… AND ($creator = addr(0xA…) OR $creator = addr(0xB…) OR …)` |
 | My data | `app = str('nexora') AND (kind = str('shift') OR kind = str('incident')) AND v = i32(1) AND ($creator = addr(<test wallet>) OR $creator = addr(<one-time wallet>) OR …)`, 25 wallets per query; more wallets become several queries whose results are merged |
 | Updates to an incident | `… AND kind = str('incident') … AND parent = key(0x…)` |
+| Replies to an incident | `app = str('nexora') AND kind = str('reply') AND v = i32(1) AND parent = key(0x…)` |
+| Replies on the Incidents page | `app = str('nexora') AND kind = str('reply') AND v = i32(1)` (one query for every report shown) |
 | Trust lists | `app = str('nexora') AND kind = str('trust_list') AND v = i32(1)` |
 | Entry page | `getEntity(key)` |
 | Live feed | `watchEntityEvents` over WebSocket (`wss://…`) collects `EntityCreated` keys; every 10 s one query `… AND ($key = key(0x…) OR …)` (≤ 25 keys) over both entry kinds returns only the Nexora entries among them. Events carry no attributes (friction F3), and this replaces one `getEntity` per chain event. |
@@ -128,6 +144,7 @@ Results are paged with the SDK cursor (200 per page): pages read up to 400 entri
 | Log one day | Log my day | `createEntity(shiftCreate(input))` |
 | Log a week | Log my day → CSV | `executeBatch({ creates })`, 20 per transaction |
 | Report an incident, or update one | Log my day → Something happened | `createEntity(incidentCreate(input))`, from a one-time wallet by default; an update sets `parent` |
+| Reply to a report as a union or group | Entry page → "Reply as a union or group" | `createEntity(replyCreate({ parent, status, period, expiresInDays: 365 }))` from the connected wallet |
 | Lock an entry (opt-in, either kind) | Log my day → "Lock it" | `predictEntityKeys({ owner, count: 1 })`, then one `executeBatch({ creates: [{ …params, salt }], ownershipChanges: [{ entityKey, newOwner: 0x…dEaD }] })` ([`createLocked`](../ledger/src/lock.ts)) |
 | Seed demo data | `scripts/seed.ts` | `executeBatch({ creates })` |
 | Keep alive | Entry page, any wallet | `extendEntity({ entityKey, expires: atBlock(…) })` |
@@ -136,11 +153,11 @@ Results are paged with the SDK cursor (200 per page): pages read up to 400 entri
 
 ## What is deliberately not on Arkiv
 
-Worker names, phone numbers, rider or partner IDs, vehicle numbers, addresses, exact rupee amounts and hours (unless sealed), passphrases and wallet keys. There is no Nexora database. The burner wallet key, the worker's usual app/city/vehicle and UI preferences stay in the visitor's `localStorage`; the optional gas sponsor and read fallback store nothing.
+Worker names, phone numbers, rider or partner IDs, vehicle numbers, addresses, exact rupee amounts and hours (unless sealed), passphrases and wallet keys. There is no Nexora database. The burner wallet key, the worker's usual app/city/vehicle, UI preferences and any entries saved while offline (already sealed; never the passphrase) stay in the visitor's `localStorage`; the optional gas sponsor and read fallback store nothing.
 
 ## Recorded evidence
 
-`npm run seed` performs one transaction per feature above and records its hash and entity keys in [`evidence.json`](evidence.json): batch creates of shifts and incidents, incident follow-ups (lineage), a sealed payload, trust list create and patch, a permissionless extension by a non-owner, a refused patch on a readonly entity, an owner delete, and a locked incident whose author's own delete was refused. The recommended trust list is pinned there **by entity key**. `npm run e2e` writes measured gas, latency and limits to [`e2e-report.md`](e2e-report.md).
+`npm run seed` performs one transaction per feature above and records its hash and entity keys in [`evidence.json`](evidence.json): batch creates of shifts and incidents, incident follow-ups (lineage), a sealed payload, trust list create and patch, a permissionless extension by a non-owner, a refused patch on a readonly entity, an owner delete, a locked incident whose author's own delete was refused, and three replies from the trust list's curator in one batch. The recommended trust list is pinned there **by entity key**. `npm run e2e` writes measured gas, latency and limits to [`e2e-report.md`](e2e-report.md).
 
 ## Wallets that create entities
 

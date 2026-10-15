@@ -444,10 +444,28 @@ select option:checked { background-color: var(--accent); color: var(--accent-ink
 .letter-where ul { margin: 0.5rem 0 0.4rem; padding-left: 1.2rem; }
 .letter-where li { margin: 0.3rem 0; }
 
+/* replies from unions and groups */
+.replies .reply-list { list-style: none; margin: 0.6rem 0; padding: 0; }
+.replies .reply-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.5rem; padding: 0.5rem 0; border-top: 1px solid var(--line); }
+.replies .reply-list .badge { margin-left: 0; font-size: 0.78rem; padding: 0.1rem 0.5rem; }
+.reply-form summary { cursor: pointer; font-weight: 600; margin-top: 0.4rem; }
+.reply-form .row { align-items: flex-end; gap: 0.8rem; }
+.tags span.reply-tag { background: var(--ok-bg); color: var(--ok-ink); }
+.answered { margin: 0.6rem 0; font-weight: 600; }
+.eshram { margin: 0.4rem 0 0.8rem; }
+
+/* voice input */
+.voice { margin: 0 0 1rem; }
+.voice p { margin: 0.35rem 0 0; }
+.voice button.listening { border-color: var(--accent); color: var(--accent); }
+
+/* entries saved while offline */
+.card.pending { border-color: var(--accent); }
+
 /* printable union report: only the report, black on white */
 .print-only { display: none; }
 @media print {
-  .top, .foot, .filters, label.check, button, .actions, .no-print, .grid, details.query { display: none !important; }
+  .top, .foot, .filters, label.check, button, .actions, .no-print, .grid, details.query, .card.pending { display: none !important; }
   .print-only { display: block !important; }
   * { background: transparent !important; color: #000 !important; box-shadow: none !important; text-shadow: none !important; }
   body { background: #fff !important; }

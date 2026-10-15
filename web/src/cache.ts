@@ -1,7 +1,7 @@
 import type { PublicArkivClient } from "@arkiv-network/sdk";
 import {
-  fetchEntries, fetchIncidents, fetchShifts, fetchTrustList, fetchTrustLists,
-  type EntryFilters, type IncidentFilters, type ShiftFilters,
+  fetchEntries, fetchIncidents, fetchReplies, fetchShifts, fetchTrustList, fetchTrustLists,
+  type EntryFilters, type IncidentFilters, type ReplyFilters, type ShiftFilters,
 } from "nexora-ledger";
 import type { Hex } from "viem";
 
@@ -36,6 +36,9 @@ export const readIncidents = (client: PublicArkivClient, filters: IncidentFilter
 
 export const readEntries = (client: PublicArkivClient, filters: EntryFilters, maxItems = 400) =>
   cached(`entry|${id(client)}|${maxItems}|${JSON.stringify(filters)}`, () => fetchEntries(client, filters, maxItems));
+
+export const readReplies = (client: PublicArkivClient, filters: ReplyFilters, maxItems = 400) =>
+  cached(`reply|${id(client)}|${maxItems}|${JSON.stringify(filters)}`, () => fetchReplies(client, filters, maxItems));
 
 export const readTrustLists = (client: PublicArkivClient) => cached(`lists|${id(client)}`, () => fetchTrustLists(client));
 

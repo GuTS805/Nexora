@@ -14,10 +14,10 @@
  * the validator.
  */
 import Ajv2020, { type ErrorObject, type ValidateFunction } from "ajv/dist/2020.js";
-import { decodeEntry, decodeTrustList, type RawEntity } from "./codec.ts";
+import { decodeEntry, decodeReply, decodeTrustList, type RawEntity } from "./codec.ts";
 import {
   APP, CITIES, COST_STEP, HOURS_BANDS, INCENTIVES, INCIDENT_TYPES, KIND, MAX_DAYS_LOST, MAX_NAME_LENGTH, MAX_TRUST_MEMBERS,
-  NET_MAX, NET_MIN, NET_STEP, PERIOD_MAX, PERIOD_MIN, PLATFORMS, SCHEMA_VERSION, VEHICLES, WORK_TYPES, isPeriod,
+  NET_MAX, NET_MIN, NET_STEP, PERIOD_MAX, PERIOD_MIN, PLATFORMS, REPLY_STATUSES, SCHEMA_VERSION, VEHICLES, WORK_TYPES, isPeriod,
 } from "./schema.ts";
 import { SEAL_ALG, SEAL_KDF } from "./seal.ts";
 
@@ -143,6 +143,30 @@ export const JSON_SCHEMAS = {
       },
     },
   ),
+  reply: entity(
+    "reply",
+    "Nexora reply to a report (v1)",
+    "Where a union, worker group or platform says a report stands. Points at the report through `parent`; never changes it. Closed vocabulary only.",
+    {
+      flags: ENTRY_FLAGS,
+      required: ["app", "v", "kind", "parent", "status", "period", "demo"],
+      attributes: {
+        app: COMMON_ATTRIBUTES.app,
+        v: COMMON_ATTRIBUTES.v,
+        kind: attr("str", { const: KIND.reply }),
+        parent: attr("key", HEX32, "The incident report this reply is about."),
+        status: attr("str", { enum: [...REPLY_STATUSES] }),
+        period: attr("i32", { enum: PERIODS }, "Month of the reply, YYYYMM."),
+        demo: COMMON_ATTRIBUTES.demo,
+      },
+      payload: {
+        type: "object",
+        additionalProperties: false,
+        required: ["v"],
+        properties: { v: { const: SCHEMA_VERSION } },
+      },
+    },
+  ),
   trust_list: entity(
     "trust-list",
     "Nexora trust list (v1)",
@@ -178,7 +202,7 @@ export const JSON_SCHEMAS = {
 
 export type ContractKind = keyof typeof JSON_SCHEMAS;
 
-/** `shift.schema.json`, `incident.schema.json`, `trust-list.schema.json`. */
+/** `shift.schema.json`, `incident.schema.json`, `reply.schema.json`, `trust-list.schema.json`. */
 export const schemaFileName = (kind: ContractKind) => `${kind.replace("_", "-")}.schema.json`;
 
 /** The exact text committed under arkiv/schema/. */
@@ -231,6 +255,7 @@ function compiled(): Record<ContractKind, ValidateFunction> {
     validators = {
       shift: ajv.compile(JSON_SCHEMAS.shift),
       incident: ajv.compile(JSON_SCHEMAS.incident),
+      reply: ajv.compile(JSON_SCHEMAS.reply),
       trust_list: ajv.compile(JSON_SCHEMAS.trust_list),
     };
   }
@@ -308,7 +333,7 @@ export type AuditReport = {
  * personal data in clear text.
  */
 export function auditEntities(entities: readonly RawEntity[]): AuditReport {
-  const shown: AuditReport["shown"] = { shift: 0, incident: 0, trust_list: 0 };
+  const shown: AuditReport["shown"] = { shift: 0, incident: 0, reply: 0, trust_list: 0 };
   const rejected: AuditReport["rejected"] = [];
   const violations: AuditFinding[] = [];
   const wallets = {
@@ -318,15 +343,16 @@ export function auditEntities(entities: readonly RawEntity[]): AuditReport {
 
   for (const raw of entities) {
     const kindValue = raw.attributes?.kind?.value;
-    const kind: ContractKind | null = kindValue === KIND.shift ? "shift" : kindValue === KIND.incident ? "incident" : kindValue === KIND.trustList ? "trust_list" : null;
-    const decoded = kind === "trust_list" ? decodeTrustList(raw) : kind ? decodeEntry(raw) : null;
+    const kind: ContractKind | null =
+      kindValue === KIND.shift ? "shift" : kindValue === KIND.incident ? "incident" : kindValue === KIND.reply ? "reply" : kindValue === KIND.trustList ? "trust_list" : null;
+    const decoded = kind === "trust_list" ? decodeTrustList(raw) : kind === "reply" ? decodeReply(raw) : kind ? decodeEntry(raw) : null;
     if (!kind || !decoded || !decoded.ok) {
       rejected.push({ key: raw.key ?? "unknown", reason: decoded && !decoded.ok ? decoded.reason : "not a Nexora kind" });
       continue;
     }
     shown[kind]++;
     const demo = raw.attributes?.demo?.value === true;
-    if (kind !== "trust_list") wallets[demo ? "demo" : "real"][kind].add((raw.creator ?? "").toLowerCase());
+    if (kind === "shift" || kind === "incident") wallets[demo ? "demo" : "real"][kind].add((raw.creator ?? "").toLowerCase());
     const problems = [...validateEntity(kind, raw), ...findPersonalData(raw)];
     if (problems.length > 0) violations.push({ key: raw.key ?? "unknown", creator: raw.creator ?? "unknown", kind, demo, problems });
   }

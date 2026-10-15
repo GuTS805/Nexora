@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Hex } from "viem";
 import mark from "./assets/mark.png";
 import { useI18n } from "./i18n.tsx";
+import { PendingQueue } from "./pending.tsx";
 import { store } from "./storage.ts";
 import { About } from "./pages/About.tsx";
 import { Compare } from "./pages/Compare.tsx";
@@ -66,6 +67,7 @@ export function App() {
         <button className="icon-control lang" onClick={() => setLang(lang === "en" ? "hi" : "en")}>{t("switchLang")}</button>
       </header>
       <main>
+        <PendingQueue />
         {entity ? <Entity entityKey={entity} /> :
           route === "/compare" ? <Compare key={query} /> :
           route === "/log" ? <Log key={query} /> :

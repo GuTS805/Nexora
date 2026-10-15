@@ -7,7 +7,7 @@
  *                    [--since 202608] [--demo] [--trust <listKey> | --creator <address>] [--json]
  *   nexora compare   --city <city> [--work <work>] [--vehicle <vehicle>] [--demo] [--trust <listKey>]
  *   nexora incidents [--platform …] [--city …] [--type id_blocked] [--demo] [--trust <listKey>] [--json]
- *   nexora show      <entityKey>
+ *   nexora show      <entityKey>       an entry; for a report, also its updates and the replies to it
  *   nexora lists
  *   nexora verify    re-check every feature recorded in arkiv/evidence.json against the chain
  *   nexora audit     check every Nexora entity on chain against the JSON Schemas and for personal data [--json]
@@ -20,7 +20,7 @@ import { getAddress, type Address, type Hex } from "viem";
 import {
   HOURS_BAND_LABELS, comparePlatforms, entryPredicate, explainError, fetchEntries, fetchEntry, fetchIncidents,
   fetchShifts, fetchTrustList, fetchTrustLists, getEntityOrNull, incidentStats, liveClient, queryText, readClient,
-  fetchRawEntities, isLocked, type EntryFilters, type IncidentFilters, type ShiftFilters,
+  fetchRawEntities, fetchReplies, decodeReply, decodeTrustList, isLocked, repliesTo, type EntryFilters, type IncidentFilters, type ShiftFilters,
 } from "./src/index.ts";
 import { auditEntities } from "./src/contract.ts";
 
@@ -124,12 +124,19 @@ switch (command) {
     if (decoded.ok) {
       json(decoded.value);
       if (decoded.value.kind === "incident") {
-        const updates = await fetchIncidents(client, { parent: key, includeDemo: true });
+        const [updates, replies] = await Promise.all([
+          fetchIncidents(client, { parent: key, includeDemo: true }),
+          fetchReplies(client, { parent: key, includeDemo: true }),
+        ]);
         console.log(`updates and "same here" reports: ${updates.items.map((c) => c.key).join(", ") || "none"}`);
+        // Replies from the reporter's own wallet are not answers; repliesTo leaves them out.
+        const answers = repliesTo(decoded.value, replies.items);
+        console.log(`replies: ${answers.map((r) => `${r.status} by ${r.creator} (${r.key})`).join(", ") || "none"}`);
       }
     } else {
-      const list = await fetchTrustList(client, key);
-      if (list.ok) json(list.value);
+      const raw = await getEntityOrNull(client, key);
+      const other = raw ? [decodeTrustList(raw), decodeReply(raw)].find((d) => d.ok) : undefined;
+      if (other?.ok) json(other.value);
       else console.log(`not a valid Nexora entry: ${decoded.reason}`);
     }
     break;
@@ -160,6 +167,7 @@ switch (command) {
         name === "owner_delete" ? entity === null :
         name === "ownership_lock" ? entity !== null && !!entityFlags?.readonly && isLocked(entity.owner ?? "") :
         name === "trust_list_create" || name === "trust_list_patch" ? entity !== null && entityFlags?.readonly === false :
+        name === "union_reply" ? entity !== null && !!entityFlags?.readonly && String(entity.creator).toLowerCase() === String(step.curator).toLowerCase() :
         name === "permissionless_extend" ? !!entityFlags?.permissionlessExtension && String(step.extendedBy).toLowerCase() !== String(entity?.owner).toLowerCase() :
         entity !== null && !!entityFlags?.readonly;
       console.log(`${verdict ? "ok  " : "FAIL"} ${name}: ${key}${entity ? ` creator ${entity.creator}` : " (gone)"}`);
@@ -175,7 +183,7 @@ switch (command) {
     } else {
       console.log(`query @ block ${page.blockNumber}:\n  ${page.query}\n`);
       console.log(`${report.checked} entities claim to be Nexora data`);
-      console.log(`  shown by readers: ${report.shown.shift} earnings days, ${report.shown.incident} incidents, ${report.shown.trust_list} trust lists`);
+      console.log(`  shown by readers: ${report.shown.shift} earnings days, ${report.shown.incident} incidents, ${report.shown.reply} replies, ${report.shown.trust_list} trust lists`);
       console.log(`  rejected by readers (never shown or counted): ${report.rejected.length}`);
       for (const r of report.rejected) console.log(`    ${r.key}  ${r.reason}`);
       console.log(`\nstrict schema + personal-data scan over every shown entry: ${report.violations.length} violation(s)`);

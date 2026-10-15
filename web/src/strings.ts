@@ -256,6 +256,46 @@ export const STRINGS = {
   curator: ["Curator", "बनाने वाले"],
   membersCount: ["{n} members", "{n} सदस्य"],
   editMembers: ["Edit members", "सदस्य बदलें"],
+
+  // replies from unions and groups
+  repliesTitle: ["Replies from unions and groups ({n})", "यूनियन और ग्रुप के जवाब ({n})"],
+  repliesIntro: ["A union, a worker group or the platform can say where this report stands. A reply is its own read-only entry: it never changes the report, and only the worker's own update can mark the report resolved.", "यूनियन, वर्कर ग्रुप या प्लेटफ़ॉर्म बता सकता है कि यह रिपोर्ट कहाँ तक पहुँची। जवाब एक अलग एंट्री है जिसे कोई बदल नहीं सकता: उससे रिपोर्ट नहीं बदलती, और रिपोर्ट को सुलझा हुआ सिर्फ़ वर्कर का अपना अपडेट बता सकता है।"],
+  repliesNone: ["No replies yet.", "अभी कोई जवाब नहीं।"],
+  replyCurator: ["runs the trust list “{name}”", "“{name}” भरोसा सूची चलाते हैं"],
+  replyUnknownTitle: ["This wallet does not run a trust list you use. Anyone can reply, so treat it as a claim.", "यह वॉलेट आपकी इस्तेमाल की किसी भरोसा सूची को नहीं चलाता। जवाब कोई भी दे सकता है, इसलिए इसे दावा मानिए।"],
+  replyAs: ["Reply as a union or group", "यूनियन या ग्रुप की तरफ़ से जवाब दें"],
+  replyHelp: ["Sent from your connected wallet, not a one-time one, so workers can see who answered and check it against a trust list. Pick what is true today, and post a new reply when it changes.", "आपके कनेक्ट किए वॉलेट से जाता है, एक-बार वाले से नहीं, ताकि वर्कर्स देख सकें कि जवाब किसने दिया और उसे भरोसा सूची से मिला सकें। आज जो सच है वही चुनें, और बदलने पर नया जवाब भेजें।"],
+  replyStatus: ["Where it stands", "मामला कहाँ है"],
+  replySend: ["Publish reply", "जवाब दर्ज करें"],
+  replyOwn: ["This is your own report, so a reply from you would not count. Post an update instead.", "यह आपकी अपनी रिपोर्ट है, इसलिए आपका जवाब नहीं गिना जाएगा। इसके बजाय अपडेट दें।"],
+  replyBadge: ["Reply: {status}", "जवाब: {status}"],
+  answeredLine: ["{a} of {n} reports here have a reply from someone other than the reporter.", "यहाँ की {n} में से {a} रिपोर्ट पर रिपोर्ट करने वाले के अलावा किसी और ने जवाब दिया है।"],
+  answeredTrusted: ["{a} of them from the group that runs the trust list “{name}”.", "इनमें से {a} पर “{name}” भरोसा सूची चलाने वाले ग्रुप का जवाब है।"],
+
+  // social security
+  eshram: ["Not registered yet? Platform workers can sign up for government social security schemes on e-Shram, the Labour Ministry's portal.", "अभी तक रजिस्ट्रेशन नहीं किया? प्लेटफ़ॉर्म वर्कर्स श्रम मंत्रालय के e-Shram पोर्टल पर सरकारी सामाजिक सुरक्षा योजनाओं के लिए रजिस्टर कर सकते हैं।"],
+  eshramLink: ["Register on e-Shram", "e-Shram पर रजिस्टर करें"],
+
+  // voice
+  micStart: ["🎤 Say your day", "🎤 बोलकर भरें"],
+  micStop: ["■ Stop listening", "■ सुनना बंद करें"],
+  micListening: ["Listening… say, for example: “earned 1200, petrol 300, 9 hours”", "सुन रहे हैं… जैसे बोलें: “1200 कमाए, 300 का पेट्रोल, 9 घंटे”"],
+  micHeard: ["Heard: “{text}”. Check the numbers below before you publish.", "सुना: “{text}”। दर्ज करने से पहले नीचे के नंबर जाँच लें।"],
+  micNothing: ["Heard “{text}”, but could not tell which number is which. Try: “earned 1200, petrol 300, 9 hours”.", "“{text}” सुना, पर समझ नहीं आया कि कौन सा नंबर किसका है। ऐसे बोलें: “1200 कमाए, 300 का पेट्रोल, 9 घंटे”।"],
+  micError: ["The microphone did not work ({error}). You can still type the numbers.", "माइक नहीं चला ({error})। आप नंबर टाइप कर सकते हैं।"],
+  micPrivacy: ["Your browser turns speech into text; Chrome sends the audio to Google to do it. Nothing is published until you press Publish.", "बोली को आपका ब्राउज़र टेक्स्ट में बदलता है; इसके लिए Chrome आवाज़ Google को भेजता है। जब तक आप दर्ज करें नहीं दबाते, कुछ भी पब्लिश नहीं होता।"],
+  listen: ["🔊 Listen", "🔊 सुनें"],
+  listenStop: ["■ Stop", "■ रोकें"],
+
+  // offline
+  offlineSaved: ["You are offline. This entry is saved on this phone and will be published when the network is back.", "आप ऑफ़लाइन हैं। यह एंट्री इसी फ़ोन में सेव है और नेटवर्क आते ही दर्ज हो जाएगी।"],
+  saveForLater: ["Save and publish when the network is back", "सेव करें, नेटवर्क आने पर दर्ज करें"],
+  queueTitle: ["Saved on this phone, waiting for the network: {n}", "इस फ़ोन में सेव, नेटवर्क का इंतज़ार: {n}"],
+  queueHelp: ["Kept only on this device, exactly as it will be published: bands and rounded figures, sealed details already encrypted. Your exact rupees, hours and passphrase were not saved.", "सिर्फ़ इसी डिवाइस पर, ठीक वैसे जैसे दर्ज होगी: रेंज और गोल आँकड़े, बंद जानकारी पहले से एन्क्रिप्टेड। आपके सटीक रुपये, घंटे और पासफ़्रेज़ सेव नहीं हुए।"],
+  queueSend: ["Publish now", "अभी दर्ज करें"],
+  queueRemove: ["Discard", "हटाएँ"],
+  queueNeedsWallet: ["Connect the wallet you chose to publish these.", "इन्हें दर्ज करने के लिए वही वॉलेट कनेक्ट करें जो आपने चुना था।"],
+  queueSent: ["Published from this phone ({n}):", "इस फ़ोन से दर्ज हुईं ({n}):"],
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

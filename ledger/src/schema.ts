@@ -15,6 +15,7 @@ export const KIND = {
   shift: "shift",
   incident: "incident",
   trustList: "trust_list",
+  reply: "reply",
 } as const;
 
 export const PLATFORMS = [
@@ -100,12 +101,21 @@ export const INCIDENT_TYPES = [
   "harassment",
 ] as const;
 
+/**
+ * Where a union, worker group or platform says a report stands. A reply is its own read-only entity
+ * pointing at the report through `parent`; it never changes the report, and only the reporter's own
+ * updates mark a report resolved. Closed vocabulary again: a reply cannot carry a name or a phone
+ * number either.
+ */
+export const REPLY_STATUSES = ["received", "taken_up", "escalated", "resolved", "cannot_help"] as const;
+
 export type Platform = (typeof PLATFORMS)[number];
 export type WorkType = (typeof WORK_TYPES)[number];
 export type City = (typeof CITIES)[number];
 export type Vehicle = (typeof VEHICLES)[number];
 export type Incentive = (typeof INCENTIVES)[number];
 export type IncidentType = (typeof INCIDENT_TYPES)[number];
+export type ReplyStatus = (typeof REPLY_STATUSES)[number];
 
 /**
  * Hours logged in are published as a band, never exactly. The upper bound of each band is

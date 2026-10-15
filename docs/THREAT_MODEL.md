@@ -140,7 +140,7 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
 - **Fact:** the test wallet key lives in `localStorage`, so a malicious browser extension or an XSS bug could read it.
 - **Mitigations:**
   - It is a testnet key with a few test GLM.
-  - The CSP blocks inline and third-party scripts, plugins (`object-src 'none'`) and framing. `connect-src` allows any `https:`/`wss:` host on purpose, because readers can switch to any Arkiv RPC (T10). So an injected script could send data out, and the CSP's job is to keep scripts from being injected. `Permissions-Policy` turns off camera, microphone, location and payment APIs, and `Cross-Origin-Opener-Policy: same-origin` cuts the window off from pages it opens.
+  - The CSP blocks inline and third-party scripts, plugins (`object-src 'none'`) and framing. `connect-src` allows any `https:`/`wss:` host on purpose, because readers can switch to any Arkiv RPC (T10). So an injected script could send data out, and the CSP's job is to keep scripts from being injected. `Permissions-Policy` turns off camera, location and payment APIs and allows the microphone only to the app's own origin (for "Say your day"), and `Cross-Origin-Opener-Policy: same-origin` cuts the window off from pages it opens.
   - Users can bring their own browser wallet instead.
 - **Residual:** with the key, an attacker could delete that wallet's own entries, or learn which entries a phone published if they get the phone.
 
@@ -154,6 +154,22 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
   - Every GitHub Action is pinned to a full commit SHA, not a movable tag, and checkouts do not keep the token (`persist-credentials: false`). Dependabot updates the pins. Workflows get read-only permissions; only CodeQL may write security events.
   - CI publishes a SHA-256 checksum next to the portable `nexora.html`, so a union passing the file around can check it is the one CI built.
   - The sealed payload's key derivation uses PBKDF2-SHA256 at 600,000 iterations (OWASP's current figure). Boxes record their own count, so older ones still open.
+
+### T15. Fake replies: a platform or an impostor "answers" a report
+
+- **Threat:** anyone can publish a `reply`, so a platform could mark complaints "resolved" in bulk, or an impostor could pose as a union.
+- **Mitigations:**
+  - A reply never changes the report. Only the reporter's own update (an `incident` with `parent`, from the same wallet) marks a report resolved (`resolvedReports`), so "resolved" by someone else is only that party's claim.
+  - The app marks a reply only when its `$creator` runs the recommended trust list; every other reply carries an "unverified" badge. Replies from the reporter's own wallet are ignored (`repliesTo`).
+  - Statuses are a closed vocabulary, so a reply cannot carry a phone number, a threat or a link.
+- **Residual:** a flood of unverified replies is still shown, marked as unverified.
+- **Test:** *a reporter replying to their own report is not an answer, and a trust set limits who counts*.
+
+### T16. Voice input and offline storage
+
+- **Voice:** the browser does speech-to-text; in Chrome the audio goes to Google. This is disclosed beside the button, the feature is opt-in, and only three numbers reach the form. A worker who does not want that types instead. Nothing is published until they press Publish.
+- **Offline queue:** an entry saved with no network is kept in `localStorage` as exactly what will be published: the banded, rounded attributes and the payload, with any private details already sealed. The exact rupees and hours and the passphrase are never stored, not even on the phone. Before sending, the saved entry goes through the same decoder readers use, so a tampered one is dropped.
+- **Double publishing:** an entry is queued only when the browser reports it is offline before anything is sent, so an entry that may already be on chain is never queued again.
 
 ## Known limitations
 
