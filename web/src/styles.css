@@ -294,6 +294,8 @@ main { max-width: 1360px; padding: 0 20px 50px; }
 .proof-table .verify button.fail { border-color: var(--down); color: var(--down); }
 .proof-table .verify small { display: block; margin-top: 4px; font-size: 11.5px; color: var(--muted); }
 .proof-table .verify small.fail { color: var(--down); }
+.proof-table .verify button.error { border-color: var(--warn-ink); color: var(--warn-ink); }
+.proof-table .verify small.error { color: var(--warn-ink); }
 .foot { max-width: 1320px; margin: 0 auto 20px; border: 1px solid var(--line); border-radius: 12px; }
 @media (max-width: 1100px) { .proof-hero { grid-template-columns: 1fr auto; }.proof-art { display: none; }.proof-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
@@ -459,13 +461,21 @@ select option:checked { background-color: var(--accent); color: var(--accent-ink
 .voice p { margin: 0.35rem 0 0; }
 .voice button.listening { border-color: var(--accent); color: var(--accent); }
 
+/* what was on record at a past time */
+.as-of summary { cursor: pointer; font-weight: 600; }
+.as-of .row { align-items: flex-end; gap: 0.8rem; flex-wrap: wrap; }
+.as-of .row .field { flex: 0 1 260px; }
+.as-of .row .field input { flex: none; max-width: 100%; }
+.as-of .mono { overflow-wrap: anywhere; }
+.card .as-of.card { border: 0; border-top: 1px dashed var(--line); border-radius: 0; background: none; padding: 0.6rem 0 0; margin: 0.6rem 0 0; }
+
 /* entries saved while offline */
 .card.pending { border-color: var(--accent); }
 
 /* printable union report: only the report, black on white */
 .print-only { display: none; }
 @media print {
-  .top, .foot, .filters, label.check, button, .actions, .no-print, .grid, details.query, .card.pending { display: none !important; }
+  .top, .foot, .filters, label.check, button, .actions, .no-print, .grid, details.query, details.as-of, .card.pending { display: none !important; }
   .print-only { display: block !important; }
   * { background: transparent !important; color: #000 !important; box-shadow: none !important; text-shadow: none !important; }
   body { background: #fff !important; }

@@ -7,7 +7,8 @@
  * Besides the dataset, the script exercises every Arkiv feature the app claims: batch creates,
  * key-typed lineage (incident follow-ups), a sealed payload, a trust list created then patched, a
  * permissionless extension by a non-owner, a refused patch on a readonly entity, an owner delete, a
- * report locked by handing it to 0x…dEaD, and replies from the trust list's curator to three reports.
+ * report locked by handing it to 0x…dEaD, replies from the trust list's curator to three reports, the
+ * curator renewing the trust list's lease, and reads as of past blocks.
  * Each transaction is recorded in arkiv/evidence.json so the claims can be checked on the explorer.
  *
  * Every entry is synthetic and flagged `demo = true`. Nine wallets behave like honest workers, each
@@ -26,8 +27,8 @@ import { tiramisu } from "@arkiv-network/sdk/chains";
 import type { Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
-  EXTEND_DAYS, MAX_BATCH, arkivHttp, createLocked, explainError, fetchEntry, fetchIncidents, fetchReplies, fetchShifts, fetchTrustList,
-  incidentCreate, readClient, replyCreate, seal, shiftCreate, trustListCreate, trustListPatch, type ReplyStatus,
+  EXTEND_DAYS, MAX_BATCH, arkivHttp, createLocked, decodeTrustList, entityAtBlock, explainError, fetchEntry, fetchIncidents, fetchReplies, fetchShifts, fetchTrustList,
+  incidentCreate, readClient, replyCreate, seal, shiftCreate, trustListCreate, trustListPatch, trustRenewal, type ReplyStatus,
   type City, type IncidentInput, type IncidentType, type Platform, type ShiftInput, type Vehicle, type WorkType,
 } from "../ledger/src/index.ts";
 import { SEED_KEY_NAMES, SPAMMER_KEY_NAME, SPONSOR_KEY_NAME, loadEnv, requireKey } from "./env.ts";
@@ -360,6 +361,47 @@ await step("union_reply", "replies linked by a key-typed parent: the demo trust 
     curator, keys: result.createdEntities, tx: result.txHash,
     replies: answers.map(([parent, status], i) => ({ parent, status, key: result.createdEntities[i] })),
     query: check.query, foundByParentQuery: check.items.length,
+  };
+});
+
+await step("trust_list_renew", "extendEntity as a lease: only the curator can renew the trust list, to 180 days from today; a list nobody renews stops vouching", async () => {
+  const key = list?.key as Hex;
+  const before = await fetchTrustList(client, key);
+  if (!before.ok) throw new Error(before.reason);
+  const block = await client.getBlockNumber();
+  const target = trustRenewal(before.value.expiresAt, block);
+  if (target === null) throw new Error("the list was renewed too recently to renew again");
+  const result = await walletFor(SPONSOR_KEY_NAME).extendEntity({ entityKey: key, expires: ExpirationTime.atBlock(target) });
+  const after = await fetchTrustList(client, key);
+  return {
+    key, curator: account(SPONSOR_KEY_NAME).address, tx: result.txHash,
+    expiresBefore: before.value.expiresAt.toString(), expiresAfter: (after.ok ? after.value.expiresAt : result.expiresAt).toString(),
+  };
+});
+
+await step("history_at_block", "reads as of a past block: the trust list had 8 members just before its curator's patch and 9 after, and worker 2's deleted day is still readable at the block before its deletion, so anyone can show what was on record at a given time", async () => {
+  const patched = evidence.features.trust_list_patch;
+  const deleted = evidence.features.owner_delete;
+  if (!patched?.tx || !deleted?.deleteTx) throw new Error("run the earlier steps first");
+  const key = patched.key as Hex;
+  const deletedKey = deleted.key as Hex;
+  const patchBlock = (await client.getTransactionReceipt({ hash: patched.tx as Hex })).blockNumber;
+  const deleteBlock = (await client.getTransactionReceipt({ hash: deleted.deleteTx as Hex })).blockNumber;
+  const membersAt = async (block: bigint) => {
+    const raw = await entityAtBlock(client, key, block);
+    const list = raw ? decodeTrustList(raw) : null;
+    if (!list?.ok) throw new Error(`no valid trust list at block ${block}`);
+    return list.value.members.length;
+  };
+  const membersBefore = await membersAt(patchBlock - 1n);
+  const membersAfter = await membersAt(patchBlock);
+  const visibleBefore = (await entityAtBlock(client, deletedKey, deleteBlock - 1n)) !== null;
+  const goneAtDelete = (await entityAtBlock(client, deletedKey, deleteBlock)) === null;
+  if (membersAfter !== membersBefore + 1 || !visibleBefore || !goneAtDelete) throw new Error("history did not read back as expected");
+  return {
+    key, txs: [patched.tx, deleted.deleteTx],
+    listBlockBefore: patchBlock - 1n, membersBefore, listBlockAfter: patchBlock, membersAfter,
+    deletedKey, deletedVisibleAt: deleteBlock - 1n, deletedGoneAt: deleteBlock,
   };
 });
 

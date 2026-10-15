@@ -27,6 +27,10 @@ Every entity is validated before it is used, because anyone can write data that 
 
 To count only workers a union vouches for, pass `creators: list.members` from `fetchTrustList(client, key)`. That filter runs on Arkiv's `$creator`, which no writer can forge.
 
+A trust list is a 180-day lease only its curator can renew: `trustRenewal(list.expiresAt, currentBlock)` gives the block to renew to with `extendEntity`, or `null` when renewing would not add time.
+
+To read what was on record at a past time, `blockAtDate(client, date)` finds the block at that moment and `entityAtBlock(client, key, block)` returns the entity as it stood then, or `null`. It works for entities deleted or expired since: deletion removes them from the current state, not from history. `memberChanges(listThen.members, listNow.members)` says who joined or left a trust list since.
+
 Replies to a report (from a union, a worker group or the platform) come from `fetchReplies(client, { parent: reportKey })`. `repliesTo(report, replies, trusted?)` leaves out the reporter's own wallet and, given a set of wallets, keeps only theirs.
 
 ## Check (JSON Schema and privacy audit)
@@ -61,6 +65,8 @@ Exact rupees and hours never reach the chain. They become an hours band and a ta
 ```bash
 npx -p nexora-ledger nexora earnings --demo --city bengaluru
 npx -p nexora-ledger nexora compare --demo --city delhi_ncr --work cab
+npx -p nexora-ledger nexora earnings --demo --city bengaluru --day 8plus   # days of 8 h or more (hours_band >= 2)
+npx -p nexora-ledger nexora at <entityKey> --date 2026-10-15   # as it stood then, even if later deleted
 npx -p nexora-ledger nexora audit      # every Nexora entity on chain vs the schemas
 npx -p nexora-ledger nexora verify     # re-check the project's recorded on-chain evidence
 ```

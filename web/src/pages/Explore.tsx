@@ -1,5 +1,5 @@
 import { readShifts, readTrustList, readTrustLists } from "../cache.ts";
-import { CITIES, PLATFORMS, VEHICLES, WORK_TYPES, earningsStats, fetchEntries, liveClient, summariseShifts, type City, type EntryFilters, type IncidentFilters, type Platform, type ShiftFilters, type TrustList, type Vehicle, type WorkType } from "nexora-ledger";
+import { CITIES, DAY_LENGTHS, PLATFORMS, VEHICLES, WORK_TYPES, earningsStats, fetchEntries, isOneOf, liveClient, summariseShifts, type City, type DayLength, type EntryFilters, type IncidentFilters, type Platform, type ShiftFilters, type TrustList, type Vehicle, type WorkType } from "nexora-ledger";
 import { useEffect, useRef, useState } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
@@ -28,10 +28,30 @@ export function cliFor(command: string, filters: ShiftFilters & IncidentFilters,
   add("vehicle", filters.vehicle);
   add("type", filters.type);
   add("since", filters.minPeriod);
+  add("day", filters.day);
+  add("min-cost", filters.minCostPct);
   if (filters.includeDemo) parts.push("--demo");
   if (source.kind === "list") add("trust", source.key);
   if (source.kind === "mine" && filters.creators?.[0]) add("creator", filters.creators[0]);
   return parts.join(" ");
+}
+
+const DAYS = Object.keys(DAY_LENGTHS) as DayLength[];
+
+export const isDayLength = (value: unknown): value is DayLength => isOneOf(DAYS, value);
+
+/** Day length, as a range over the published hours band: long days often pay a different rate per hour. */
+export function DayPicker({ value, onChange }: { value: DayLength | ""; onChange: (value: DayLength | "") => void }) {
+  const { t } = useI18n();
+  return (
+    <label className="field">
+      <span>{t("dayLength")}</span>
+      <select value={value} onChange={(e) => onChange(isDayLength(e.target.value) ? e.target.value : "")}>
+        <option value="">{t("any")}</option>
+        {DAYS.map((d) => <option key={d} value={d}>{t(`day_${d}`)}</option>)}
+      </select>
+    </label>
+  );
 }
 
 export function SourcePicker({ source, setSource }: { source: Source; setSource: (s: Source) => void }) {
@@ -149,19 +169,20 @@ export function Explore() {
   const [city, setCity] = useState<City | "">("");
   const [vehicle, setVehicle] = useState<Vehicle | "">("");
   const [since, setSince] = useState<number | "">("");
+  const [day, setDay] = useState<DayLength | "">("");
   const [includeDemo, setIncludeDemo] = useState(true);
   const [source, setSource, list] = useSource();
 
   const creators = creatorsFor(source, wallet, list?.members);
   const filters: ShiftFilters = {
     platform: platform || undefined, work: work || undefined, city: city || undefined, vehicle: vehicle || undefined,
-    minPeriod: since === "" ? undefined : since, includeDemo, creators,
+    minPeriod: since === "" ? undefined : since, day: day || undefined, includeDemo, creators,
   };
   const waitingForList = source.kind === "list" && !list;
   const result = useAsync(async () => {
     if (waitingForList || (creators && creators.length === 0)) return null;
     return readShifts(reader, filters);
-  }, [reader, revision, platform, work, city, vehicle, since, includeDemo, source.kind, list?.key, list?.members.length, wallet?.address]);
+  }, [reader, revision, platform, work, city, vehicle, since, day, includeDemo, source.kind, list?.key, list?.members.length, wallet?.address]);
 
   const items = result.data?.items ?? [];
   const recommended = useRecommendedList();
@@ -208,6 +229,7 @@ export function Explore() {
               {recentPeriods().map((p) => <option key={p} value={p}>{month(p)}</option>)}
             </select>
           </label>
+          <DayPicker value={day} onChange={setDay} />
           <SourcePicker source={source} setSource={setSource} />
         </div>
         <label className="check"><input type="checkbox" checked={includeDemo} onChange={(e) => setIncludeDemo(e.target.checked)} /> {t("showDemo")}</label>

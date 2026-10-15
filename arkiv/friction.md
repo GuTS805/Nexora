@@ -3,7 +3,7 @@
 Environment for every entry unless stated otherwise: `@arkiv-network/sdk` **0.8.1**, `viem` 2.x, Node **24.19.0** on Windows 11, Tiramisu (chain `7738577`), browser build with Vite 8.
 Every entry has been reproduced against Tiramisu (status: live).
 
-Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 change how a browser-first app has to be designed. A short list of what worked well is at the end, kept separate from the friction.
+Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 change how a browser-first app has to be designed; F7 and F8 came up while building the report lock and the offline queue; F9 while adding reads as of past blocks, and it changed what our privacy copy promises. A short list of what worked well is at the end, kept separate from the friction.
 
 ---
 
@@ -69,7 +69,7 @@ Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 cha
       params:["app = str(\x27nexora\x27) AND ("+Array.from({length:n},(_,i)=>"$creator = addr("+a(i+1)+")").join(" OR ")+")",{limit:1}]})})
       .then(r=>r.json()).then(j=>console.log(n+1,"predicates:",j.error?.message??"ok"))'
   ```
-- **Our workaround:** [`ledger/src/queries.ts`](../ledger/src/queries.ts) caps one query at `MAX_OR_BRANCHES = 25` `$creator` or `$key` branches (at most 36 predicates and about 2 KB with every filter set). The fetch functions split longer lists into several queries and merge the results. A test checks the heaviest filter against both limits.
+- **Our workaround:** [`ledger/src/queries.ts`](../ledger/src/queries.ts) caps one query at `MAX_OR_BRANCHES = 25` `$creator` or `$key` branches (at most 38 predicates and 1 900 bytes with every earnings filter set). The fetch functions split longer lists into several queries and merge the results. A test checks the heaviest filter against both limits.
 - **Suggested fix:** a "Limits" table on the network page covering page size, predicates per query, query bytes, payload bytes (`MAX_PAYLOAD_BYTES = 128 KiB`, also only in source), attribute count (`MAX_ATTRIBUTES = 32`) and string length (128 bytes). Put the limit in the error message (`query has 65 predicates, max 64`), and validate in the SDK's query builder so the error appears before a network round trip. An `IN` operator (`$creator IN (…)`) would make the common case one predicate.
 
 ## F5. Entity URL format on the block explorer is undocumented (status: live)
@@ -111,6 +111,46 @@ Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 cha
   2. Document the anonymous budget and the cost model, and return the remaining cost budget on every response (e.g. a second `ratelimit` entry), so clients can back off before the hour-long stop.
   3. Consider a per-origin or per-dApp read allowance, so browser-first apps do not have to proxy reads through a server, which reintroduces the central point that Arkiv removes.
 
+## F7. The documented `predictEntityKeys` example cannot run: no client has both methods it calls (status: live)
+
+- **Surface:** TypeScript SDK 0.8.1, `predictEntityKeys` + `executeBatch` (JSDoc in `src/actions/public/predictEntityKeys.ts`)
+- **What we were doing (15 Oct 2026):** locking a report, which means creating it and handing it to `0x…dEaD` in one atomic batch. The transfer has to name the new entity's key before it exists, so we followed the `@example` "A batch whose second entity points at its first".
+- **Expected:** the example's `client.predictEntityKeys({ owner, count })` followed by `client.executeBatch({ creates: [{ …, salt }] })` runs on one client.
+- **Actual:** `predictEntityKeys` exists only on the public client and `executeBatch` only on the wallet client. TypeScript rejects the example as written, and at runtime:
+  ```
+  predictEntityKeys on public client: function | on wallet client: undefined
+  executeBatch     on public client: undefined | on wallet client: function
+  ```
+- **Reproduce:** `createPublicClient({ chain: tiramisu, transport: http() })` and `createWalletClient({ chain: tiramisu, transport: http(), account })`, then compare `typeof client.predictEntityKeys` and `typeof client.executeBatch` on each.
+- **Our workaround:** [`createLocked`](../ledger/src/lock.ts) takes a reader for the prediction and a wallet for the batch, then checks that the key the batch created and transferred is the predicted one. Once the two clients are passed separately it works first time: seed step `ownership_lock` locked a report, and the author's own delete afterwards was refused.
+- **Suggested fix:** add `predictEntityKeys` to the wallet client's actions (it predicts keys for the account that will sign), or show two clients in the example.
+
+## F8. Create parameters cannot be saved and restored as data (status: live)
+
+- **Surface:** TypeScript SDK 0.8.1, `CreateEntityParameters`, `ExpirationTime`, attribute values (`@arkiv-network/sdk/attr`)
+- **What we were doing (15 Oct 2026):** an offline queue. A worker with no signal fills in the form, and the entry is saved on the phone and sent when the network returns. The natural thing to save is the exact `createEntity` parameters.
+- **Expected:** parameters survive `JSON.stringify` / `JSON.parse`, or the SDK offers a way to serialise them.
+- **Actual:**
+  - `JSON.stringify(params)` throws `Do not know how to serialize a BigInt`, because `ExpirationTime.fromDays(30)` is `{ minLifetime: 1296000n, expiresAt: 0n }`.
+  - Attribute values carry a type-level brand. Passing a parsed `{ type: "str", value: "…" }` back is a TypeScript error (`TS2352 … Property '[validated]' is missing in type '{ type: "str"; value: string; }' but required in type 'StrValue'`), although the runtime only checks the shape.
+- **Reproduce:** `JSON.stringify({ expires: ExpirationTime.fromDays(30) })`; and in TypeScript, assign `JSON.parse(JSON.stringify(str("x")))` to an attribute map.
+- **Our workaround:** [`web/src/queue.ts`](../web/src/queue.ts) stores the attributes as `{ type, value }`, the payload as text and the lifetime in days. When sending, it rebuilds every attribute with `str` / `i32` / `bool` / `key`, rebuilds the expiry with `ExpirationTime.fromDays`, and runs the result through the same decoder readers use before it is sent.
+- **Suggested fix:** `serializeCreate(params)` / `parseCreate(json)` helpers (or a `toJSON` on `ExpirationTime`), and an exported runtime check that turns a plain `{ type, value }` into a branded value.
+- **Smaller, related:** read-back `creationFlags` carry an extra `raw` byte (`{"readonly":true,"permissionlessExtension":true,"raw":3}`). It is typed (`ResolvedCreationFlags`), but a strict comparison of write flags with read flags fails: our first JSON Schema audit flagged every entity until we compared only the two documented flags.
+
+## F9. Deleting or expiring an entity does not remove it from history, and neither fact nor retention is documented (status: live)
+
+- **Surface:** TypeScript SDK 0.8.1, `deleteEntity`, entity expiry, `SelectQueryBuilder.atBlock`; Tiramisu node
+- **What we were doing (16 Oct 2026):** adding "What was on record at a past time" to every entry and trust list, and `nexora at <key> --block <n>` to the CLI.
+- **Expected:** the docs to say whether a deleted or expired entity can still be read at earlier blocks, and how far back a node keeps history. An app that tells people "delete" or "expires" needs to know what that means.
+- **Actual:**
+  - `deleteEntity`'s JSDoc says only "Deletes the entity with the given key". `atBlock` says the block "must be within the range the node retains", and the range is not stated anywhere we looked.
+  - Measured: worker 2's deleted day (`0x1685…261a`, deleted in block 580 130) comes back in full, payload included, from `$key = key(…)` at block 580 129, and is absent at 580 130. The trust list returns its 8 pre-patch members at block 580 117 and 9 at 580 118. A query at block 1 answers with an empty page, not a `"block"` error, so on Tiramisu today history seems to reach genesis.
+- **Why it matters:** "delete" and "expires" remove an entity from the current state, which is what every default query reads. They do not erase it. A privacy promise built on deletion alone would be wrong.
+- **Reproduce:** `npx -p nexora-ledger nexora at 0x1685179bf008a2915b8f61777181fcccf226c65fd4f040d049fe7ce73945261a --block 580129`, then `--block 580130`. Seed step `history_at_block` records both, and the Proof page re-checks them.
+- **What we changed:** the app now says an entry "leaves Arkiv's current records", not that it disappears, and that history keeps it. This was already why only bands and rounded figures are public and exact figures are sealed: what anyone can read at an old block is what was safe to publish in the first place.
+- **Suggested fix:** state in the `deleteEntity` and expiry docs that history keeps deleted and expired entities readable through `atBlock`, and document each network's retention window (and whether mainnet nodes will prune).
+
 ---
 
 ## What worked well (not friction)
@@ -118,6 +158,9 @@ Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 cha
 - **Query text you can paste anywhere.** `and([...]).toString()` renders the exact predicate the node runs, with typed literals, e.g. `app = str('nexora') AND spend_band >= i32(1)`. We show it under every list, so reproducibility took no extra code. One docs example of the `str('…')` literal format would have saved us a failing test.
 - **Types that prevent mistakes.** Out-of-range values throw an `InvalidValueError` that names the fix ("use u64(...) for … timestamps"). Expiries can only be built with `ExpirationTime.*`, so raw seconds do not compile. The package ships its TypeScript source, which is how we could pin down F2 and F3 precisely.
 - **Revert messages that explain themselves.** A refused patch on a `readonly` entity and a shortening extend both came back as plain sentences naming the entity, the blocks and what is still allowed, not as a raw custom-error selector.
+- **Ownership transfer in the same batch as the create.** With F7 worked around, `executeBatch({ creates: [{ …, salt }], ownershipChanges: [{ entityKey, newOwner: 0x…dEaD }] })` was atomic and returned both the created key and the transferred key, so the app can check them. The refused delete afterwards named the problem plainly: *"entity … is owned by 0x…dEaD, not 0xfdF4…"*.
+- **Leases are one call.** Renewing a trust list to 180 days from today is `extendEntity({ expires: ExpirationTime.atBlock(currentBlock + 180 days of blocks) })`, and because the list is created without permissionless extension, only its curator can do it.
+- **History in one call.** `.atBlock(n)` on any query returns the state as of block `n`, and paging is pinned to the block a walk started at, so results cannot shift under a reader. That turned "who did this union vouch for when the figure was confirmed" and "was this report public before that date" into features rather than an indexer.
 - **Reading needs no account.** `select().where(...).fetch()` worked first time from Node and the browser, with no key and no CORS problems, until the budget in F6 ran out.
 
 ---
@@ -134,4 +177,4 @@ Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 cha
 | Patch on a `readonly` entity | refused: *"was created readonly, so its contents can never change. Its expiry can still be extended, and it can be transferred or deleted"* |
 | Batch delete of 22 entities | one transaction, none queryable afterwards |
 
-The seed run behind the Proof page (`arkiv/evidence.json`) wrote 159 days of earnings (15 of them from the deliberate spammer), 14 incidents with 2 linked follow-ups, a sealed day and a trust list, and recorded a permissionless extension, a refused readonly patch, an owner delete, and a locked incident: created and handed to `0x…dEaD` in one `executeBatch` (with a `predictEntityKeys` salt). Its author's own delete was then refused: *"entity … is owned by 0x…dEaD, not 0xfdF4…"*. Last, the trust list's curator sent three replies to reports in one batch, each linked by a key-typed `parent`. `npx tsx ledger/cli.ts verify` re-checks all 12 steps against the chain.
+The seed run behind the Proof page (`arkiv/evidence.json`) wrote 159 days of earnings (15 of them from the deliberate spammer), 14 incidents with 2 linked follow-ups, a sealed day and a trust list, and recorded a permissionless extension, a refused readonly patch, an owner delete, and a locked incident: created and handed to `0x…dEaD` in one `executeBatch` (with a `predictEntityKeys` salt). Its author's own delete was then refused: *"entity … is owned by 0x…dEaD, not 0xfdF4…"*. The trust list's curator then sent three replies to reports in one batch, each linked by a key-typed `parent`, and renewed the list's lease (expiry block 8 356 114 → 8 399 045). Step `history_at_block` then read the list and the deleted day as of past blocks (F9). `npx tsx ledger/cli.ts verify` re-checks all 14 steps against the chain.

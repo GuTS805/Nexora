@@ -4,7 +4,7 @@ import { tiramisu } from "@arkiv-network/sdk/chains";
 import { and, eq, gte, lte, or, type Expression } from "@arkiv-network/sdk/query";
 import { custom, http, webSocket, type Address, type Hex } from "viem";
 import { decodeEntry, decodeIncident, decodeReply, decodeShift, decodeTrustList, type Decoded, type Entry, type Incident, type RawEntity, type Reply, type Shift, type TrustList } from "./codec.ts";
-import { APP, KIND, SCHEMA_VERSION, type City, type IncidentType, type Platform, type Vehicle, type WorkType } from "./schema.ts";
+import { APP, DAY_LENGTHS, KIND, SCHEMA_VERSION, type City, type DayLength, type IncidentType, type Platform, type Vehicle, type WorkType } from "./schema.ts";
 
 export const TIRAMISU_RPC = tiramisu.rpcUrls.default.http[0];
 export const TIRAMISU_WS = tiramisu.rpcUrls.default.webSocket[0];
@@ -152,6 +152,10 @@ export type ShiftFilters = EntryFilters & {
   vehicle?: Vehicle | undefined;
   /** Only days that paid at least this much per logged-in hour, after costs. */
   minHourly?: number | undefined;
+  /** Only days of this length, as a range over `hours_band` ({@link DAY_LENGTHS}). */
+  day?: DayLength | undefined;
+  /** Only days whose costs took at least this share of the day's pay, in percent (`cost_pct`). */
+  minCostPct?: number | undefined;
 };
 
 export type IncidentFilters = EntryFilters & {
@@ -169,7 +173,7 @@ export type ReplyFilters = Pick<EntryFilters, "includeDemo" | "creators" | "keys
 /**
  * Most `OR` branches one predicate carries. The Tiramisu node rejects a query with more than 64
  * predicates ("query has too many predicates") or longer than 8192 bytes ("query is too long");
- * neither limit is documented (friction F4). A full filter uses at most 12 predicates, so 25
+ * neither limit is documented (friction F4). A full filter uses at most 13 predicates, so 25
  * `$creator`/`$key` branches (about 1.6 KB) stay well inside both. Longer lists are split into
  * several queries by the fetch functions.
  */
@@ -208,6 +212,12 @@ export function shiftPredicate(filters: ShiftFilters = {}): Expression {
   const clauses = base(KIND.shift);
   if (filters.vehicle) clauses.push(eq("vehicle", str(filters.vehicle)));
   if (filters.minHourly !== undefined) clauses.push(gte("net_hourly", i32(filters.minHourly)));
+  if (filters.day) {
+    const band: { min?: number; max?: number } = DAY_LENGTHS[filters.day];
+    if (band.min !== undefined) clauses.push(gte("hours_band", i32(band.min)));
+    if (band.max !== undefined) clauses.push(lte("hours_band", i32(band.max)));
+  }
+  if (filters.minCostPct !== undefined) clauses.push(gte("cost_pct", i32(filters.minCostPct)));
   return common(clauses, filters);
 }
 

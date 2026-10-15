@@ -1,4 +1,5 @@
-import { explainError, explorerEntity, explorerTx, getEntityOrNull, isLocked } from "nexora-ledger";
+import type { PublicArkivClient } from "@arkiv-network/sdk";
+import { decodeTrustList, entityAtBlock, explainError, explorerEntity, explorerTx, getEntityOrNull, isLocked } from "nexora-ledger";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Hex } from "viem";
 import evidence from "../../../arkiv/evidence.json";
@@ -10,8 +11,21 @@ import { useI18n } from "../i18n.tsx";
 type Step = { why?: string; tx?: Hex; txs?: Hex[]; key?: Hex; keys?: Hex[]; createTx?: Hex; deleteTx?: Hex; error?: string; [k: string]: unknown };
 
 /** What to read back from chain for each recorded step, and what must hold. */
-type Entity = { creator?: string; owner?: string; creationFlags?: { readonly: boolean; permissionlessExtension: boolean } } | null;
-type Check = { key: (s: Step) => Hex | undefined; expect: [en: string, hi: string]; verify: (e: Entity, s: Step) => boolean };
+type Entity = { creator?: string; owner?: string; expiresAt?: bigint; creationFlags?: { readonly: boolean; permissionlessExtension: boolean } } | null;
+type Check = {
+  key: (s: Step) => Hex | undefined;
+  expect: [en: string, hi: string];
+  verify: (e: Entity, s: Step) => boolean;
+  /** Extra reads, for checks about the past rather than the entity as it is now. */
+  history?: (reader: PublicArkivClient, s: Step) => Promise<boolean>;
+};
+
+/** Members of a trust list as of a block, or -1 if there was no valid list then. */
+async function membersAt(reader: PublicArkivClient, key: Hex, block: unknown): Promise<number> {
+  const raw = await entityAtBlock(reader, key, BigInt(String(block)));
+  const list = raw ? decodeTrustList(raw) : null;
+  return list?.ok ? list.value.members.length : -1;
+}
 const readonlyEntry: Check = { key: (s) => s.key ?? s.keys?.[0], expect: ["exists, readonly", "मौजूद है, readonly"], verify: (e) => !!e?.creationFlags?.readonly };
 const CHECKS: Record<string, Check> = {
   batch_shifts: readonlyEntry,
@@ -24,8 +38,24 @@ const CHECKS: Record<string, Check> = {
   permissionless_extend: { key: (s) => s.key, expect: ["owner ≠ extender, community extension on", "मालिक ≠ बढ़ाने वाला, कम्युनिटी एक्सटेंशन चालू"], verify: (e, s) => !!e?.creationFlags?.permissionlessExtension && String(s.extendedBy).toLowerCase() !== String(e.owner).toLowerCase() },
   readonly_enforced: { key: (s) => s.key, expect: ["still readonly after the refused patch", "ठुकराए गए पैच के बाद भी readonly"], verify: (e) => !!e?.creationFlags?.readonly },
   owner_delete: { key: (s) => s.key, expect: ["gone after delete", "डिलीट के बाद मौजूद नहीं"], verify: (e) => e === null },
+  trust_list_renew: { key: (s) => s.key, expect: ["renewed by its curator, expiry at least the recorded one", "बनाने वाले ने रिन्यू की, मियाद कम से कम दर्ज की हुई जितनी"], verify: (e, s) => e !== null && e.creationFlags?.readonly === false && (e.expiresAt ?? 0n) >= BigInt(String(s.expiresAfter)) && String(e.owner).toLowerCase() === String(s.curator).toLowerCase() },
   union_reply: { key: (s) => s.keys?.[0], expect: ["exists, readonly, sent by the trust list's curator", "मौजूद है, readonly, भरोसा सूची चलाने वाले ने भेजा"], verify: (e, s) => !!e?.creationFlags?.readonly && String(e.creator).toLowerCase() === String(s.curator).toLowerCase() },
   ownership_lock: { key: (s) => s.key, expect: ["owned by 0x…dEaD, readonly: nobody can delete it", "मालिक 0x…dEaD, readonly: कोई डिलीट नहीं कर सकता"], verify: (e) => !!e?.creationFlags?.readonly && isLocked(String(e.owner)) },
+  history_at_block: {
+    key: (s) => s.key,
+    expect: ["list read at both past blocks with the recorded member counts; deleted day present the block before its deletion, absent at it", "दोनों पुराने ब्लॉक पर सूची में दर्ज जितने सदस्य; हटाया गया दिन हटने से एक ब्लॉक पहले मौजूद, हटने वाले ब्लॉक पर नहीं"],
+    verify: (e) => e !== null,
+    history: async (reader, s) => {
+      const deleted = s.deletedKey as Hex;
+      const [before, after, visible, gone] = await Promise.all([
+        membersAt(reader, s.key as Hex, s.listBlockBefore),
+        membersAt(reader, s.key as Hex, s.listBlockAfter),
+        entityAtBlock(reader, deleted, BigInt(String(s.deletedVisibleAt))),
+        entityAtBlock(reader, deleted, BigInt(String(s.deletedGoneAt))),
+      ]);
+      return before === s.membersBefore && after === s.membersAfter && visible !== null && gone === null;
+    },
+  },
 };
 
 /** evidence.json is written by the seed script in English; these are the Hindi versions. */
@@ -40,7 +70,9 @@ const WHY_HI: Record<string, string> = {
   permissionless_extend: "permissionlessExtension की वजह से मालिक के अलावा कोई और (स्पॉन्सर) वर्कर 1 की एंट्री की उम्र बढ़ाता है",
   readonly_enforced: "readonly एंट्री पर patchEntity ठुकराया जाना चाहिए, मालिक के लिए भी",
   owner_delete: "मालिक का deleteEntity: वर्कर 2 गलती से डाला दिन हटाता है",
+  trust_list_renew: "लीज़ की तरह extendEntity: भरोसा सूची को सिर्फ़ बनाने वाला आज से 180 दिन के लिए रिन्यू कर सकता है; जिसे कोई रिन्यू न करे, वह सूची भरोसा देना बंद कर देती है",
   union_reply: "key-टाइप parent से जुड़े जवाब: डेमो भरोसा सूची चलाने वाला, यूनियन की जगह, एक ही बैच में तीन रिपोर्ट का जवाब देता है; जवाब से रिपोर्ट नहीं बदलती",
+  history_at_block: "पुराने ब्लॉक के हिसाब से पढ़ना: बनाने वाले के पैच से ठीक पहले भरोसा सूची में 8 सदस्य थे और बाद में 9, और वर्कर 2 का हटाया गया दिन हटने से एक ब्लॉक पहले तक अब भी पढ़ा जा सकता है, इसलिए कोई भी दिखा सकता है कि किसी समय रिकॉर्ड पर क्या था",
   ownership_lock: "ओनरशिप बदलने वाला executeBatch: वर्कर 6 ID बंद होने की रिपोर्ट करता है और उसी ट्रांज़ैक्शन में एंट्री 0x…dEaD को सौंप देता है, ताकि कोई भी (वर्कर 6 खुद भी) उसे समय से पहले डिलीट न कर सके",
 };
 
@@ -56,12 +88,15 @@ const ICON_PATHS: Record<string, ReactNode> = {
   readonly_enforced: <><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></>,
   owner_delete: <><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6" /></>,
   ownership_lock: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4M12 15v2" /></>,
+  trust_list_renew: <><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5" /></>,
   union_reply: <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /><path d="M8 9h8M8 13h5" /></>,
+  history_at_block: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
 };
 
 const External = () => <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>;
 
-type Result = { state: "checking" } | { state: "ok" | "fail"; error?: string };
+/** "error" means the chain could not be read (e.g. the RPC's rate limit), which says nothing about the step. */
+type Result = { state: "checking" | "ok" | "fail" } | { state: "error"; error: string };
 
 export function Proof() {
   const { reader } = useArkiv();
@@ -79,10 +114,10 @@ export function Proof() {
     setResults((r) => ({ ...r, [name]: { state: "checking" } }));
     try {
       const entity = (await getEntityOrNull(reader, key)) as Entity;
-      const ok = check.verify(entity, step);
+      const ok = check.verify(entity, step) && (!check.history || (await check.history(reader, step)));
       setResults((r) => ({ ...r, [name]: { state: ok ? "ok" : "fail" } }));
     } catch (error) {
-      setResults((r) => ({ ...r, [name]: { state: "fail", error: explainError(error) } }));
+      setResults((r) => ({ ...r, [name]: { state: "error", error: explainError(error) } }));
     }
   }
 
@@ -101,7 +136,8 @@ export function Proof() {
   const checkable = steps.filter(([name]) => CHECKS[name]).length;
   const done = Object.values(results).filter((r) => r.state !== "checking");
   const passed = done.filter((r) => r.state === "ok").length;
-  const failed = done.length - passed;
+  const failed = done.filter((r) => r.state === "fail").length;
+  const unread = done.length - passed - failed;
   const checking = done.length < checkable;
 
   return (
@@ -111,8 +147,8 @@ export function Proof() {
           <h2>{hi ? <>सबूत: हर Arkiv फ़ीचर, <em>चेन पर</em></> : <>Proof: every Arkiv feature, <em>on chain</em></>}</h2>
           <p>
             {hi
-              ? "हर पंक्ति एक असली Tiramisu ट्रांज़ैक्शन है, जो डेमो सीड स्क्रिप्ट ने दर्ज किया (arkiv/evidence.json)। एक्सप्लोरर पर खोलें, या यहीं चेन से दोबारा जाँचें।"
-              : "Each row is a real Tiramisu transaction recorded by the demo seed script (arkiv/evidence.json). Open it on the explorer, or re-check it against the chain right here."}
+              ? "हर पंक्ति के पीछे असली Tiramisu ट्रांज़ैक्शन हैं, जो डेमो सीड स्क्रिप्ट ने दर्ज किए (arkiv/evidence.json)। एक्सप्लोरर पर खोलें, या यहीं चेन से दोबारा जाँचें।"
+              : "Each row is backed by real Tiramisu transactions recorded by the demo seed script (arkiv/evidence.json). Open them on the explorer, or re-check them against the chain right here."}
           </p>
         </div>
         <div className="proof-badge">
@@ -132,10 +168,10 @@ export function Proof() {
           <Icon>{ICON_PATHS.incident_followup}</Icon>
           <span>{hi ? "दर्ज कदम" : "Recorded steps"}</span><b>{steps.length}</b><small>{hi ? "Arkiv फ़ीचर जो इस्तेमाल हुए" : "Arkiv features exercised"}</small>
         </div>
-        <div className={failed ? "bad" : checking ? "" : "good"}>
+        <div className={failed ? "bad" : checking || unread ? "" : "good"}>
           <Icon><><circle cx="12" cy="12" r="9" /><path d="m8 12 3 3 5-6" /></></Icon>
           <span>{hi ? "अभी जाँचे गए" : "Verified just now"}</span><b>{passed} / {checkable}</b>
-          <small>{checking ? (hi ? "आपके ब्राउज़र से जाँच हो रही है…" : "checking from your browser…") : failed ? (hi ? `${failed} नहीं मिले, नीचे देखें` : `${failed} did not match, see below`) : (hi ? "आपके ब्राउज़र ने चेन से पढ़कर जाँचा" : "read back from chain by your browser")}</small>
+          <small>{checking ? (hi ? "आपके ब्राउज़र से जाँच हो रही है…" : "checking from your browser…") : failed ? (hi ? `${failed} नहीं मिले, नीचे देखें` : `${failed} did not match, see below`) : unread ? (hi ? `${unread} अभी पढ़े नहीं जा सके, नीचे देखें` : `${unread} could not be read right now, see below`) : (hi ? "आपके ब्राउज़र ने चेन से पढ़कर जाँचा" : "read back from chain by your browser")}</small>
         </div>
         <div>
           <Icon>{ICON_PATHS.permissionless_extend}</Icon>
@@ -173,12 +209,13 @@ export function Proof() {
                           {!result ? (hi ? "चेन पर जाँचें" : "Verify on chain")
                             : result.state === "checking" ? (hi ? "जाँच रहे हैं…" : "Checking…")
                             : result.state === "ok" ? (hi ? "✓ सही निकला" : "✓ Verified")
+                            : result.state === "error" ? (hi ? "↻ फिर जाँचें" : "↻ Try again")
                             : (hi ? "✗ मेल नहीं" : "✗ Mismatch")}
                         </button>
                       )}
                       {result && result.state !== "checking" && (
                         <small className={result.state}>
-                          {result.error ?? `${result.state === "fail" ? (hi ? "उम्मीद थी: " : "expected: ") : ""}${CHECKS[name]!.expect[hi ? 1 : 0]}`}
+                          {result.state === "error" ? result.error : `${result.state === "fail" ? (hi ? "उम्मीद थी: " : "expected: ") : ""}${CHECKS[name]!.expect[hi ? 1 : 0]}`}
                         </small>
                       )}
                     </td>

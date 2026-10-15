@@ -25,7 +25,7 @@ Platforms hold detailed pay and account records, while workers see only fragment
 
 ### 1. Learn before taking a shift
 
-1. Open **Earnings** and filter shifts by city, work type, app, vehicle, and month.
+1. Open **Earnings** and filter shifts by city, work type, app, vehicle, month, and day length ("8 h or more").
 2. Open **Compare** to see take-home pay per hour and month-on-month change. Results backed by at least two distinct *trusted* publisher wallets rank ahead of single-wallet claims.
 3. Inspect underlying entries, their Arkiv creator addresses, and the exact query used to fetch them. Switch trust lists to see how the answer changes.
 
@@ -76,7 +76,7 @@ Arkiv is the primary data layer. The static browser app reads it directly throug
 
 The two main entity kinds are **`shift`** and **`incident`**; a **`reply`** records where a report stands. Typed attributes hold values needed for filters or ranges, such as city, work type, platform, month, and incident type. Display-only fields and an optional encrypted box live in the payload. Authorship comes from Arkiv's engine-set **`$creator`**, never a self-declared author field.
 
-Published shifts, incidents, and replies use `readonly`. The owner can still delete an entity, unless the worker locked it by handing ownership to `0x…dEaD`. Anyone can pay for a permitted lifetime extension. A separate, editable **`trust_list`** lets groups curate publisher wallets. Nexora validates every entity it reads because anyone can publish data with the same app marker. See the [exact attributes, vocabularies, queries, and lifetimes](arkiv/schema.md).
+Published shifts, incidents, and replies use `readonly`. The owner can still delete an entity, unless the worker locked it by handing ownership to `0x…dEaD`. Anyone can pay for a permitted lifetime extension. A separate, editable **`trust_list`** lets groups curate publisher wallets; it is a 180-day lease that only its curator can renew, so a group that stops curating stops vouching. Every entry and trust list page can also show **what was on record at a past time**, read as of the block at that moment, even for an entry that was later deleted. Nexora validates every entity it reads because anyone can publish data with the same app marker. See the [exact attributes, vocabularies, queries, and lifetimes](arkiv/schema.md).
 
 **Off Arkiv:** worker names, phone numbers, rider IDs, vehicle numbers, addresses, unencrypted exact earnings, passphrases, and wallet keys. Browser-held keys and preferences stay on that device. Public wallet addresses, timestamps, city, and work patterns can still be correlated; the [threat model](docs/THREAT_MODEL.md) explains this residual risk and the one-time-wallet option.
 
@@ -112,6 +112,7 @@ npx tsx ledger/cli.ts earnings --demo --city bengaluru
 npx tsx ledger/cli.ts compare --demo --city delhi_ncr --work cab
 npx tsx ledger/cli.ts incidents --demo
 node examples/read-without-nexora.mjs delhi_ncr
+npx tsx ledger/cli.ts at <entityKey> --date 2026-10-15   # an entity as it stood then, even if later deleted
 npx tsx ledger/cli.ts verify
 npx tsx ledger/cli.ts audit       # every Nexora entity on chain vs the JSON Schemas + a personal-data scan
 ```
@@ -124,7 +125,7 @@ The same CLI ships in the npm package, so none of this needs a clone: `npx -p ne
 
 1. In the app, open **Log my day**, choose the test wallet, and fund it with test GLM if needed. Inspect the privacy preview before publishing.
 2. Publish a synthetic shift. Open its entity and transaction links, then compare `$creator` with the wallet address.
-3. Open **Proof** or run `npx tsx ledger/cli.ts verify`. Both inspect the recorded [Tiramisu evidence](arkiv/evidence.json), including batch writes, linked incident updates, a sealed payload, a trust-list change, a non-owner lifetime extension, a locked report, and a union's replies.
+3. Open **Proof** or run `npx tsx ledger/cli.ts verify`. Both inspect the recorded [Tiramisu evidence](arkiv/evidence.json), including batch writes, linked incident updates, a sealed payload, a trust-list change, a non-owner lifetime extension, a locked report, a union's replies, and reads as of past blocks.
 4. Run an independent CLI query above. The [end-to-end report](arkiv/e2e-report.md) records measured Tiramisu behavior; the [friction report](arkiv/friction.md) gives reproducible SDK/RPC observations.
 
 ## Build and deploy
@@ -158,7 +159,7 @@ The contract is also machine-checkable: [`arkiv/schema/`](arkiv/schema) holds JS
 
 - Results and incidents are **self-reported**. Trust lists, creator metadata, and distinct-wallet counts help assess claims; they do not prove identity or truth.
 - Demo entries are synthetic and are not findings about any real platform.
-- Expiration removes live access under Arkiv's rules, but public transaction history and prior copies can persist. Workers should not publish identifying details.
+- Expiration and deletion remove an entry from Arkiv's current state, not from history: a query as of an earlier block still returns it ([friction F9](arkiv/friction.md)), and transaction history and prior copies persist too. That is why only bands and rounded figures are public. Workers should not publish identifying details.
 - This is on Tiramisu testnet. The public RPC can rate-limit readers, and the optional sponsor can run out of test GLM.
 
 Built for the **Arkiv Global Tour Stop, 9–18 October 2026**. [Submission notes](docs/SUBMISSION.md) map the product to the India and CROPS tracks; [friction](arkiv/friction.md), [schema](arkiv/schema.md), and [evidence](arkiv/evidence.json) are the technical record. The ≤3-minute demo video link is still pending.

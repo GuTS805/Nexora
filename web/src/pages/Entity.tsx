@@ -9,6 +9,7 @@ import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
 import { Addr, EntityLink, ErrorNote, ExplorerEntity, Field, Hourly, IncidentCard, TxLink, VocabSelect, WalletBar, WhatsAppButton, useAsync, useMonth } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
+import { AsOf } from "../history.tsx";
 import { ComplaintLetter } from "../letter.tsx";
 import { PlatformLogo } from "../logos.tsx";
 import { appUrl } from "../share.ts";
@@ -27,7 +28,7 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
     if (!decoded.ok) {
       const list = raw ? decodeTrustList(raw) : null;
       const reply = raw ? decodeReply(raw) : null;
-      return { kind: "other" as const, block, reason: decoded.reason, list: list?.ok ? list.value : null, reply: reply?.ok ? reply.value : null };
+      return { kind: "other" as const, block, gone: raw === null, reason: decoded.reason, list: list?.ok ? list.value : null, reply: reply?.ok ? reply.value : null };
     }
     // Incidents collect updates ("unblocked after 6 days") and "same here" reports through `parent`,
     // and replies from unions or groups the same way.
@@ -84,13 +85,22 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
         </section>
       );
     }
-    if (!list) return <p className="error">{t("notContract", { reason: data.data.reason })}</p>;
+    if (!list) {
+      // Deleted or expired entries leave the current state, not history: offer to read it as of earlier.
+      return (
+        <section>
+          <p className="error">{t("notContract", { reason: data.data.reason })}</p>
+          {data.data.gone && <AsOf entityKey={entityKey} gone />}
+        </section>
+      );
+    }
     return (
       <section>
         <h2>{t("trustListTitle", { name: list.name })}</h2>
         <p>{list.description}</p>
         <p>{t("curatedBy")} <Addr address={list.creator} /> · {list.scope === "all" ? t("allWork") : v(list.scope)} · <ExplorerEntity entityKey={list.key} /></p>
         <ul>{list.members.map((m) => <li key={m}><Addr address={m} /></li>)}</ul>
+        <AsOf entityKey={list.key} current={list} />
       </section>
     );
   }
@@ -195,6 +205,8 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
           <div className="grid">{updates.map((c) => <IncidentCard key={c.key} e={c} block={block} />)}</div>
         </>
       )}
+
+      <AsOf entityKey={e.key} />
     </section>
   );
 }

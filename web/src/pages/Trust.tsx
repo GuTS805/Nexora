@@ -1,9 +1,11 @@
 import { readTrustLists } from "../cache.ts";
-import { explainError, MAX_TRUST_MEMBERS, WORK_TYPES, trustListCreate, trustListPatch, type TrustList, type WorkType } from "nexora-ledger";
+import { ExpirationTime } from "@arkiv-network/sdk";
+import { explainError, blockToDate, MAX_TRUST_MEMBERS, TRUST_LIST_DAYS, WORK_TYPES, trustListCreate, trustListPatch, trustRenewal, type TrustList, type WorkType } from "nexora-ledger";
 import { useState } from "react";
 import type { Address, Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
 import { Addr, ErrorNote, ExplorerEntity, QueryBox, TxLink, WalletBar, useAsync } from "../components.tsx";
+import { AsOf } from "../history.tsx";
 import { useI18n } from "../i18n.tsx";
 
 function Editor({ existing, onDone }: { existing?: TrustList; onDone: () => void }) {
@@ -59,6 +61,50 @@ function Editor({ existing, onDone }: { existing?: TrustList; onDone: () => void
   );
 }
 
+/**
+ * A list's vouching is a lease: it lapses unless the curator renews it, so a group that stops
+ * curating stops vouching. Only the curator (the owner) can renew.
+ */
+function Lease({ list, block }: { list: TrustList; block: bigint }) {
+  const { wallet, ensureGas, bump } = useArkiv();
+  const { t, lang } = useI18n();
+  const [busy, setBusy] = useState(false);
+  const [tx, setTx] = useState<Hex | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const curator = wallet?.address.toLowerCase() === list.owner.toLowerCase();
+  const target = trustRenewal(list.expiresAt, block);
+  const date = blockToDate(list.expiresAt, block).toLocaleDateString(lang === "hi" ? "hi-IN" : "en-IN");
+
+  async function renew() {
+    if (!wallet || target === null) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await ensureGas();
+      const result = await wallet.client.extendEntity({ entityKey: list.key, expires: ExpirationTime.atBlock(target) });
+      setTx(result.txHash);
+      bump();
+    } catch (cause) {
+      setError(explainError(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <p className="small muted">{t("trustLapses", { date })}</p>
+      {curator && (
+        <button className="secondary" disabled={busy || target === null} title={target === null ? t("trustRenewedRecently") : undefined} onClick={renew}>
+          {busy ? t("extending") : t("trustRenew", { n: TRUST_LIST_DAYS })}
+        </button>
+      )}
+      {tx && <p className="small">{t("doneTx")} <TxLink hash={tx} /></p>}
+      {error && <p className="error">{error}</p>}
+    </>
+  );
+}
+
 export function Trust() {
   const { reader, wallet, revision } = useArkiv();
   const { t, v } = useI18n();
@@ -82,6 +128,8 @@ export function Trust() {
               <p className="small">{list.description}</p>
               <p className="small">{t("curator")} <Addr address={list.creator} /> · {list.scope === "all" ? t("allWork") : v(list.scope)} · {t("membersCount", { n: list.members.length })} · <ExplorerEntity entityKey={list.key} /></p>
               <p className="small">{list.members.map((m) => <span key={m}><Addr address={m} /> </span>)}</p>
+              <Lease list={list} block={lists.data!.blockNumber} />
+              <AsOf entityKey={list.key} current={list} />
               {wallet?.address.toLowerCase() === list.owner.toLowerCase() && <button className="secondary" onClick={() => setEditing(list)}>{t("editMembers")}</button>}
             </article>
           ))}

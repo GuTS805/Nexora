@@ -124,6 +124,19 @@ export type ReplyStatus = (typeof REPLY_STATUSES)[number];
 export const HOURS_BANDS = [4, 8, 10, 12, 14] as const;
 export const HOURS_BAND_LABELS = ["< 4 h", "4–8 h", "8–10 h", "10–12 h", "12–14 h", "14 h +"] as const;
 
+/**
+ * Day-length filters over `hours_band`, shared by the app and the CLI, as band indexes into
+ * HOURS_BAND_LABELS. Long days often pay a different rate per hour (incentive targets reward them),
+ * so "what do full days pay" is a question of its own.
+ */
+export const DAY_LENGTHS = {
+  under8: { max: 1 },
+  "8plus": { min: 2 },
+  "10plus": { min: 3 },
+  "12plus": { min: 4 },
+} as const satisfies Record<string, { min?: number; max?: number }>;
+export type DayLength = keyof typeof DAY_LENGTHS;
+
 export function hoursBand(hours: number): number {
   const index = HOURS_BANDS.findIndex((upper) => hours < upper);
   return index === -1 ? HOURS_BANDS.length : index;

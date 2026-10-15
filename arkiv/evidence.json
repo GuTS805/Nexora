@@ -358,6 +358,31 @@
       "query": "app = str('nexora') AND kind = str('reply') AND v = i32(1) AND parent = key(0x0e1f62831dd1eea0886f5942e6fbae9bd3ccf6ff4ce524cc2ae04439b660a422)",
       "foundByParentQuery": 1,
       "at": "2026-10-15T09:49:54.788Z"
+    },
+    "trust_list_renew": {
+      "why": "extendEntity as a lease: only the curator can renew the trust list, to 180 days from today; a list nobody renews stops vouching",
+      "key": "0x0ba80e7836e3dcc85e5c118ee70f14f0a5bc7d93c36c7094f55406f691c56108",
+      "curator": "0xf00b81c90dF57B2924A3d165a670FcF656d0e492",
+      "tx": "0x491d9cc3fa0ec64f5039379971cc94abf0dc658010b50d988b04844d27b0bad3",
+      "expiresBefore": "8356114",
+      "expiresAfter": "8399045",
+      "at": "2026-10-15T20:24:22.920Z"
+    },
+    "history_at_block": {
+      "why": "reads as of a past block: the trust list had 8 members just before its curator's patch and 9 after, and worker 2's deleted day is still readable at the block before its deletion, so anyone can show what was on record at a given time",
+      "key": "0x0ba80e7836e3dcc85e5c118ee70f14f0a5bc7d93c36c7094f55406f691c56108",
+      "txs": [
+        "0xbafd1af6dbe877bfd2f9dd9a1517e5e3bad2838d0cb41c1acd6cdcf27e3f2c9c",
+        "0x6600ea6254d858d7fc0fc45f6e14bab8d3c6af0dfe7b080ea73bd85fc85044f4"
+      ],
+      "listBlockBefore": "580117",
+      "membersBefore": 8,
+      "listBlockAfter": "580118",
+      "membersAfter": 9,
+      "deletedKey": "0x1685179bf008a2915b8f61777181fcccf226c65fd4f040d049fe7ce73945261a",
+      "deletedVisibleAt": "580129",
+      "deletedGoneAt": "580130",
+      "at": "2026-10-15T20:50:40.461Z"
     }
   }
 }

@@ -30,9 +30,9 @@ Every string attribute comes from a closed list, and there is **no free-text att
 | `app` `kind` `v` | str, str, i32 | `nexora`, `shift`, `1` | Namespace, entity type, schema version |
 | `platform` `work` `city` `vehicle` | str | see vocabularies | Filters: "workers like me", and grouping for comparisons |
 | `period` | i32 | `YYYYMM` | Range query: "since August" is `period >= i32(202608)` |
-| `hours_band` | i32 | 0–5 (`< 4 h`, `4–8 h`, `8–10 h`, `10–12 h`, `12–14 h`, `14 h +`) | Hours logged in, banded so the exact figure is never published |
+| `hours_band` | i32 | 0–5 (`< 4 h`, `4–8 h`, `8–10 h`, `10–12 h`, `12–14 h`, `14 h +`) | Hours logged in, banded so the exact figure is never published. Range query for day length: "8 h or more" is `hours_band >= i32(2)` (Earnings, Compare, CLI `--day`) |
 | `net_hourly` | i32 | −500…2000, multiples of 10 | Take-home per logged-in hour after the day's costs, in rupees. Range query: `net_hourly >= i32(100)` |
-| `cost_pct` | i32 | 0–100, multiples of 10 | Fuel, repairs and data as a share of the day's pay |
+| `cost_pct` | i32 | 0–100, multiples of 10 | Fuel, repairs and data as a share of the day's pay. Range query: days where costs took 30% or more is `cost_pct >= i32(30)` (CLI `--min-cost`) |
 | `demo` | bool | `true` for synthetic seed data | Default views exclude demo data with `demo = false` |
 
 `net_hourly` = (what the app paid, incentives and tips included − the day's costs) ÷ logged-in hours, waiting time included, rounded to ₹10. Waiting is in the denominator on purpose: it is time the worker could not spend elsewhere.
@@ -90,7 +90,7 @@ Payload: `{ "v": 1 }`. Anyone can reply, so readers decide whose replies count. 
 | --- | --- | --- |
 | `readonly` | `true` | Once published, nobody, the author included, can quietly rewrite an entry, so nobody can be pressured into "correcting" it. The author can still delete it. Corrections and updates are new entries linked by `parent`. |
 | `permissionlessExtension` | `true` | Any reader who finds an entry useful (a union, a researcher, another worker) can pay to keep it alive ("Keep alive +30 days"). This takes no permission and grants no write access. |
-| Expiry | The worker chooses 7, 30, 90 or 365 days (`ExpirationTime.fromDays`) | Privacy: the author decides how long the data stays public. Demo entries use 365 days (the spammer's 90). |
+| Expiry | The worker chooses 7, 30, 90 or 365 days (`ExpirationTime.fromDays`) | Privacy: the author decides how long the entry stays in Arkiv's current state. Deletion and expiry do not erase history: a query as of an earlier block still returns it (friction F9), so only data that is safe to stay public is published. Demo entries use 365 days (the spammer's 90). |
 | Extension | `ExpirationTime.atBlock(currentExpiresAt + 30 days of blocks)` | Extension sets a new absolute deadline, so the app computes it from the current expiry (see friction report F2). |
 
 ### Authorship
@@ -112,7 +112,7 @@ A curated set of worker wallets that someone vouches for, such as a union, a rid
 Payload: `{ "v": 1, "description": "<at most 280 chars>", "members": ["0x…", …] }`, with 1–25 checksummed, de-duplicated addresses.
 
 Flags: `readonly = false`, `permissionlessExtension = false`. The curator edits membership in place with `patchEntity`, and only the owner can patch it.
-Expiry: 180 days, which the curator can extend.
+Expiry: a 180-day **lease**. Only the curator can renew it, back to 180 days from that day ([`trustRenewal`](../ledger/src/lease.ts), *Trust lists → Renew*). A list nobody renews expires, so a group that stops curating, or no longer exists, stops vouching for anyone.
 
 ## Queries the app runs
 
@@ -121,6 +121,7 @@ These strings are produced by the SDK's `Expression.toString()`. The UI shows th
 | Where | Query |
 | --- | --- |
 | Earnings (no filters) | `app = str('nexora') AND kind = str('shift') AND v = i32(1)` |
+| Earnings or Compare by day length | `… AND hours_band >= i32(2)` ("8 h or more"; "under 8 h" is `hours_band <= i32(1)`) |
 | Earnings, filtered, demo hidden | `… AND city = str('bengaluru') AND work = str('food_delivery') AND period >= i32(202608) AND demo = false` |
 | Compare | shifts and incidents with the same `city` (and `work`). With *All workers*, entries from everyone are used, but only creators on the recommended trust list count toward "confirmed". |
 | Incidents | `app = str('nexora') AND kind = str('incident') AND v = i32(1) AND type = str('id_blocked') …` |
@@ -133,7 +134,7 @@ These strings are produced by the SDK's `Expression.toString()`. The UI shows th
 | Entry page | `getEntity(key)` |
 | Live feed | `watchEntityEvents` over WebSocket (`wss://…`) collects `EntityCreated` keys; every 10 s one query `… AND ($key = key(0x…) OR …)` (≤ 25 keys) over both entry kinds returns only the Nexora entries among them. Events carry no attributes (friction F3), and this replaces one `getEntity` per chain event. |
 
-The Tiramisu node refuses a query with more than 64 predicates or more than 8192 bytes (measured, friction F4). A Nexora query has at most 12 filter predicates plus 25 `$creator` or `$key` branches (`MAX_OR_BRANCHES`), about 2 KB.
+The Tiramisu node refuses a query with more than 64 predicates or more than 8192 bytes (measured, friction F4). A Nexora query has at most 13 filter predicates plus 25 `$creator` or `$key` branches (`MAX_OR_BRANCHES`): 38 predicates and 1 900 bytes for the heaviest earnings query.
 
 Results are paged with the SDK cursor (200 per page): pages read up to 400 entries, the CLI up to 600. The web app also caches identical reads for 30 s, because each visitor IP has a small anonymous query budget (friction F6). Arkiv has no server-side ordering, so sorting and the statistics (median and quartiles of take-home, month-on-month change, distinct `$creator` count) run on the client, in [`ledger/src/insights.ts`](../ledger/src/insights.ts).
 
@@ -144,11 +145,13 @@ Results are paged with the SDK cursor (200 per page): pages read up to 400 entri
 | Log one day | Log my day | `createEntity(shiftCreate(input))` |
 | Log a week | Log my day → CSV | `executeBatch({ creates })`, 20 per transaction |
 | Report an incident, or update one | Log my day → Something happened | `createEntity(incidentCreate(input))`, from a one-time wallet by default; an update sets `parent` |
+| Renew a trust list's lease | Trust lists → "Renew for 180 days from today", curator only | `extendEntity({ entityKey, expires: ExpirationTime.atBlock(currentBlock + 180 × 43 200) })`; not offered when it would not move the expiry later |
 | Reply to a report as a union or group | Entry page → "Reply as a union or group" | `createEntity(replyCreate({ parent, status, period, expiresInDays: 365 }))` from the connected wallet |
 | Lock an entry (opt-in, either kind) | Log my day → "Lock it" | `predictEntityKeys({ owner, count: 1 })`, then one `executeBatch({ creates: [{ …params, salt }], ownershipChanges: [{ entityKey, newOwner: 0x…dEaD }] })` ([`createLocked`](../ledger/src/lock.ts)) |
 | Seed demo data | `scripts/seed.ts` | `executeBatch({ creates })` |
 | Keep alive | Entry page, any wallet | `extendEntity({ entityKey, expires: atBlock(…) })` |
 | Delete | Entry page, owner only | `deleteEntity({ entityKey })` |
+| What was on record at a past time | Entry and trust list pages; CLI `nexora at <key> --block <n>` or `--date …` | `select("*").where($key = key(…)).atBlock(n)`, with `n` found from the chosen moment by searching block timestamps (`blockAtDate`) |
 | Create or edit a trust list | Trust lists | `createEntity` / `patchEntity({ entityKey, payload, set: attributes })`. Arkiv patches are mutations, so every attribute is re-set. |
 
 ## What is deliberately not on Arkiv
@@ -157,7 +160,7 @@ Worker names, phone numbers, rider or partner IDs, vehicle numbers, addresses, e
 
 ## Recorded evidence
 
-`npm run seed` performs one transaction per feature above and records its hash and entity keys in [`evidence.json`](evidence.json): batch creates of shifts and incidents, incident follow-ups (lineage), a sealed payload, trust list create and patch, a permissionless extension by a non-owner, a refused patch on a readonly entity, an owner delete, a locked incident whose author's own delete was refused, and three replies from the trust list's curator in one batch. The recommended trust list is pinned there **by entity key**. `npm run e2e` writes measured gas, latency and limits to [`e2e-report.md`](e2e-report.md).
+`npm run seed` performs one transaction per feature above and records its hash and entity keys in [`evidence.json`](evidence.json): batch creates of shifts and incidents, incident follow-ups (lineage), a sealed payload, trust list create and patch, a permissionless extension by a non-owner, a refused patch on a readonly entity, an owner delete, a locked incident whose author's own delete was refused, three replies from the trust list's curator in one batch, and the curator renewing the list's lease. One read-only step, `history_at_block`, records the list's members either side of its patch and the deleted day either side of its deletion, read as of those blocks. The recommended trust list is pinned there **by entity key**. `npm run e2e` writes measured gas, latency and limits to [`e2e-report.md`](e2e-report.md).
 
 ## Wallets that create entities
 

@@ -1,5 +1,5 @@
 import { readIncidents, readShifts } from "../cache.ts";
-import { CITIES, VEHICLES, WORK_TYPES, comparePlatforms, isOneOf, type City, type PlatformComparison, type ShiftFilters, type Vehicle, type WorkType } from "nexora-ledger";
+import { CITIES, VEHICLES, WORK_TYPES, comparePlatforms, isOneOf, type City, type DayLength, type PlatformComparison, type ShiftFilters, type Vehicle, type WorkType } from "nexora-ledger";
 import { useMemo, useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
 import { Change, EntityLink, ErrorNote, Field, Hourly, QueryBox, VocabSelect, WhatsAppButton, useAsync, useSource } from "../components.tsx";
@@ -7,7 +7,7 @@ import { useI18n } from "../i18n.tsx";
 import { SpeakButton } from "../voice.tsx";
 import { PlatformLogo } from "../logos.tsx";
 import { appUrl } from "../share.ts";
-import { SourcePicker, cliFor, creatorsFor, trustedSetFor, useRecommendedList } from "./Explore.tsx";
+import { DayPicker, SourcePicker, cliFor, creatorsFor, isDayLength, trustedSetFor, useRecommendedList } from "./Explore.tsx";
 
 /** Filters live in the URL, so a link shared on WhatsApp opens the same comparison. */
 function useInitialParams() {
@@ -21,13 +21,14 @@ export function Compare() {
   const [city, setCity] = useState<City | "">(isOneOf(CITIES, params.get("city")) ? (params.get("city") as City) : "bengaluru");
   const [work, setWork] = useState<WorkType | "">(isOneOf(WORK_TYPES, params.get("work")) ? (params.get("work") as WorkType) : "food_delivery");
   const [vehicle, setVehicle] = useState<Vehicle | "">(isOneOf(VEHICLES, params.get("vehicle")) ? (params.get("vehicle") as Vehicle) : "");
+  const [day, setDay] = useState<DayLength | "">(isDayLength(params.get("day")) ? (params.get("day") as DayLength) : "");
   const [includeDemo, setIncludeDemo] = useState(true);
   const [source, setSource, list] = useSource();
 
   const creators = creatorsFor(source, wallet, list?.members);
   const recommended = useRecommendedList();
   const trusted = trustedSetFor(source, recommended);
-  const filters: ShiftFilters = { city: city || undefined, work: work || undefined, vehicle: vehicle || undefined, includeDemo, creators };
+  const filters: ShiftFilters = { city: city || undefined, work: work || undefined, vehicle: vehicle || undefined, day: day || undefined, includeDemo, creators };
   const result = useAsync(async () => {
     if (!city || (source.kind === "list" && !list) || (creators && creators.length === 0)) return null;
     const [shifts, incidents] = await Promise.all([
@@ -35,12 +36,13 @@ export function Compare() {
       readIncidents(reader, { city: filters.city, work: filters.work, includeDemo, creators }),
     ]);
     return { shifts, ranking: comparePlatforms(shifts.items, incidents.items, { trusted }) };
-  }, [reader, revision, city, work, vehicle, includeDemo, source.kind, list?.key, wallet?.address, recommended?.key]);
+  }, [reader, revision, city, work, vehicle, day, includeDemo, source.kind, list?.key, wallet?.address, recommended?.key]);
 
   function shareText(ranking: PlatformComparison[]): string {
     const query = new URLSearchParams({ city, ui: uiLang });
     if (work) query.set("work", work);
     if (vehicle) query.set("vehicle", vehicle);
+    if (day) query.set("day", day);
     const confirmed = ranking.filter((r) => r.confirmed);
     const lines = confirmed.length
       ? confirmed.map((r) => t("shareLine", { platform: work ? v(r.platform) : `${v(r.platform)} (${v(r.work)})`, r: r.medianHourly, p: r.trustedWorkers })).join("\n")
@@ -56,6 +58,7 @@ export function Compare() {
         <Field label="city"><VocabSelect list={CITIES} value={city} onChange={setCity} /></Field>
         <Field label="work"><VocabSelect list={WORK_TYPES} value={work} onChange={setWork} any /></Field>
         <Field label="vehicle"><VocabSelect list={VEHICLES} value={vehicle} onChange={setVehicle} any /></Field>
+        <DayPicker value={day} onChange={setDay} />
         <SourcePicker source={source} setSource={setSource} />
       </div>
       {source.kind === "all" && (

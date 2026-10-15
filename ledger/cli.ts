@@ -4,10 +4,14 @@
  * wallet involved: if nexora's website disappeared tomorrow, this still works.
  *
  *   nexora earnings  [--platform swiggy] [--work food_delivery] [--city bengaluru] [--vehicle ev_scooter]
- *                    [--since 202608] [--demo] [--trust <listKey> | --creator <address>] [--json]
- *   nexora compare   --city <city> [--work <work>] [--vehicle <vehicle>] [--demo] [--trust <listKey>]
+ *                    [--since 202608] [--day under8|8plus|10plus|12plus] [--min-cost 30]
+ *                    [--demo] [--trust <listKey> | --creator <address>] [--json]
+ *   nexora compare   --city <city> [--work <work>] [--vehicle <vehicle>] [--day 8plus] [--demo] [--trust <listKey>]
  *   nexora incidents [--platform …] [--city …] [--type id_blocked] [--demo] [--trust <listKey>] [--json]
  *   nexora show      <entityKey>       an entry; for a report, also its updates and the replies to it
+ *   nexora at        <entityKey> --block <n> | --date <YYYY-MM-DD or ISO time>
+ *                    the entity as it stood then, even if it was later deleted or expired;
+ *                    for a trust list, who joined and left since
  *   nexora lists
  *   nexora verify    re-check every feature recorded in arkiv/evidence.json against the chain
  *   nexora audit     check every Nexora entity on chain against the JSON Schemas and for personal data [--json]
@@ -18,9 +22,10 @@
 import { readFileSync } from "node:fs";
 import { getAddress, type Address, type Hex } from "viem";
 import {
-  HOURS_BAND_LABELS, comparePlatforms, entryPredicate, explainError, fetchEntries, fetchEntry, fetchIncidents,
+  DAY_LENGTHS, HOURS_BAND_LABELS, comparePlatforms, entryPredicate, explainError, fetchEntries, fetchEntry, fetchIncidents,
   fetchShifts, fetchTrustList, fetchTrustLists, getEntityOrNull, incidentStats, liveClient, queryText, readClient,
   fetchRawEntities, fetchReplies, decodeReply, decodeTrustList, isLocked, repliesTo, type EntryFilters, type IncidentFilters, type ShiftFilters,
+  blockAtDate, decodeEntry, entityAtBlock, memberChanges, type RawEntity,
 } from "./src/index.ts";
 import { auditEntities } from "./src/contract.ts";
 
@@ -67,13 +72,57 @@ async function commonFlags(): Promise<EntryFilters> {
   };
 }
 
+/** --day and --min-cost, checked before any query is sent. */
+function shiftFlags(): Pick<ShiftFilters, "vehicle" | "day" | "minCostPct"> {
+  const day = flag("day");
+  if (day !== undefined && !(day in DAY_LENGTHS)) throw new Error(`--day must be one of ${Object.keys(DAY_LENGTHS).join(", ")}`);
+  const cost = flag("min-cost");
+  const minCostPct = cost === undefined ? undefined : Number(cost);
+  if (minCostPct !== undefined && !(Number.isInteger(minCostPct) && minCostPct >= 0 && minCostPct <= 100)) throw new Error("--min-cost must be a whole percentage from 0 to 100");
+  return { vehicle: flag("vehicle") as ShiftFilters["vehicle"], day: day as ShiftFilters["day"], minCostPct };
+}
+
 const rupees = (n: number) => `₹${n}`;
+
+/** --block, or --date: a bare date means the end of that day (UTC), an ISO time means that moment. */
+async function blockFromFlags(): Promise<bigint> {
+  const block = flag("block");
+  if (block !== undefined) {
+    if (!/^\d+$/.test(block)) throw new Error("--block must be a block number");
+    return BigInt(block);
+  }
+  const date = flag("date");
+  if (date === undefined) throw new Error("give --block <n> or --date <YYYY-MM-DD>");
+  const when = new Date(/^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T23:59:59Z` : date);
+  if (Number.isNaN(when.getTime())) throw new Error(`--date ${date} is not a date`);
+  const found = await blockAtDate(client, when);
+  if (found === null) throw new Error(`${date} is before the chain began`);
+  return found;
+}
+
+/** The recorded past reads: list sizes either side of its patch, and the deleted day either side of its deletion. */
+async function historyHolds(step: Record<string, unknown>): Promise<boolean> {
+  const at = (key: unknown, block: unknown) => entityAtBlock(client, key as Hex, BigInt(String(block)));
+  const size = (raw: RawEntity | null) => {
+    const list = raw ? decodeTrustList(raw) : null;
+    return list?.ok ? list.value.members.length : -1;
+  };
+  const [before, after, visible, gone] = await Promise.all([
+    at(step.key, step.listBlockBefore), at(step.key, step.listBlockAfter), at(step.deletedKey, step.deletedVisibleAt), at(step.deletedKey, step.deletedGoneAt),
+  ]);
+  return size(before) === step.membersBefore && size(after) === step.membersAfter && visible !== null && gone === null;
+}
+
+/** Any Nexora entity, decoded by whichever contract it follows. */
+function decodeAny(raw: RawEntity) {
+  return [decodeEntry(raw), decodeTrustList(raw), decodeReply(raw)].find((d) => d.ok);
+}
 const EVIDENCE_URL = "https://raw.githubusercontent.com/GuTS805/Nexora/main/arkiv/evidence.json";
 
 try {
 switch (command) {
   case "earnings": {
-    const filters: ShiftFilters = { ...(await commonFlags()), vehicle: flag("vehicle") as ShiftFilters["vehicle"] };
+    const filters: ShiftFilters = { ...(await commonFlags()), ...shiftFlags() };
     const result = await fetchShifts(client, filters);
     if (flags.has("json")) {
       json(result);
@@ -90,7 +139,7 @@ switch (command) {
     const filters = await commonFlags();
     if (!filters.city) throw new Error("--city is required");
     const [shifts, incidents] = await Promise.all([
-      fetchShifts(client, { ...filters, vehicle: flag("vehicle") as ShiftFilters["vehicle"] }),
+      fetchShifts(client, { ...filters, ...shiftFlags() }),
       fetchIncidents(client, filters),
     ]);
     console.log(`based on ${shifts.items.length} days and ${incidents.items.length} incidents matching:\n  ${shifts.query}\n`);
@@ -141,6 +190,28 @@ switch (command) {
     }
     break;
   }
+  case "at": {
+    const key = positional[0] as Hex | undefined;
+    if (!key) throw new Error("usage: nexora at <entityKey> --block <n> | --date <YYYY-MM-DD>");
+    const block = await blockFromFlags();
+    const [then, now] = await Promise.all([entityAtBlock(client, key, block), getEntityOrNull(client, key)]);
+    console.log(`as of block ${block}:`);
+    if (!then) {
+      console.log(`  not on chain then (not yet created, or already deleted or expired)${now ? "; it exists now" : ""}`);
+      break;
+    }
+    const decoded = decodeAny(then);
+    if (decoded?.ok) json(decoded.value);
+    else console.log("  not a valid Nexora entity");
+    console.log(now ? "now: still on chain" : "now: gone (deleted or expired), yet the record above stays readable at that block");
+    const list = decoded?.ok && "members" in decoded.value ? decoded.value : null;
+    const current = now ? decodeTrustList(now) : null;
+    if (list && current?.ok) {
+      const { added, removed } = memberChanges(list.members, current.value.members);
+      console.log(`members then ${list.members.length}, now ${current.value.members.length}; joined since: ${added.join(", ") || "none"}; left since: ${removed.join(", ") || "none"}`);
+    }
+    break;
+  }
   case "verify": {
     // Re-check the seed script's recorded evidence against the chain (same checks as the Proof page).
     // From a clone, the repo's copy; from the npm package (which does not ship it), the published one.
@@ -167,7 +238,9 @@ switch (command) {
         name === "owner_delete" ? entity === null :
         name === "ownership_lock" ? entity !== null && !!entityFlags?.readonly && isLocked(entity.owner ?? "") :
         name === "trust_list_create" || name === "trust_list_patch" ? entity !== null && entityFlags?.readonly === false :
+        name === "trust_list_renew" ? entity !== null && entityFlags?.readonly === false && (entity.expiresAt ?? 0n) >= BigInt(String(step.expiresAfter)) && String(entity.owner).toLowerCase() === String(step.curator).toLowerCase() :
         name === "union_reply" ? entity !== null && !!entityFlags?.readonly && String(entity.creator).toLowerCase() === String(step.curator).toLowerCase() :
+        name === "history_at_block" ? entity !== null && (await historyHolds(step)) :
         name === "permissionless_extend" ? !!entityFlags?.permissionlessExtension && String(step.extendedBy).toLowerCase() !== String(entity?.owner).toLowerCase() :
         entity !== null && !!entityFlags?.readonly;
       console.log(`${verdict ? "ok  " : "FAIL"} ${name}: ${key}${entity ? ` creator ${entity.creator}` : " (gone)"}`);
@@ -230,7 +303,7 @@ switch (command) {
     break;
   }
   default:
-    console.log("commands: earnings | compare --city <c> | incidents | show <key> | lists | watch | verify | audit   (see header of ledger/cli.ts)");
+    console.log("commands: earnings | compare --city <c> | incidents | show <key> | at <key> --date <d> | lists | watch | verify | audit   (see header of ledger/cli.ts)");
 }
 } catch (error) {
   console.error(`error: ${explainError(error)}`);

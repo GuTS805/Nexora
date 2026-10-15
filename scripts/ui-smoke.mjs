@@ -97,6 +97,15 @@ try {
   await sleep(400);
   check("language toggles to Hindi", await js(`document.querySelector(".lead")?.textContent.includes("असल कमाई")`));
   await js(`document.querySelector("button.lang").click()`);
+  await sleep(300);
+  // Day length is a range over the published hours band, in the query and in the equivalent CLI command.
+  await js(`(() => { const s = [...document.querySelectorAll(".filters label.field")].find((l) => l.textContent.includes("Day length"))?.querySelector("select"); s.value = "8plus"; s.dispatchEvent(new Event("change", { bubbles: true })); })()`);
+  await sleep(3000);
+  if (await js(`/rate-limited|query budget/i.test(document.querySelector("main")?.innerText ?? "")`)) skipped.push("day-length filter (Arkiv RPC rate-limited this IP)");
+  else {
+    const query = await js(`[...document.querySelectorAll("details.query pre")].map((p) => p.textContent).join(" | ")`);
+    check("day-length filter queries the hours band, and shows the same filter as a CLI flag", /hours_band >= i32\(2\)/.test(query ?? "") && (query ?? "").includes("--day 8plus"), (query ?? "").slice(0, 120));
+  }
 
   await go("#/log?ui=en");
   // Shift form selects, in order: platform, work, city, vehicle, month, incentive.
@@ -169,6 +178,30 @@ try {
     const labour = (await js(`document.querySelector(".letter-text")?.value`)) ?? "";
     check("letter to the labour department leaves Delhi NCR's state blank and links similar reports", labour.startsWith("To: The Labour Department") && labour.includes("[your state]") && labour.includes("#/incidents?platform=zomato&city=delhi_ncr"), labour.slice(0, 80));
   }
+
+  await go("#/trust?ui=en", 3500);
+  if (await limitedHere()) skipped.push("trust list lease (Arkiv RPC rate-limited this IP)");
+  else check("a trust list says when its vouching lapses unless the curator renews it", await js(`document.querySelector("main")?.innerText.includes("Vouching lapses on about")`));
+
+  // The day worker 2 deleted: gone from the current state, still readable as of a block before the
+  // delete. The moment is fixed in UTC and typed in this browser's local time, so any timezone works.
+  await go(`#/e/${evidence.features.owner_delete?.key}?ui=en`, 4000);
+  const past = await js(`(async () => {
+    const box = document.querySelector("details.as-of");
+    if (!box?.open) return "no open past-record box";
+    const at = new Date("2026-10-14T20:33:43Z");
+    const pad = (n) => String(n).padStart(2, "0");
+    const local = at.getFullYear() + "-" + pad(at.getMonth() + 1) + "-" + pad(at.getDate()) + "T" + pad(at.getHours()) + ":" + pad(at.getMinutes()) + ":" + pad(at.getSeconds());
+    const input = box.querySelector("input[type=datetime-local]");
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, local);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 300));
+    box.querySelector("button[type=submit]").click();
+    for (let i = 0; i < 60 && !box.querySelector(".mono, .error"); i++) await new Promise((r) => setTimeout(r, 500));
+    return box.innerText;
+  })()`);
+  if (await limitedHere()) skipped.push("past record (Arkiv RPC rate-limited this IP)");
+  else check("a deleted day is still on record as of a block before its deletion", String(past).includes("On record then:") && String(past).includes("It is gone now"), String(past).slice(-160));
 
   check("the hosted app installs an offline shell", await js(`navigator.serviceWorker.getRegistration().then((r) => !!r)`));
 

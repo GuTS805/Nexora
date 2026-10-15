@@ -53,7 +53,7 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
 - **Mitigation:** entries are created with `readonly: true` ([`ledger/src/codec.ts`](../ledger/src/codec.ts)). An update is a new entry linked by `parent`, so the original stays as written.
 - **Evidence:** the seed step `readonly_enforced` records a refused patch from the owner, and `npm run e2e` re-checks it.
 - **Lock (opt-in):** a worker who expects pressure can lock a report. It is created and handed to `0x…dEaD` in the same transaction ([`ledger/src/lock.ts`](../ledger/src/lock.ts)), so from then on nobody can delete it before its lifetime ends, the author included. The seed step `ownership_lock` records the author's own refused delete.
-- **Residual:** an unlocked entry's owner can still *delete*. That is intended (privacy), and a pressured worker could be made to delete. `permissionlessExtension` lets others keep an entry alive, but not resurrect a deleted one, and an update pointing at a deleted report simply dangles. A locked entry cannot be withdrawn even by a worker who later regrets it, so the app says so before publishing and keeps the lock off by default.
+- **Residual:** an unlocked entry's owner can still *delete*. That is intended (privacy), and a pressured worker could be made to delete. `permissionlessExtension` lets others keep an entry alive, but not resurrect a deleted one, and an update pointing at a deleted report simply dangles. Deleting does not erase history, though: anyone can still show the report was public at the blocks before ("What was on record at a past time", friction F9). A locked entry cannot be withdrawn even by a worker who later regrets it, so the app says so before publishing and keeps the lock off by default.
 
 ### T5. Malformed or hostile entities
 
@@ -68,6 +68,8 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
 
 - **Attack:** publish a list named like a known union.
 - **Mitigation:** list names are not identities. The UI always shows the curator's address, and the recommended list is pinned by **entity key** in [`arkiv/evidence.json`](../arkiv/evidence.json), not by name.
+- **Stale vouching:** a list is a 180-day lease that only its curator can renew. A union that stops curating, or loses its key, stops vouching when the lease runs out, instead of vouching for those wallets forever.
+- **Quiet rewrites:** a curator can edit members in place, but the old list stays readable at past blocks, and the app shows who joined or left since any moment.
 - **Residual:** visitors must check the curator, as with any signed artefact.
 
 ### T7. Personal data reaching the ledger
@@ -87,7 +89,8 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
   - GCM authentication makes a tampered box fail to open.
 - **Test:** *never writes rupee amounts or exact hours into attributes or the public payload*; the UI test checks the privacy preview's public column.
 - **Residual:**
-  - A weak passphrase can be brute-forced offline, because the ciphertext is public until expiry. The UI enforces a minimum length.
+  - A weak passphrase can be brute-forced offline, because the ciphertext is public, and stays readable at earlier blocks even after expiry or deletion (friction F9). The UI enforces a minimum length.
+  - Deletion and expiry remove an entry from the current state, not from history. Anything public must be safe to stay public, which is why only bands and rounded figures are published and the app says so before publishing.
   - The band and the rounded rate still leak an approximate scale, by design.
 
 ### T9. Linking a worker's entries together, or to a person

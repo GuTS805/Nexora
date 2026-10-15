@@ -23,12 +23,21 @@ describe("queries", () => {
     expect(both).toContain("kind = str('incident')");
   });
 
+  it("day-length presets become ranges over hours_band, and cost share a range over cost_pct", () => {
+    expect(queryText(shiftPredicate({ day: "under8" }))).toContain("hours_band <= i32(1)");
+    expect(queryText(shiftPredicate({ day: "8plus" }))).toContain("hours_band >= i32(2)");
+    const long = queryText(shiftPredicate({ day: "12plus", minCostPct: 30 }));
+    expect(long).toContain("hours_band >= i32(4)");
+    expect(long).not.toContain("hours_band <=");
+    expect(long).toContain("cost_pct >= i32(30)");
+  });
+
   // Limits measured on Tiramisu (friction F4): > 64 predicates or > 8192 bytes is refused.
   it("keeps the heaviest filter inside the node's predicate and length limits", () => {
     const many = Array.from({ length: MAX_OR_BRANCHES }, (_, i) => getAddress(`0x${(i + 1).toString(16).padStart(40, "f")}`));
     const keys = Array.from({ length: MAX_OR_BRANCHES }, (_, i) => keyOf(i + 1));
     for (const text of [
-      queryText(shiftPredicate({ platform: "swiggy", work: "food_delivery", city: "bengaluru", vehicle: "ev_scooter", minPeriod: 202601, maxPeriod: 202612, minHourly: 0, creators: many })),
+      queryText(shiftPredicate({ platform: "swiggy", work: "food_delivery", city: "bengaluru", vehicle: "ev_scooter", minPeriod: 202601, maxPeriod: 202612, minHourly: 0, day: "10plus", minCostPct: 30, creators: many })),
       queryText(incidentPredicate({ platform: "swiggy", work: "food_delivery", city: "bengaluru", type: "pay_cut", minPeriod: 202601, maxPeriod: 202612, parent: KEY, creators: many })),
       queryText(entryPredicate({ creators: many, keys })),
     ]) {
