@@ -203,6 +203,17 @@ try {
   if (await limitedHere()) skipped.push("past record (Arkiv RPC rate-limited this IP)");
   else check("a deleted day is still on record as of a block before its deletion", String(past).includes("On record then:") && String(past).includes("It is gone now"), String(past).slice(-160));
 
+  // If this host is blocked: the other host, the whole app as one file (with its checksum), a terminal.
+  await go("#/about?ui=en", 2500);
+  const escape = await js(`(async () => {
+    const box = document.querySelector(".escape");
+    const links = [...(box?.querySelectorAll("a") ?? [])].map((a) => a.getAttribute("href"));
+    const file = await fetch("./nexora.html").then((r) => (r.ok ? r.text() : ""));
+    const sha = await fetch("./nexora.html.sha256").then((r) => (r.ok ? r.text() : ""));
+    return { hosts: links.filter((h) => h.startsWith("https://")).length, download: box?.querySelector("a[download]")?.getAttribute("href"), oneFile: file.includes("<script type=\\"module\\">") && !/<script[^>]*src=/.test(file), sha: /^[0-9a-f]{64}  nexora.html/.test(sha) };
+  })()`);
+  check("the app says how to reach it if this host is blocked, and hands out itself as one checked file", escape?.hosts === 2 && escape.download === "./nexora.html" && escape.oneFile && escape.sha, JSON.stringify(escape));
+
   check("the hosted app installs an offline shell", await js(`navigator.serviceWorker.getRegistration().then((r) => !!r)`));
 
   await go("#/proof?ui=hi");

@@ -21,6 +21,8 @@ Nexora is a **testnet prototype**. Seed entries are synthetic and labelled. A wa
 
 Platforms hold detailed pay and account records, while workers see only fragments of their own history. A worker weighing two apps or a move to another city needs to know what people take home after fuel and other costs. A worker reporting a blocked account may also need to avoid attaching their name or rider ID to the report. Nexora makes comparable, inspectable records available across platforms while keeping names and exact figures out of public attributes.
 
+**Hosts:** https://nexora-pi-snowy.vercel.app · mirror https://guts805.github.io/Nexora/ (built by GitHub from this repository) · the whole app as one file: `nexora.html` on either host, under *How it works*.
+
 ## The product in three flows
 
 ### 1. Learn before taking a shift

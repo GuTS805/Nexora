@@ -72,6 +72,7 @@ export const STRINGS = {
   sealedTitle: ["Exact figures are encrypted; only the worker can open them", "असली आँकड़े एन्क्रिप्टेड हैं; सिर्फ़ वर्कर खोल सकता है"],
   queryTitle: ["Exact Arkiv query", "Arkiv की असली क्वेरी"],
   queryBlock: [" · block {n}", " · ब्लॉक {n}"],
+  truncatedNote: ["Not every match is shown: more entries match than one read holds. Anyone can publish, so a flood of entries could push others out of view. Pick a trust list, which Arkiv itself filters by author, or narrow the filters.", "सारे नतीजे नहीं दिख रहे: एक बार में जितनी एंट्री पढ़ी जाती हैं, उससे ज़्यादा मेल खाती हैं। कोई भी एंट्री डाल सकता है, इसलिए एंट्री की बाढ़ दूसरी एंट्री को नज़र से हटा सकती है। कोई भरोसा सूची चुनिए, जिसे Arkiv खुद लेखक के हिसाब से छाँटता है, या फ़िल्टर कम कीजिए।"],
   queryRejected: [" · {n} entries rejected by the data rules", " · {n} एंट्री डेटा नियमों पर खरी नहीं उतरीं"],
   querySame: ["Same result without this website:", "यही नतीजा इस वेबसाइट के बिना:"],
   testWallet: ["Test wallet", "टेस्ट वॉलेट"],

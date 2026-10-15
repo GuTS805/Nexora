@@ -133,7 +133,7 @@ export function Trust() {
               {wallet?.address.toLowerCase() === list.owner.toLowerCase() && <button className="secondary" onClick={() => setEditing(list)}>{t("editMembers")}</button>}
             </article>
           ))}
-          <QueryBox query={lists.data.query} block={lists.data.blockNumber} cli="npx tsx ledger/cli.ts lists" rejected={lists.data.rejected} />
+          <QueryBox query={lists.data.query} block={lists.data.blockNumber} cli="npx tsx ledger/cli.ts lists" rejected={lists.data.rejected} truncated={lists.data.truncated} />
         </>
       )}
     </section>

@@ -264,7 +264,7 @@ export function Explore() {
               </div>
             )}
             <p className="small muted">{t("takeHomeNote")}</p>
-            <QueryBox query={result.data.query} block={result.data.blockNumber} cli={cliFor("earnings", filters, source)} rejected={result.data.rejected} />
+            <QueryBox query={result.data.query} block={result.data.blockNumber} cli={cliFor("earnings", filters, source)} rejected={result.data.rejected} truncated={result.data.truncated} />
             {latest.length === 0 && <p className="muted">{t("empty")}</p>}
             <div className="grid">
               {latest.map((e) => <ShiftCard key={e.key} e={e} trusted={source.kind === "list" ? true : undefined} block={result.data?.blockNumber} />)}

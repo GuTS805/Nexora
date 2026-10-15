@@ -76,9 +76,12 @@ export function WhatsAppButton({ text }: { text: string }) {
 }
 
 /** Shows the exact predicate the page ran, so anyone can rerun it without this site. */
-export function QueryBox({ query, block, cli, rejected }: { query: string; block?: bigint | undefined; cli?: string | undefined; rejected?: { key: string; reason: string }[] | undefined }) {
+export function QueryBox({ query, block, cli, rejected, truncated }: { query: string; block?: bigint | undefined; cli?: string | undefined; rejected?: { key: string; reason: string }[] | undefined; truncated?: boolean | undefined }) {
   const { t } = useI18n();
   return (
+    <>
+    {/* Anyone can publish, so a flood of entries could push others past what one read holds: say so. */}
+    {truncated && <p className="card notice" role="status">{t("truncatedNote")}</p>}
     <details className="query">
       <summary>
         {t("queryTitle")}
@@ -98,6 +101,7 @@ export function QueryBox({ query, block, cli, rejected }: { query: string; block
         </ul>
       )}
     </details>
+    </>
   );
 }
 

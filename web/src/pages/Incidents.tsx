@@ -96,7 +96,7 @@ export function Incidents() {
               </table>
             </div>
           )}
-          <QueryBox query={result.data.query} block={result.data.blockNumber} cli={cliFor("incidents", filters, source)} rejected={result.data.rejected} />
+          <QueryBox query={result.data.query} block={result.data.blockNumber} cli={cliFor("incidents", filters, source)} rejected={result.data.rejected} truncated={result.data.truncated} />
           {originals.length === 0 && <p className="muted">{t("empty")}</p>}
           <ol className="print-only report-keys">
             {originals.map((e) => <li key={e.key}>{v(e.type)} · {v(e.platform)} · {v(e.city)} · {month(e.period)} · {t("daysLost")}: {e.daysLost}{resolved.has(e.key) ? ` · ${t("resolvedBadge")}` : ""}{(() => { const r = latestReply(e.key, e.creator); return r ? ` · ${t("replyBadge", { status: v(r) })}` : ""; })()}<br /><span className="mono">{explorerEntity(e.key)}</span></li>)}

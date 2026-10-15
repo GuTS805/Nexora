@@ -10,6 +10,12 @@
   },
   "headers": [
     {
+      "source": "/nexora.html",
+      "headers": [
+        { "key": "Content-Disposition", "value": "attachment; filename=\"nexora.html\"" }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },

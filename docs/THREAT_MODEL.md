@@ -109,9 +109,21 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
 - **Attack:** take down the website, block the domain, or send the operator a legal notice.
 - **Mitigations:**
   - There is no Nexora database. The web app is a static bundle with hash routing and relative paths, so it runs from any host or IPFS gateway, and `npm run build:portable` produces a single `nexora.html` that opens from disk or a file share.
+  - Two independent hosts serve the same build: Vercel and GitHub Pages ([`pages.yml`](../.github/workflows/pages.yml), built by GitHub from this repository). Blocking one domain, or a notice to one company, leaves the other. Any fork gets its own mirror by turning on Pages.
+  - Both hosts hand out the whole app as one file (`nexora.html`, with its SHA-256 next to it), linked from *How it works*, so a union can keep a copy and pass it on before anything is blocked.
   - The CLI reads Arkiv directly, and [`examples/read-without-nexora.mjs`](../examples/read-without-nexora.mjs) needs only the official SDK.
   - The RPC is configurable in the UI and the CLI (`--rpc`, `ARKIV_RPC_URL`).
-- **Residual:** the public Tiramisu RPC is a single default endpoint, and it rate-limits anonymous reads (friction F6). A blocked or exhausted RPC needs another node or an access key.
+- **Residual:** the public Tiramisu RPC is a single default endpoint, and it rate-limits anonymous reads (friction F6). A blocked or exhausted RPC needs another node or an access key. The mirror has no gas sponsor or read relay (those are Vercel functions), so writers there use the public faucet.
+
+### T10a. Burying entries under a flood
+
+- **Attack:** anyone can publish, so a platform could publish thousands of valid-looking entries to push real ones out of the lists people read. Deleting is impossible for it, so drowning is the remaining way to censor.
+- **Mitigations:**
+  - With a trust list, the `$creator` filter runs on Arkiv itself, so entries from wallets outside the list never enter the result at all, however many there are.
+  - Figures count distinct wallets, not entries (T1, T2), so a flood from a few wallets does not change what is confirmed.
+  - A single entry stays reachable by its key, its explorer link and "What was on record at a past time", whatever else is published.
+  - When more entries match than one read holds (400 in the app, 600 in the CLI), the list says so on screen and suggests a trust list or narrower filters, instead of silently showing a partial picture.
+- **Residual:** in the "All workers" view a large enough flood can still push honest entries past the read limit; the notice makes that visible, and a trust list removes it.
 
 ### T11. Read-budget exhaustion as denial of service
 

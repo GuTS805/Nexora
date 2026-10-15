@@ -461,6 +461,11 @@ select option:checked { background-color: var(--accent); color: var(--accent-ink
 .voice p { margin: 0.35rem 0 0; }
 .voice button.listening { border-color: var(--accent); color: var(--accent); }
 
+/* other ways to reach the app (About) */
+.escape { margin: 0.5rem 0 0; padding-left: 1.1rem; }
+.escape li { margin: 0.25rem 0; overflow-wrap: anywhere; }
+.escape .badge { margin-left: 0.4rem; }
+
 /* what was on record at a past time */
 .as-of summary { cursor: pointer; font-weight: 600; }
 .as-of .row { align-items: flex-end; gap: 0.8rem; flex-wrap: wrap; }

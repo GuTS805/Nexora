@@ -107,7 +107,7 @@ export function Compare() {
               </li>
             ))}
           </ol>
-          <QueryBox query={result.data.shifts.query} block={result.data.shifts.blockNumber} cli={cliFor("compare", filters, source)} rejected={result.data.shifts.rejected} />
+          <QueryBox query={result.data.shifts.query} block={result.data.shifts.blockNumber} cli={cliFor("compare", filters, source)} rejected={result.data.shifts.rejected} truncated={result.data.shifts.truncated} />
         </>
       )}
     </section>
