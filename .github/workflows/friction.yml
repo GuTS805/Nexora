@@ -1,0 +1,34 @@
+name: friction re-check
+
+# Re-runs every finding in arkiv/friction.md against the SDK and live Tiramisu (read-only). It runs
+# apart from CI on purpose: a failure here means Arkiv changed, possibly by fixing something we
+# reported, and the report needs updating; it says nothing about our code.
+on:
+  schedule:
+    - cron: "41 6 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["scripts/friction-check.ts", "arkiv/friction.md", ".github/workflows/friction.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  friction:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Every finding still behaves as written
+        # Optional repository secret: the public RPC with an Arkiv Hub key appended, for the reads.
+        # F6 always asks the public endpoint, since its anonymous budget is the finding.
+        env:
+          ARKIV_RPC_URL: ${{ secrets.ARKIV_RPC_URL }}
+        run: npm run friction

@@ -45,7 +45,7 @@ Some of the library is useful to any Arkiv app, whatever its data:
 | `blockAtDate(client, date)`, `entityAtBlock(client, key, block)` | What any entity looked like at a past moment, including one deleted or expired since. Finds the block from timestamps, because block times are not constant. |
 | `memberChanges(before, after)` | Who joined and who left an address list between two readings. |
 | `createLocked(reader, wallet, owner, params)`, `isLocked`, `NOBODY` | Create an entity and hand it to `0x…dEaD` in one atomic batch, so nobody can delete it early. Works around the SDK example that no single client can run (friction F7). |
-| `leaseRenewal(expiresAt, block, days)` (0.4.0) | Use any entity as a lease: the block to renew to, or `null` when renewing would add no time (the node reverts that). |
+| `leaseRenewal(expiresAt, block, days)` (0.4.0) | Use any entity as a lease: the block to renew to, or `null` when renewing would add no time (the node would revert a shorter expiry, and charge for an equal one, friction F11). |
 
 [`examples/any-arkiv-app.mjs`](https://github.com/GuTS805/Nexora/blob/main/examples/any-arkiv-app.mjs) uses them on an entity another team published for its own app. CI installs this package from the public registry into an empty folder and runs that example, so what is on npm is what is tested.
 

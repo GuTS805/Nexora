@@ -11,7 +11,7 @@ describe("trust list lease", () => {
     expect(trustRenewal(expiresAt, now)).toBe(now + LEASE);
   });
 
-  it("offers no renewal that would not move the expiry later, because the node reverts it", () => {
+  it("offers no renewal that would not move the expiry later: shorter reverts, equal is charged for nothing", () => {
     const now = 1_000_000n;
     expect(trustRenewal(now + LEASE, now)).toBeNull();
     expect(trustRenewal(now + LEASE + 5n, now)).toBeNull();

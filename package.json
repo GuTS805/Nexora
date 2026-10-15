@@ -19,7 +19,8 @@
     "e2e": "tsx scripts/e2e.ts",
     "check:secrets": "tsx scripts/check-secrets.ts",
     "test:ui": "node scripts/ui-smoke.mjs",
-    "wallets": "tsx scripts/wallets.ts"
+    "wallets": "tsx scripts/wallets.ts",
+    "friction": "tsx scripts/friction-check.ts"
   },
   "devDependencies": {
     "tsx": "^4.23.15"

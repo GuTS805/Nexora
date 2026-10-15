@@ -3,7 +3,27 @@
 Environment for every entry unless stated otherwise: `@arkiv-network/sdk` **0.8.1**, `viem` 2.x, Node **24.19.0** on Windows 11, Tiramisu (chain `7738577`), browser build with Vite 8.
 Every entry has been reproduced against Tiramisu (status: live).
 
-Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 change how a browser-first app has to be designed; F7 and F8 came up while building the report lock and the offline queue; F9 while adding reads as of past blocks, and it changed what our privacy copy promises. A short list of what worked well is at the end, kept separate from the friction.
+**Re-check all of it with one command:** `npm run friction` ([`scripts/friction-check.ts`](../scripts/friction-check.ts)) re-runs every finding against the installed SDK and the live network, read-only, with no key and about eight queries, and writes [`friction-check.json`](friction-check.json). Each check says how it was observed: **source** (the SDK's own code), **runtime** (the SDK running locally), **chain** (Tiramisu), or **manual**. Last run: **10 of 10 automated checks behave as written**; F1 is a UI flow, checked by hand (Tiramisu block 627,128, 16 Oct 2026).
+
+Entries are numbered in the order we hit them; the summary orders them by what they cost us. A short list of what worked well is at the end, kept separate from the friction.
+
+## Summary
+
+| # | Surface | What happens | Cost to us | Suggested fix | Check |
+| --- | --- | --- | --- | --- | --- |
+| [F6](#f6-exhausted-anonymous-query-budget-looks-like-a-silent-hang-of-several-minutes-status-live) | Public RPC + SDK transport | The anonymous query budget runs out with a `429` and `Retry-After: ~2000`, which viem's default transport silently waits out. The budget is not visible until it is gone. | **High.** Hours misdiagnosed as an SDK bug; we built a fail-fast transport and a read relay | Fail fast with a typed error; send the remaining budget on every answer | runtime, chain |
+| [F9](#f9-deleting-or-expiring-an-entity-does-not-remove-it-from-history-and-neither-fact-nor-retention-is-documented-status-live) | `deleteEntity`, expiry, `atBlock` | A deleted or expired entity stays fully readable, payload included, at earlier blocks. Neither this nor how long history is kept is documented. | **High** for privacy: our copy promised data "disappears" | Say so in the delete and expiry docs; document retention | chain |
+| [F1](#f1-faucet-cannot-fund-a-script-generated-key-without-a-browser-wallet-status-live) | Faucet | Only a browser-wallet flow; no paste-address mode or API. | **High** at the start: blocked our first write | Paste-address mode or a rate-limited API | manual |
+| [F4](#f4-query-limits-are-undocumented-and-the-node-enforces-two-that-are-not-in-the-sdk-at-all-status-live) | `arkiv_query`, docs | At most 64 predicates and 8 192 bytes per query; undocumented, and the SDK does not check. | Medium: *My data* silently capped a wallet list | A limits table; check in the SDK; an `IN` operator | chain |
+| [F2](#f2-extendentity-with-expirationtimefromdaysn-sets-a-deadline-relative-to-now-not-to-the-current-expiry-status-live) | `extendEntity` | "Extend by 30 days" sets now + 30 days, and reverts on a longer-lived entity. | Medium: "Keep alive" reverted | `ExpirationTime.extendBy()`, or document it | source |
+| [F10](#f10-block-time-is-not-constant-and-there-is-no-way-to-find-the-block-for-a-moment-status-live) | `getBlockTiming`, `atBlock` | Blocks averaged 5.8 s since genesis, not the 2 s the SDK and RPC report, and nothing finds the block for a moment. | Medium: we wrote a timestamp search | A block-at-time method | chain |
+| [F3](#f3-entity-events-carry-no-attributes-so-filtering-a-live-feed-costs-extra-queries-per-event-status-live) | `watchEntityEvents` | Events carry no attributes, so every client looks up every entity on the chain. | Medium: queries per event | A node-side filter | source |
+| [F7](#f7-the-documented-predictentitykeys-example-cannot-run-no-client-has-both-methods-it-calls-status-live) | `predictEntityKeys` | The JSDoc example calls it and `executeBatch` on one client; no client has both. | Medium: the report lock | Add it to the wallet client | runtime |
+| [F8](#f8-create-parameters-cannot-be-saved-and-restored-as-data-status-live) | `CreateEntityParameters` | Parameters do not survive JSON (bigints, branded values). | Low: the offline queue | Serialise and parse helpers | runtime, chain |
+| [F11](#f11-extending-to-the-expiry-an-entity-already-has-is-accepted-and-charged-though-the-docs-say-it-is-rejected-status-live) | `extendEntity` | Extending to the same expiry succeeds and costs gas; the JSDoc says it is rejected. | Low: a lease renewal could pay for nothing | Reject it, or correct the docs | chain |
+| [F5](#f5-entity-url-format-on-the-block-explorer-is-undocumented-status-live) | Block explorer | Deep-link formats undocumented; every path answers 200. | Low | Document them; 404 unknown keys | chain |
+
+"Cost to us" is our judgement of what each one cost this build, not a measured time.
 
 ---
 
@@ -97,6 +117,7 @@ Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 cha
   - an error within seconds that says "query budget exhausted, resets in ~36 min, use an access key";
   - documentation of the anonymous budget size and of what a query costs. The `ratelimit` header says `limit=10000` cost units, but the docs give no cost per query or per row.
 - **Also:** `getEntity` is implemented as an `arkiv_query` (`$key = key(…)`, see `src/actions/public/getEntity.ts`), so even single-entity lookups draw on the same scarce budget. Only `eth_*` calls sit in a separate bucket (`ratelimit: limit=600` per short window, observed on `eth_blockNumber`).
+- **Re-checked 16 Oct 2026:** successful `arkiv_query` answers now carry `arkiv-cost: 100`, so a query costs 100 of the 10 000 units, about 100 queries per window. `Arkiv-Quota-Used-Percent` is listed in `Access-Control-Expose-Headers` but is never sent, so the remaining budget is still invisible. `npm run friction` also shows viem's default `http()` transport waiting through a local `429` with `Retry-After: 1` for about 3 s, against about 1 s for our fail-fast transport.
 - **Budget not visible until it is gone (live, 17:23 IST, after the window reset):** successful `arkiv_query` responses carry only the short request bucket (`ratelimit: limit=600, remaining=592, reset=29`). The 10,000-unit cost budget shows up in headers only on the 429. A client therefore cannot see that it is about to run out and slow down; the first sign is a hard stop of about an hour.
 - **Impact on apps:** a browser dApp that reads Arkiv directly (our censorship-resistance design) inherits this per visitor IP. Visitors on a shared NAT, such as an office, a college Wi-Fi or a mobile carrier's CGNAT in India, share one anonymous budget. Access keys are explicitly not safe in browsers ([docs](https://docs.arkiv.network/start-here/access-keys/)).
 - **Our workaround:** [`ledger/src/queries.ts`](../ledger/src/queries.ts) `arkivHttp()`:
@@ -150,6 +171,26 @@ Entries are ordered by when we hit them. F6 cost us the most time; F4 and F6 cha
 - **Reproduce:** `npx -p nexora-ledger nexora at 0x1685179bf008a2915b8f61777181fcccf226c65fd4f040d049fe7ce73945261a --block 580129`, then `--block 580130`. Seed step `history_at_block` records both, and the Proof page re-checks them.
 - **What we changed:** the app now says an entry "leaves Arkiv's current records", not that it disappears, and that history keeps it. This was already why only bands and rounded figures are public and exact figures are sealed: what anyone can read at an old block is what was safe to publish in the first place.
 - **Suggested fix:** state in the `deleteEntity` and expiry docs that history keeps deleted and expired entities readable through `atBlock`, and document each network's retention window (and whether mainnet nodes will prune).
+
+## F10. Block time is not constant, and there is no way to find the block for a moment (status: live)
+
+- **Surface:** `getBlockTiming` / `arkiv_getBlockTiming`, the SDK's `BLOCK_TIME = 2` (`src/consts.ts`), `atBlock` reads
+- **What we were doing (16 Oct 2026):** "What was on record at a past time". A person picks a date; we need the block at that moment to read as of it.
+- **Expected:** a method that returns the block at a timestamp, or a constant block time, so `(now - moment) / 2 s` blocks back is right. `getBlockTiming()` answers `"duration": 2`, and the SDK converts durations at 2 s.
+- **Actual:** blocks have not always come every 2 s. Genesis was at 16:07:50 UTC on 3 Sep 2026, and block 623 688 at 20:45:42 UTC on 15 Oct: an average of **5.8 s**. Recent blocks do come every 2.0 s (block 580 127 at 20:33:40 UTC on 14 Oct to 623 688: 43 561 blocks in 87 122 s). So counting back at 2 s from today, any moment more than about 14 days ago lands before block 0, although the chain began on 3 September. Neither the SDK nor the RPC can find the block for a moment. (To its credit, the SDK's `resolveExpiry` JSDoc does say durations are approximate.)
+- **Reproduce:** `client.getBlock({ blockNumber: 0n })`, `client.getBlock()` and `client.getBlockTiming()`, then divide the time between the first two by the head's number.
+- **Our workaround:** [`blockAtDate`](../ledger/src/history.ts) searches block timestamps with `eth_getBlockByNumber`: interpolation, halving whenever a step fails to halve the range. 3 to 21 calls in our tests over uneven block times.
+- **Suggested fix:** an `arkiv_getBlockAt(timestamp)` method or an SDK helper, and a note that `getBlockTiming` gives the current block time, not a history.
+
+## F11. Extending to the expiry an entity already has is accepted and charged, though the docs say it is rejected (status: live)
+
+- **Surface:** `extendEntity`. Its JSDoc: "The engine rejects an extension that would not move the expiry later."
+- **What we were doing (16 Oct 2026):** checking our lease code, which assumed the node refuses an extension that adds no time.
+- **Actual:** the trust list `0x0ba8…6108` expired at block 8 399 045. `extendEntity({ expires: ExpirationTime.atBlock(8_399_045n) })` succeeded, used 25 240 gas and left the expiry at 8 399 045 ([tx `0x85914ab4…8005`](https://tiramisu.explorer.arkiv.network/tx/0x85914ab4fc4112f85d899f9455f40603036e4b9cc836a5bb7e1e30bcae2b8005)). One block less was refused: *"already expires at block 8399045, so extending it to 8399044 would shorten its life"*.
+- **Impact:** a renewal pressed twice, or a "keep alive" computed from a stale expiry, pays gas for nothing, with no error to tell the user.
+- **Reproduce:** `npm run friction` reads the expiry as of the block before and the block of that transaction.
+- **Our workaround:** [`leaseRenewal`](../ledger/src/lease.ts) returns `null` unless the new expiry is later, and the *Renew* button is disabled then.
+- **Suggested fix:** reject an equal expiry as the docs say, or change the docs to "would shorten".
 
 ---
 

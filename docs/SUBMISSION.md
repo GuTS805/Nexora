@@ -176,6 +176,20 @@ Every write in the table above has a transaction on Tiramisu in [`arkiv/evidence
 
 **Deliberately off Arkiv:** names, phone numbers, rider and partner IDs, vehicle numbers, addresses, exact rupees and hours (unless sealed), passphrases, wallet keys and UI preferences.
 
+## Friction report
+
+[`arkiv/friction.md`](../arkiv/friction.md) has eleven findings, each with the SDK version, what we expected, what happened, a reproduction, what it cost us, our workaround in code and a suggested fix. A summary table at the top orders them by cost.
+
+- **Every finding is re-checkable with one command.** `npm run friction` re-runs all of them against the installed SDK and live Tiramisu, read-only, with no key. Each check is labelled as observed in the SDK's code, by running the SDK, or on the chain. The result is written to [`friction-check.json`](../arkiv/friction-check.json); last run, 10 of 10 automated checks behave as written (F1, the faucet, is a UI flow checked by hand). A [daily workflow](../.github/workflows/friction.yml) runs it too, so the report notices when Arkiv changes.
+- **What cost us most:**
+  - F6: an exhausted anonymous query budget looks like a silent hang, because viem waits out a `Retry-After` of about 35 minutes;
+  - F9: deletion and expiry do not erase history, which is undocumented and changed our privacy copy;
+  - F4: query limits (64 predicates, 8 192 bytes) are enforced but undocumented.
+- **Found by measuring, not by reading:**
+  - F10: Tiramisu's blocks averaged 5.8 s since genesis, while the RPC and SDK say 2 s;
+  - F11: an extension to the same expiry is accepted and charged, although the JSDoc says it is rejected.
+- **Credit where due:** a "What worked well" section lists, with the same rigour, what was good (query text you can paste anywhere, revert messages that explain themselves, atomic ownership transfer, history in one call).
+
 ## Pre-existing work
 
 None. Everything in this repository was written during the challenge, starting 14 October 2026 (first commit `0fcbbc7`). Third-party code is limited to the open-source dependencies listed in `package.json` files (Arkiv SDK, viem, React/Preact, Vite).

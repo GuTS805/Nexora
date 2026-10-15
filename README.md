@@ -126,7 +126,7 @@ The same CLI ships in the npm package, so none of this needs a clone: `npx -p ne
 1. In the app, open **Log my day**, choose the test wallet, and fund it with test GLM if needed. Inspect the privacy preview before publishing.
 2. Publish a synthetic shift. Open its entity and transaction links, then compare `$creator` with the wallet address.
 3. Open **Proof** or run `npx tsx ledger/cli.ts verify`. Both inspect the recorded [Tiramisu evidence](arkiv/evidence.json), including batch writes, linked incident updates, a sealed payload, a trust-list change, a non-owner lifetime extension, a locked report, a union's replies, and reads as of past blocks.
-4. Run an independent CLI query above. The [end-to-end report](arkiv/e2e-report.md) records measured Tiramisu behavior; the [friction report](arkiv/friction.md) gives reproducible SDK/RPC observations.
+4. Run an independent CLI query above. The [end-to-end report](arkiv/e2e-report.md) records measured Tiramisu behavior; the [friction report](arkiv/friction.md) gives eleven reproducible SDK/RPC findings, and `npm run friction` re-checks them against the live network (also daily in CI).
 
 ## Build and deploy
 
@@ -165,7 +165,7 @@ Parts of `nexora-ledger` are useful to **any Arkiv app**, whatever its data. [`e
 | `blockAtDate(client, date)`, `entityAtBlock(client, key, block)` | What any entity looked like at a past moment, including one deleted or expired since. Finds the block from timestamps, because block times are not constant. |
 | `memberChanges(before, after)` | Who joined and who left an address list between two readings. |
 | `createLocked(reader, wallet, owner, params)`, `isLocked`, `NOBODY` | Create an entity and hand it to `0x…dEaD` in one atomic batch, so nobody can delete it early. Works around the SDK example that no single client can run (friction F7). |
-| `leaseRenewal(expiresAt, block, days)` (0.4.0) | Use any entity as a lease: the block to renew to, or `null` when renewing would add no time (the node reverts that). |
+| `leaseRenewal(expiresAt, block, days)` (0.4.0) | Use any entity as a lease: the block to renew to, or `null` when renewing would add no time (the node would revert a shorter expiry, and charge for an equal one, friction F11). |
 
 ## Limits and status
 

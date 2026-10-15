@@ -1,0 +1,73 @@
+{
+  "checkedAt": "2026-10-15T22:41:51.975Z",
+  "block": "627172",
+  "sdk": "0.8.1",
+  "results": [
+    {
+      "id": "F1 faucet needs a browser wallet",
+      "how": "manual",
+      "verdict": "not checked",
+      "observed": "UI flow; check by hand at hub.arkiv.network/faucet"
+    },
+    {
+      "id": "F2 extend fromDays counts from now, not from the current expiry",
+      "how": "source",
+      "verdict": "as documented",
+      "observed": "fromDays(30) at block 1 000 000 resolves to 2296000, whatever the entity's expiry"
+    },
+    {
+      "id": "F3 entity events carry no attributes",
+      "how": "source",
+      "verdict": "as documented",
+      "observed": "EntityCreatedEvent: entityKey, owner, expiresAt, creationFlags"
+    },
+    {
+      "id": "F4 node limits: 64 predicates, 8192 bytes, neither in the SDK",
+      "how": "chain",
+      "verdict": "as documented",
+      "observed": "64: ok | 65: query has too many predicates | 8532 bytes: query is too long"
+    },
+    {
+      "id": "F5 explorer answers 200 for any path",
+      "how": "chain",
+      "verdict": "as documented",
+      "observed": "unknown entity key: HTTP 200"
+    },
+    {
+      "id": "F6 viem's default transport sleeps through Retry-After; the budget is not visible until gone",
+      "how": "runtime",
+      "verdict": "as documented",
+      "observed": "default http() waited 3071 ms on Retry-After: 1, fail-fast transport 1266 ms; cost 100, quota absent, exposes quota header: true"
+    },
+    {
+      "id": "F7 predictEntityKeys and executeBatch are on different clients",
+      "how": "runtime",
+      "verdict": "as documented",
+      "observed": "public: predict function, batch undefined; wallet: predict undefined, batch function"
+    },
+    {
+      "id": "F8 create parameters are not JSON; read-back flags carry raw",
+      "how": "chain",
+      "verdict": "as documented",
+      "observed": "JSON.stringify(fromDays(30)) throws; flags {\"readonly\":false,\"permissionlessExtension\":false,\"raw\":0}"
+    },
+    {
+      "id": "F9 a deleted entity stays readable at earlier blocks",
+      "how": "chain",
+      "verdict": "as documented",
+      "observed": "block 580129: full entity, payload included; 580130: absent; now: gone"
+    },
+    {
+      "id": "F10 block time is not constant; no way to find a block by time",
+      "how": "chain",
+      "verdict": "as documented",
+      "observed": "getBlockTiming says 2 s; genesis to head averages 5.82 s over 627172 blocks"
+    },
+    {
+      "id": "F11 extending to the same expiry is accepted and charged, though the docs say it is rejected",
+      "how": "chain",
+      "verdict": "as documented",
+      "observed": "tx success, 25240 gas, expiry 8399045 → 8399045"
+    }
+  ]
+}
