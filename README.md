@@ -100,7 +100,7 @@ Import the repository in Vercel and keep **Root Directory = repository root**. [
 5. In *Compare* (Bengaluru, bike taxi) with **All workers**, the spammer's ₹400/hour days are counted but marked unconfirmed: confirmation only counts workers on the recommended trust list. Switch to that list and those entries disappear entirely.
 6. Open *Incidents*, then an ID-block report with an update: the update is a separate read-only entity linked with `parent = key(…)`.
 7. Open the sealed demo day (its key is in `arkiv/evidence.json` under `sealed_payload`) and unlock it with the public demo passphrase `nexora-demo-2026`. On the explorer, the payload is only ciphertext.
-8. Open *Proof*: each claimed feature (batches, incident follow-ups, sealed payload, trust-list patch, non-owner extension, refused readonly patch, owner delete) links to its transaction, and *verify on chain* re-reads it.
+8. Open *Proof*: each claimed feature (batches, incident follow-ups, sealed payload, trust-list patch, non-owner extension, refused readonly patch, owner delete) links to its transaction. On arrival your browser re-reads all ten from the chain and shows the count (*Verified just now: 10 / 10*); each row's *Verify on chain* button repeats its check.
 9. Download `nexora.html` from the latest CI run's artifacts, double-click it, and the same data loads with no website involved.
 
 ## Build on the data

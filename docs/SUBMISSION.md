@@ -105,7 +105,7 @@ The full threat model, with residual risks and a plain list of known limitations
 
 ## How we use each Arkiv feature
 
-Each row says what the feature changes for the user and why we chose it. Every claim is backed by a transaction recorded in [`arkiv/evidence.json`](../arkiv/evidence.json) by `npm run seed`. The app's **Proof** page lists those transactions and re-checks each against the chain on demand; `npx tsx ledger/cli.ts verify` does the same from a terminal.
+Each row says what the feature changes for the user and why we chose it. Every claim is backed by a transaction recorded in [`arkiv/evidence.json`](../arkiv/evidence.json) by `npm run seed`. The app's **Proof** page lists those transactions and re-checks all of them against the chain from the visitor's browser on arrival; `npx tsx ledger/cli.ts verify` does the same from a terminal.
 
 | Feature | Where | What the user sees / why |
 | --- | --- | --- |
@@ -114,13 +114,13 @@ Each row says what the feature changes for the user and why we chose it. Every c
 | **`$creator` filters** | [`queries.ts:193-197`](../ledger/src/queries.ts#L193-L197) | Trust lists and *My data* filter with `OR` over `$creator`, which writers cannot forge. This one feature carries the Security track. |
 | **`key`-typed attribute** | [`codec.ts:233`](../ledger/src/codec.ts#L233), [`queries.ts:211`](../ledger/src/queries.ts#L211) | An incident's updates ("unblocked after 6 days") and "same here" reports point at it with `parent = key(…)`. Because entries are read-only, this is how a story evolves without anyone rewriting history. |
 | **`readonly` creation flag** | [`codec.ts:182-185`](../ledger/src/codec.ts#L182-L185) | A published entry cannot be edited after others relied on it, not even by its author, so nobody can be pressured into "correcting" it. Seed step `readonly_enforced` records the refused patch. |
-| **`permissionlessExtension` flag + `extendEntity`** | [`Entity.tsx:123`](../web/src/pages/Entity.tsx#L123) | "Keep alive +30 days" lets a union or researcher keep important evidence alive past the author's chosen lifetime, without write access. Seed step `permissionless_extend` has a non-owner extending. We use `atBlock(current + 30 d)` because extension sets an absolute deadline (friction F2). |
+| **`permissionlessExtension` flag + `extendEntity`** | [`Entity.tsx:124`](../web/src/pages/Entity.tsx#L124) | "Keep alive +30 days" lets a union or researcher keep important evidence alive past the author's chosen lifetime, without write access. Seed step `permissionless_extend` has a non-owner extending. We use `atBlock(current + 30 d)` because extension sets an absolute deadline (friction F2). |
 | **Expiration** | [`codec.ts:213`](../ledger/src/codec.ts#L213) | The worker picks 7, 30, 90 or 365 days, and data disappears on schedule. This is the Privacy track's "expiry the user controls". |
-| **`deleteEntity` (owner)** | [`Entity.tsx:132`](../web/src/pages/Entity.tsx#L132) | The author can withdraw an entry early, including from a one-time wallet whose key the browser kept. |
+| **`deleteEntity` (owner)** | [`Entity.tsx:133`](../web/src/pages/Entity.tsx#L133) | The author can withdraw an entry early, including from a one-time wallet whose key the browser kept. |
 | **`patchEntity` with `set`** | [`Trust.tsx:28`](../web/src/pages/Trust.tsx#L28), [`codec.ts:414`](../ledger/src/codec.ts#L414) | A union edits its trust list's members in place (mutable on purpose, owner-only). Seed step `trust_list_patch`. |
 | **`executeBatch`** | [`Log.tsx:317`](../web/src/pages/Log.tsx#L317) | A week of days is logged in one transaction from CSV (20 per transaction). The seed and e2e scripts use batches for creates and deletes. |
 | **Cursor paging** | [`queries.ts:240-249`](../ledger/src/queries.ts#L240-L249) | Lists follow the SDK cursor (200 per page). Wallet or key lists longer than 25 are split into several queries, because the node refuses more than 64 predicates or 8192 bytes (friction F4, measured live). |
-| **WebSocket entity events** | [`Explore.tsx:107-126`](../web/src/pages/Explore.tsx#L107-L126) | The live feed shows new days and incidents without reloading. Keys are batched into one `$key` query, because events carry no attributes (friction F3). |
+| **WebSocket entity events** | [`Explore.tsx:109-128`](../web/src/pages/Explore.tsx#L109-L128) | The live feed shows new days and incidents without reloading. Keys are batched into one `$key` query, because events carry no attributes (friction F3). |
 | **`Expression.toString()`** | [`queries.ts:228-230`](../ledger/src/queries.ts#L228-L230) | Every list shows the exact query and the equivalent CLI command, so anyone can reproduce it without us. |
 
 ## Why Arkiv (what would break elsewhere)
