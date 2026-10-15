@@ -1,144 +1,148 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.png">
-    <img src="docs/assets/logo-light.png" alt="Nexora ledger" width="260">
+    <img src="docs/assets/logo-light.png" alt="Nexora Ledger" width="260">
   </picture>
 </p>
 
 # Nexora Ledger
 
-[![ci](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml/badge.svg)](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE) [![Data on Arkiv](https://img.shields.io/badge/data-Arkiv%20Tiramisu-ff8424.svg)](arkiv/schema.md) [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+**A worker-written record of what gig work in India pays, and what happens when the work goes wrong.**
 
-**What delivery and ride work in India really pays — reported by workers, owned by no company.** Nexora is an open ledger where gig workers (food and grocery delivery riders, cab and bike-taxi drivers) log what a day actually paid after fuel and costs, and report what happened to them at work: ID blocks, pay cuts, unexplained penalties. It is stored on [Arkiv](https://arkiv.network). Anyone can read it, nobody can quietly rewrite it, no platform can take it down, and no worker has to give their name.
+[Live app](https://nexora-pi-snowy.vercel.app) · [Data contract](arkiv/schema.md) · [Independent reader](examples/read-without-nexora.mjs) · [On-chain evidence](arkiv/evidence.json) · [MIT license](LICENSE)
 
-- **Live app:** https://nexora-pi-snowy.vercel.app
-- **Demo video (≤ 3 min):** _add link_
-- **Data contract:** [`arkiv/schema.md`](arkiv/schema.md)
-- **Friction report:** [`arkiv/friction.md`](arkiv/friction.md)
-- **Per-track write-up:** [`docs/SUBMISSION.md`](docs/SUBMISSION.md)
-- **Threat model:** [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
-- **On-chain evidence:** [`arkiv/evidence.json`](arkiv/evidence.json) (every feature, with tx hashes) and [`arkiv/e2e-report.md`](arkiv/e2e-report.md)
+[![CI](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml/badge.svg)](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml) [![MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
-Built for the Arkiv Global Tour Stop (pre-Devcon 8), 9–18 October 2026. Tracks: Best Indian Use Case, Privacy, Censorship Resistance, Security, Open Source.
+Food delivery riders, grocery couriers, and cab, auto, and bike-taxi drivers can record a shift's **take-home pay after costs** or report an **ID block, pay cut, or penalty**. Other workers can compare pay by city, app, work type, vehicle, and month. Unions and researchers can query the same records directly from Arkiv without Nexora's website or permission.
 
-## Why
+Nexora is a **testnet prototype**. Seed entries are synthetic and labelled. A wallet signature shows who published a claim; it does **not** verify a payslip or prove that an incident happened.
 
-India had about 77 lakh gig workers in 2020-21, and NITI Aayog projects 2.35 crore by 2029-30. In the 2024 *Prisoners on Wheels?* survey of app-based workers across eight Indian cities, 43% of cab drivers took home under ₹500 a day after costs, 34% of delivery workers took home under ₹10,000 a month, and 87% of delivery workers said ID blocking and deactivation affected them. Rajasthan (2023) and Karnataka (2025) have passed gig-worker laws, but the only complete record of what the work pays sits with the platforms, and a worker who complains under their own name risks the ID that is their income.
+## Why this exists
 
-## What it does
+Platforms hold detailed pay and account records, while workers see only fragments of their own history. A worker weighing two apps or a move to another city needs to know what people take home after fuel and other costs. A worker reporting a blocked account may also need to avoid attaching their name or rider ID to the report. Nexora makes comparable, inspectable records available across platforms while keeping names and exact figures out of public attributes.
 
-| Page | What happens | Arkiv features used |
+## The product in three flows
+
+### 1. Learn before taking a shift
+
+1. Open **Earnings** and filter shifts by city, work type, app, vehicle, and month.
+2. Open **Compare** to see take-home pay per hour and month-on-month change. Results backed by at least two distinct *trusted* publisher wallets rank ahead of single-wallet claims.
+3. Inspect underlying entries, their Arkiv creator addresses, and the exact query used to fetch them. Switch trust lists to see how the answer changes.
+
+### 2. Record work without publishing identity
+
+1. Open **Log my day** and enter pay, costs, and hours. A preview separates public fields, optional encrypted fields, and values kept on the device.
+2. Publish one shift or import several through CSV. Public fields contain controlled categories, a rupee band, and a rounded hourly rate. Exact values can be encrypted in the browser with a passphrase.
+3. Choose an entity lifetime of 7, 30, 90, or 365 days. The entry links to its Tiramisu entity and creation transaction. **My data** finds entries from this browser's wallets.
+
+### 3. Report an incident and follow up
+
+1. Open **Incidents** to read reports of ID blocks, pay cuts, and penalties, filtered by place, platform, type, and time.
+2. Publish from a fresh one-time wallet by default, reducing linkage with the worker's other entries.
+3. Post a later update as a new read-only entity linked to the original by a typed `parent` key. The original is not silently rewritten.
+
+The web UI supports English and Hindi. Reading needs no account or wallet.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  W[Worker's browser] --> UI[Static Nexora app]
+  UI --> L[Shared @nexora/ledger library]
+  L -->|typed queries and signed writes| A[(Arkiv Tiramisu)]
+  A -->|public results| L
+  L --> UI
+  C[Independent CLI or third-party app] -->|same schema; no Nexora API| A
+  UI -. optional test GLM .-> S[Gas sponsor]
+  UI -. after RPC rate limit .-> R[Cached read relay]
+  R --> A
+```
+
+Arkiv is the primary data layer. The static browser app reads it directly through the official SDK; the CLI and [standalone example](examples/read-without-nexora.mjs) do the same. The optional server functions sponsor test gas and relay cached reads after the public RPC rate-limits a visitor. Neither stores the ledger. The browser can use another Tiramisu RPC, and the CLI accepts `--rpc`.
+
+| Layer | Responsibility | Code |
 | --- | --- | --- |
-| **Earnings** | Filter by city, kind of work, app, vehicle and month; take-home per hour per app · work · city, with independent-worker counts; live feed | typed attribute queries, `period` range queries, cursor paging, WebSocket entity events batched into one `$key` query |
-| **Compare** | "Which app pays best for my work in my city?" Confirmed figures (≥ 2 independent *trusted* workers) rank first, with month-on-month change and incidents beside pay; share to WhatsApp | distinct `$creator` counting against a trust list |
-| **Log my day** | One day's earnings (or a week by CSV): exact ₹ and hours become a band and a rounded rate, or are encrypted in the browser. Incident reports default to a fresh one-time wallet | `createEntity`, `executeBatch`, `readonly` flag, user-chosen expiry |
-| **Incidents** | ID blocks, pay cuts, penalties: how often, days without work, whether a reason was given, how many got sorted out | `type` filter, `key`-typed `parent` for updates and "same here" reports |
-| **Entry page** | Creator, owner, flags, expiry; keep alive, delete, unlock sealed details, post an update; share to WhatsApp | `getEntity`, `extendEntity` (`permissionlessExtension`), `deleteEntity`, `parent = key(…)` |
-| **Trust lists** | Unions or riders' groups vouch for worker wallets; every page can filter by a list | `$creator` `OR` filter, owner-only `patchEntity` (`set` mutations) |
-| **My data** | Everything this browser published, including one-time wallets; key backup | `$creator = addr(…)` `OR` over both entry kinds |
-| **Proof** | Every Arkiv feature the app claims, as a recorded Tiramisu transaction, with a button that re-checks it against the chain | `getEntity`, creation flags, `$owner` |
+| Static app | Earnings, comparison, logging, incidents, trust lists, proof, English/Hindi UI | [`web/src`](web/src) |
+| Data contract | Validate untrusted entities, encode writes, build queries, compute summaries, encrypt optional details | [`ledger/src`](ledger/src) |
+| Arkiv entities | Queryable attributes, payloads, creator metadata, expiration, flags, lineage | [`arkiv/schema.md`](arkiv/schema.md) |
+| Optional functions | Sponsor test GLM; cache an Arkiv query briefly on rate limit | [`api/`](api) |
+| Evidence and tooling | Seed synthetic data, verify transactions, independent reads, tests | [`scripts/`](scripts), [`examples/`](examples), [`arkiv/evidence.json`](arkiv/evidence.json) |
 
-Every list shows the **exact Arkiv query** it ran, plus the equivalent CLI command. The UI is in English and Hindi (toggle in the header; shared links carry the sender's language).
+### Data and privacy boundaries
 
-## Repository layout
+The two main entity kinds are **`shift`** and **`incident`**. Typed attributes hold values needed for filters or ranges, such as city, work type, platform, month, and incident type. Display-only fields and an optional encrypted box live in the payload. Authorship comes from Arkiv's engine-set **`$creator`**, never a self-declared author field.
 
-```
-ledger/          @nexora/ledger: the MIT data contract (schema, codec, sealing, queries, insights) + CLI
-  src/           reusable library: what the web app, CLI and scripts all use
-  cli.ts         read the ledger without any Nexora server
-  test/          contract tests + every write shape run through the real SDK up to signing
-web/             static React app (Vite); reads Arkiv directly from the browser
-api/             optional Vercel functions, the only server code: sponsor.ts (gas for new wallets)
-                 and read.ts (cached arkiv_query fallback, used only after the public RPC rate-limits a visitor)
-scripts/         wallets, demo seed (records every feature on chain), end-to-end check, secret check
-examples/        read-without-nexora.mjs: the dataset with only the official SDK
-arkiv/           schema.md, friction.md, evidence.json, e2e-report.md
-docs/            SUBMISSION.md (per-track answers), THREAT_MODEL.md
-```
+Published shifts and incidents use `readonly`; the owner can still delete an entity, and anyone can pay for a permitted lifetime extension. A separate, editable **`trust_list`** lets groups curate publisher wallets. Nexora validates every entity it reads because anyone can publish data with the same app marker. See the [exact attributes, vocabularies, queries, and lifetimes](arkiv/schema.md).
 
-## Run it
+**Off Arkiv:** worker names, phone numbers, rider IDs, vehicle numbers, addresses, unencrypted exact earnings, passphrases, and wallet keys. Browser-held keys and preferences stay on that device. Public wallet addresses, timestamps, city, and work patterns can still be correlated; the [threat model](docs/THREAT_MODEL.md) explains this residual risk and the one-time-wallet option.
 
-Requires Node.js 20+.
+## Screenshots
+
+Captured from the current local production build at 1440 × 900. The displayed example entries are **synthetic demo data**.
+
+| Earnings: compare take-home pay by city and app | Compare: inspect ranked options and underlying evidence |
+| --- | --- |
+| ![Earnings page with filters, synthetic data notice, summary cards and take-home pay table](docs/assets/earnings.png) | ![Compare page showing pay per hour, confirmation, month-on-month change and evidence links](docs/assets/compare.png) |
+
+| Log my day: preview public and sealed fields | Incidents: track blocks, cuts, penalties and updates |
+| --- | --- |
+| ![Log my day form showing the privacy preview before publishing](docs/assets/log.png) | ![Incidents page showing synthetic reports, summary table and linked cards](docs/assets/incidents.png) |
+
+## Try it yourself
+
+Use the [live app](https://nexora-pi-snowy.vercel.app) to browse synthetic demo data without a wallet. To run locally, use Node.js 20+:
 
 ```bash
-npm install
-npm test                       # contract, SDK-encoding, API and translation tests
-npm run test:ui                # 14 UI checks in headless Chrome against the production build
+npm ci
+npm run dev                 # http://localhost:5173
 npm run typecheck
-npm run dev                    # http://localhost:5173
+npm test
+npm run build
+npm run test:ui             # needs headless Chrome
+```
 
-# read the public ledger from the command line, no wallet or server needed
+Read directly from Arkiv without the web app:
+
+```bash
 npx tsx ledger/cli.ts earnings --demo --city bengaluru
 npx tsx ledger/cli.ts compare --demo --city delhi_ncr --work cab
 npx tsx ledger/cli.ts incidents --demo
-npx tsx ledger/cli.ts lists
-npx tsx ledger/cli.ts show <entityKey>
-npx tsx ledger/cli.ts watch    # live feed over WebSocket
-npx tsx ledger/cli.ts verify   # re-check every recorded feature in arkiv/evidence.json against the chain
 node examples/read-without-nexora.mjs delhi_ncr
-# any CLI command accepts --rpc <url>; ARKIV_RPC_URL sets a keyed RPC for CLI and scripts
+npx tsx ledger/cli.ts verify
 ```
 
-The public Tiramisu RPC has a small anonymous query budget per IP. When it runs out, every command says so within seconds (see friction F6); use an [Arkiv Hub access key](https://docs.arkiv.network/start-here/access-keys/) via `ARKIV_RPC_URL`.
+`--demo` includes synthetic seed data. The CLI prints its query; the UI displays the same query beside each result list. The public Tiramisu RPC has an anonymous query budget. If it is exhausted, use a server-side Arkiv Hub access key through `ARKIV_RPC_URL` or another Tiramisu RPC. Never put an access key in client-side configuration.
 
-### Maintainers: demo data and live checks
+### Reproduce a write and its proof
+
+1. In the app, open **Log my day**, choose the test wallet, and fund it with test GLM if needed. Inspect the privacy preview before publishing.
+2. Publish a synthetic shift. Open its entity and transaction links, then compare `$creator` with the wallet address.
+3. Open **Proof** or run `npx tsx ledger/cli.ts verify`. Both inspect the recorded [Tiramisu evidence](arkiv/evidence.json), including batch writes, linked incident updates, a sealed payload, a trust-list change, and a non-owner lifetime extension.
+4. Run an independent CLI query above. The [end-to-end report](arkiv/e2e-report.md) records measured Tiramisu behavior; the [friction report](arkiv/friction.md) gives reproducible SDK/RPC observations.
+
+## Build and deploy
+
+The repo uses npm workspaces: `ledger` for the library and CLI, and `web` for the Vite app. Vercel builds the static app from the repository root as configured in [`vercel.json`](vercel.json). The app can also be served from another static host.
 
 ```bash
-npm run wallets                # creates test keys in .env.local (gitignored), prints addresses
-# fund the sponsor wallet at https://hub.arkiv.network/faucet
-npm run wallets -- --fund      # sponsor → seed wallets
-npm run seed                   # dataset + one transaction per claimed feature → arkiv/evidence.json
-npm run e2e                    # gas, latency, OR-query, extend, readonly, delete → arkiv/e2e-report.md
-npm run check:secrets          # also runs as a pre-commit hook: git config core.hooksPath .githooks
+npm run build:portable -w web
 ```
 
-### Deploy
-
-Import the repository in Vercel and keep **Root Directory = repository root**. [`vercel.json`](vercel.json) installs the workspaces (`npm ci`), builds `web`, serves `web/dist`, and exposes the two functions in [`api/`](api). Set `NEXORA_SPONSOR_KEY` (and optionally `ARKIV_RPC_URL` with a Hub key) as secrets if you want the gas sponsor; without it, visitors fund their own wallet from the faucet. The `web/dist/` folder also works on any static host or IPFS gateway.
-
-**Portable single file:** `npm run build:portable -w web` writes `web/dist-portable/nexora.html`, the whole app in one file (JS and CSS inlined; CI attaches it to every run). It opens from disk, an email attachment or a WhatsApp/Telegram file share, and reads Arkiv directly. If every website hosting Nexora disappeared, this file would still work.
-
-## Judge reproduction
-
-1. Open the live app. No signup is needed. Earnings shows synthetic demo data (labelled).
-2. Open *Exact Arkiv query* under any list and run the printed CLI command from a fresh clone. You get the same entities, straight from Tiramisu.
-3. *Log my day* → *Use test wallet* → fill in the form → *Publish to Arkiv*. The public column of the privacy preview shows what goes on chain, and the exact rupees never appear in it. You get an entity key and a transaction link on the Tiramisu explorer.
-4. Open the entry: the creator is your test wallet, and the flags show read-only with community extension. Click *Keep alive +30 days* to send an `extendEntity` transaction.
-5. In *Compare* (Bengaluru, bike taxi) with **All workers**, the spammer's ₹400/hour days are counted but marked unconfirmed: confirmation only counts workers on the recommended trust list. Switch to that list and those entries disappear entirely.
-6. Open *Incidents*, then an ID-block report with an update: the update is a separate read-only entity linked with `parent = key(…)`.
-7. Open the sealed demo day (its key is in `arkiv/evidence.json` under `sealed_payload`) and unlock it with the public demo passphrase `nexora-demo-2026`. On the explorer, the payload is only ciphertext.
-8. Open *Proof*: each claimed feature (batches, incident follow-ups, sealed payload, trust-list patch, non-owner extension, refused readonly patch, owner delete) links to its transaction. On arrival your browser re-reads all ten from the chain and shows the count (*Verified just now: 10 / 10*); each row's *Verify on chain* button repeats its check.
-9. Download `nexora.html` from the latest CI run's artifacts, double-click it, and the same data loads with no website involved.
+This creates `web/dist-portable/nexora.html`, a single-file build with inlined JS and CSS. It opens from disk and reads Arkiv directly. The optional gas sponsor needs `NEXORA_SPONSOR_KEY` as a server secret; without it publishers must obtain test GLM. See [`.env.example`](.env.example) for configuration and [CI](.github/workflows/ci.yml) for checks.
 
 ## Build on the data
 
-The ledger is public and the contract is documented in [`arkiv/schema.md`](arkiv/schema.md), so a union, researcher or journalist does not need Nexora's code or permission:
+The [schema](arkiv/schema.md) is public and versioned. A union, researcher, journalist, or another app can read compatible entities and count distinct creators without using Nexora's frontend. [`@nexora/ledger`](ledger) provides the same decoders, predicates, privacy helpers, and comparison rules as the UI. Start with the [SDK-only reader](examples/read-without-nexora.mjs), then follow [CONTRIBUTING.md](CONTRIBUTING.md).
 
-```js
-import { createPublicClient } from "@arkiv-network/sdk";
-import { i32, str } from "@arkiv-network/sdk/attr";
-import { tiramisu } from "@arkiv-network/sdk/chains";
-import { and, eq } from "@arkiv-network/sdk/query";
-import { http } from "viem";
+## Limits and status
 
-const client = createPublicClient({ chain: tiramisu, transport: http() });
-const page = await client.select("*")
-  .where(and([eq("app", str("nexora")), eq("kind", str("shift")), eq("v", i32(1)), eq("city", str("bengaluru"))]))
-  .limit(200).fetch();
-```
+- Results and incidents are **self-reported**. Trust lists, creator metadata, and distinct-wallet counts help assess claims; they do not prove identity or truth.
+- Demo entries are synthetic and are not findings about any real platform.
+- Expiration removes live access under Arkiv's rules, but public transaction history and prior copies can persist. Workers should not publish identifying details.
+- This is on Tiramisu testnet. The public RPC can rate-limit readers, and the optional sponsor can run out of test GLM.
 
-The full version, grouping by app and counting distinct workers, is [`examples/read-without-nexora.mjs`](examples/read-without-nexora.mjs). [`@nexora/ledger`](ledger) is the same contract as a typed library: codecs, sealing, queries and the confirmation rules.
+Built for the **Arkiv Global Tour Stop, 9–18 October 2026**. [Submission notes](docs/SUBMISSION.md) map the product to the India and CROPS tracks; [friction](arkiv/friction.md), [schema](arkiv/schema.md), and [evidence](arkiv/evidence.json) are the technical record. The ≤3-minute demo video link is still pending.
 
-## Contributing
+## License and credits
 
-Issues and pull requests are welcome, especially new cities, platforms and Indian languages. Start with [CONTRIBUTING.md](CONTRIBUTING.md); security and privacy reports go to [SECURITY.md](SECURITY.md). Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
-
-## Safety
-
-Testnet only. Demo data is synthetic, calibrated to ranges in public surveys, and built with no difference between platforms, so it says nothing about any real company. No personal data, keys or secrets are stored on Arkiv. Self-reported entries are claims signed by a wallet, not verified payslips. The UI says so, and trust lists exist because of it.
-
-## License
-
-[MIT](LICENSE)
-
-Platform logos are bundled from [Simple Icons](https://simpleicons.org) (CC0) where it has one; other platforms get a letter tile in their brand colour. The names and logos are trademarks of their owners and are shown only to say which app an entry is about. No platform endorses or is affiliated with Nexora.
+[MIT](LICENSE). Platform marks are used only to identify the apps discussed in records; no platform endorses Nexora. See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
