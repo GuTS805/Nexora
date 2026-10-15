@@ -1,14 +1,22 @@
 version: 2
 updates:
+  # Major versions (TypeScript, Preact, Node types, Actions) change behaviour and are upgraded by hand
+  # with a full test run; Dependabot proposes minor and patch updates, and security fixes of any size.
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       minor-and-patch:
         update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
