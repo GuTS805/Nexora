@@ -41,7 +41,7 @@ Every string attribute comes from a closed list, and there is **no free-text att
 
 ```json
 { "v": 1, "incentive": "met",
-  "sealed": { "alg": "AES-256-GCM", "kdf": "PBKDF2-SHA256", "iter": 310000, "salt": "…", "iv": "…", "ct": "…" } }
+  "sealed": { "alg": "AES-256-GCM", "kdf": "PBKDF2-SHA256", "iter": 600000, "salt": "…", "iv": "…", "ct": "…" } }
 ```
 
 `incentive` (`met`, `missed`, `none`) is only displayed and counted, never filtered on. `sealed` is optional. It holds the exact pay, costs, hours, orders and a private note, encrypted in the browser with a passphrase that never leaves the device ([`ledger/src/seal.ts`](../ledger/src/seal.ts)).

@@ -9,7 +9,8 @@
 
 export const SEAL_ALG = "AES-256-GCM";
 export const SEAL_KDF = "PBKDF2-SHA256";
-export const SEAL_ITERATIONS = 310_000;
+// OWASP's 2023 figure for PBKDF2-HMAC-SHA256. Boxes record their own count, so older ones (310,000) still open.
+export const SEAL_ITERATIONS = 600_000;
 export const MIN_PASSPHRASE_LENGTH = 10;
 
 export type SealedBox = {

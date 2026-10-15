@@ -82,7 +82,7 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
 
 - **Mitigations:**
   - Hours are published as one of six bands; take-home per hour is rounded to ₹10 and cost share to 10% (`hoursBand`, `netHourly`, `costPct` in [`ledger/src/schema.ts`](../ledger/src/schema.ts)).
-  - Exact values are either discarded or sealed with AES-256-GCM, using a key from PBKDF2-SHA256 at 310,000 iterations. The passphrase must be at least 10 characters ([`ledger/src/seal.ts`](../ledger/src/seal.ts)).
+  - Exact values are either discarded or sealed with AES-256-GCM, using a key from PBKDF2-SHA256 at 600,000 iterations (OWASP's current recommendation; each box records its count, so older boxes still open). The passphrase must be at least 10 characters ([`ledger/src/seal.ts`](../ledger/src/seal.ts)).
   - GCM authentication makes a tampered box fail to open.
 - **Test:** *never writes rupee amounts or exact hours into attributes or the public payload*; the UI test checks the privacy preview's public column.
 - **Residual:**
@@ -117,6 +117,7 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
   - The live feed batches lookups into one `$key` query.
   - Keyed RPC URLs can be used server-side.
   - After a 429, the browser sends that `arkiv_query` to the deployment's [`api/read.ts`](../api/read.ts), whose answers the CDN shares for 30 s, so one office costs a few upstream queries. It forwards only `arkiv_query` with at most 8 KB of query, and caches budget refusals for 15 s so a burst cannot hammer an exhausted budget.
+  - The fallback is **not a general Arkiv gateway**: it forwards only queries scoped to `app = str('nexora')` with no top-level `OR` that could widen them, or a single `$key` lookup, and allows 60 uncached queries per IP per minute ([`isNexoraQuery`](../api/read.ts), tests in [`web/api/read.test.ts`](../web/api/read.test.ts)). Nobody can spend the deployment's access key on other data or drain it from one machine.
 - **Residual:** the fallback is a server, so whoever runs it could alter answers. That adds no new trust: the same operator already serves the app's JavaScript. The CLI, the portable file and a custom RPC never use it, so anyone who doubts it can compare directly against Arkiv.
 
 ### T12. Sponsor drain
@@ -127,6 +128,8 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
   - reads the caller's address from `x-vercel-forwarded-for`, which the platform sets itself, rather than a header a client can send;
   - forgets expired entries so a long-lived instance cannot be grown without bound;
   - stops below a 0.05 GLM floor;
+  - refuses requests whose `Origin` is another website, so no other page can spend it through its visitors' browsers;
+  - caps the drip at 0.05 GLM even if its optional `SPONSOR_DRIP_GLM` override is mistyped;
   - validates input, never writes entities and stores nothing.
 - **Code and tests:** [`api/_limits.ts`](../api/_limits.ts), [`web/api/limits.test.ts`](../web/api/limits.test.ts).
 - **Residual:** the limits live in memory per serverless instance; distributed abuse can still empty a testnet faucet. The impact is limited to visitors having to use the public faucet.
@@ -136,7 +139,7 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
 - **Fact:** the test wallet key lives in `localStorage`, so a malicious browser extension or an XSS bug could read it.
 - **Mitigations:**
   - It is a testnet key with a few test GLM.
-  - The CSP blocks inline and third-party scripts.
+  - The CSP blocks inline and third-party scripts, plugins (`object-src 'none'`) and framing. `connect-src` allows any `https:`/`wss:` host on purpose, because readers can switch to any Arkiv RPC (T10). So an injected script could send data out, and the CSP's job is to keep scripts from being injected. `Permissions-Policy` turns off camera, microphone, location and payment APIs, and `Cross-Origin-Opener-Policy: same-origin` cuts the window off from pages it opens.
   - Users can bring their own browser wallet instead.
 - **Residual:** with the key, an attacker could delete that wallet's own entries, or learn which entries a phone published if they get the phone.
 
@@ -146,6 +149,10 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
   - Dependencies are pinned in `package-lock.json`, and `npm audit` reports 0 known vulnerabilities.
   - The SDK version is pinned (`0.8.1`).
   - Private keys exist only in the gitignored `.env.local` and deployment secrets. `npm run check:secrets` fails if any of those values appears in a tracked or staged file; it runs as a pre-commit hook (`.githooks/pre-commit`; enable with `git config core.hooksPath .githooks`).
+  - CI also runs [gitleaks](../.gitleaks.toml) over the **full git history** on every push. The binary is pinned to a version and checked against its SHA-256 before it runs.
+  - Every GitHub Action is pinned to a full commit SHA, not a movable tag, and checkouts do not keep the token (`persist-credentials: false`). Dependabot updates the pins. Workflows get read-only permissions; only CodeQL may write security events.
+  - CI publishes a SHA-256 checksum next to the portable `nexora.html`, so a union passing the file around can check it is the one CI built.
+  - The sealed payload's key derivation uses PBKDF2-SHA256 at 600,000 iterations (OWASP's current figure). Boxes record their own count, so older ones still open.
 
 ## Known limitations
 

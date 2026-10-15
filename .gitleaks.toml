@@ -1,0 +1,15 @@
+# Secret scan for CI (gitleaks). The default rules apply everywhere, with one narrow exception:
+# arkiv/evidence.json lists public Arkiv entity keys and transaction hashes (32-byte hex, readable by
+# anyone on the explorer), which the generic rule mistakes for API keys. Only bare 32-byte hex
+# values in that one file are allowed; any other secret shape there is still reported. A raw
+# private key has the same shape, so for that file the local pre-commit hook (npm run
+# check:secrets), which compares against the real keys in .env.local, is the check that counts.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Public Arkiv entity keys and transaction hashes recorded as on-chain evidence"
+condition = "AND"
+paths = ['''^arkiv/evidence\.json$''']
+regexTarget = "match"
+regexes = ['''0x[0-9a-fA-F]{64}"?$''', '''^"?(key|keys|txHash|tx)"?\s*:\s*"0x[0-9a-fA-F]{64}"?$''']

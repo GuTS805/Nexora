@@ -48,6 +48,25 @@ export function createLimiter(config: LimitConfig = DEFAULT_LIMITS) {
 }
 
 /**
+ * A sliding-window request cap per key (an IP), in memory per instance like the sponsor's limits.
+ * Returns how many seconds to wait, or 0 when the request may go ahead.
+ */
+export function createRateLimit(max: number, windowMs: number, maxTracked = 5_000) {
+  const hits = new Map<string, number[]>();
+  return (key: string, now: number): number => {
+    if (hits.size > maxTracked) for (const [k, times] of hits) if (!times.some((t) => now - t < windowMs)) hits.delete(k);
+    const recent = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
+    if (recent.length >= max) {
+      hits.set(key, recent);
+      return Math.max(1, Math.ceil((recent[0]! + windowMs - now) / 1_000));
+    }
+    recent.push(now);
+    hits.set(key, recent);
+    return 0;
+  };
+}
+
+/**
  * The caller's address as the platform reports it. Vercel sets `x-vercel-forwarded-for` itself, so
  * it cannot be spoofed by the client the way a forwarded-for header can on other hosts.
  */

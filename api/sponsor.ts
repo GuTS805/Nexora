@@ -14,9 +14,34 @@ import { createPublicClient, createWalletClient, getAddress, http, isAddress, pa
 import { privateKeyToAccount } from "viem/accounts";
 import { clientIp, createLimiter } from "./_limits.js";
 
-const DRIP = parseEther(process.env.SPONSOR_DRIP_GLM ?? "0.01");
+const DEFAULT_DRIP = parseEther("0.01");
+// A typo in the optional override ("10" for "0.010") must not hand out the sponsor's whole balance.
+const MAX_DRIP = parseEther("0.05");
+const DRIP = (() => {
+  try {
+    const value = parseEther(process.env.SPONSOR_DRIP_GLM ?? "0.01");
+    return value > 0n && value <= MAX_DRIP ? value : DEFAULT_DRIP;
+  } catch {
+    return DEFAULT_DRIP;
+  }
+})();
 const ALREADY_FUNDED = parseEther("0.001");
 const SPONSOR_FLOOR = parseEther("0.05");
+
+/**
+ * Browsers send `Origin` on every POST. A request from another website is refused, so no other page
+ * can quietly spend this sponsor through its visitors' browsers. Scripts that send no Origin still
+ * reach the limits below; this is not a substitute for them.
+ */
+export function sameSite(request: Request): boolean {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+  try {
+    return new URL(origin).hostname === new URL(request.url).hostname;
+  } catch {
+    return false;
+  }
+}
 
 const limiter = createLimiter();
 
@@ -26,6 +51,7 @@ const json = (status: number, body: unknown) =>
 export async function POST(request: Request): Promise<Response> {
   const key = process.env.NEXORA_SPONSOR_KEY;
   if (!key || !/^0x[0-9a-fA-F]{64}$/.test(key)) return json(503, { error: "Gas sponsor is not configured." });
+  if (!sameSite(request)) return json(403, { error: "The gas sponsor only serves this site." });
 
   let address: Address;
   try {
