@@ -1,5 +1,5 @@
 import { readIncidents } from "../cache.ts";
-import { CITIES, INCIDENT_TYPES, PLATFORMS, incidentStats, isOneOf, resolvedReports, type City, type IncidentFilters, type IncidentType, type Platform } from "@nexora/ledger";
+import { CITIES, INCIDENT_TYPES, PLATFORMS, incidentStats, isOneOf, resolvedReports, type City, type IncidentFilters, type IncidentType, type Platform } from "nexora-ledger";
 import { useMemo, useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
 import { ErrorNote, Field, IncidentCard, QueryBox, VocabSelect, useAsync, useSource } from "../components.tsx";

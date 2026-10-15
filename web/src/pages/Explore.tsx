@@ -1,5 +1,5 @@
 import { readShifts, readTrustList, readTrustLists } from "../cache.ts";
-import { CITIES, PLATFORMS, VEHICLES, WORK_TYPES, earningsStats, fetchEntries, liveClient, summariseShifts, type City, type EntryFilters, type IncidentFilters, type Platform, type ShiftFilters, type TrustList, type Vehicle, type WorkType } from "@nexora/ledger";
+import { CITIES, PLATFORMS, VEHICLES, WORK_TYPES, earningsStats, fetchEntries, liveClient, summariseShifts, type City, type EntryFilters, type IncidentFilters, type Platform, type ShiftFilters, type TrustList, type Vehicle, type WorkType } from "nexora-ledger";
 import { useEffect, useRef, useState } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";

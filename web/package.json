@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@arkiv-network/sdk": "0.8.1",
-    "@nexora/ledger": "*",
+    "nexora-ledger": "*",
     "preact": "^10.29.8",
     "react": "19.3.0",
     "react-dom": "19.3.0",

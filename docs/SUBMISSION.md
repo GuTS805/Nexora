@@ -55,6 +55,7 @@ Nexora is a shared, worker-written record of pay and incidents. Every entry is s
 - **Encrypted payload:** exact pay, costs, hours, orders and a private account of what happened are sealed in the browser with AES-256-GCM, using a key derived via PBKDF2-SHA256 (310k iterations) from a passphrase that never leaves the device ([`ledger/src/seal.ts`](../ledger/src/seal.ts)). A worker can hand the passphrase to a union or a lawyer. GCM authentication makes a tampered box fail to open. Without a passphrase, exact figures are discarded after banding.
 - **User-controlled expiry:** the worker picks 7, 30, 90 or 365 days and can delete earlier (owner-only `deleteEntity`).
 - **Shown before publishing:** the *Log my day* page has a three-column "Public on Arkiv / Sealed / Never leaves this device" preview, rendered from the actual values about to be written. A UI test checks that the exact rupees and hours never appear in the public column.
+- **Audited in public:** `nexora audit` reads every entity on chain that claims `app = "nexora"`. It holds every entry readers would show to the strict [JSON Schemas](../arkiv/schema) (no attribute outside the contract, no exact figures, only well-formed sealed boxes) and scans all clear-text strings for phone numbers, emails and 12-digit ID numbers. Anyone can run it with `npx -p nexora-ledger nexora audit`; the [audit workflow](../.github/workflows/audit.yml) runs it daily. Current result: 177 entities, 0 violations. It also reports how many incident wallets also wrote earnings. That is 0 for workers' entries; the demo seed data reuses its wallets on purpose and is labelled as such.
 
 ## Censorship Resistance: who is harmed if this data is censored or shut down
 
@@ -90,16 +91,19 @@ The full threat model, with residual risks and a plain list of known limitations
 ## Open Source: can another team build on it without asking?
 
 - **Data contract:** [`arkiv/schema.md`](../arkiv/schema.md) documents every attribute, type, vocabulary, flag and lifetime, plus the exact queries.
-- **Reusable library:** [`ledger/`](../ledger) (`@nexora/ledger`, MIT) gives any TypeScript project:
+- **Machine-checkable contract:** [`arkiv/schema/*.schema.json`](../arkiv/schema) are JSON Schema 2020-12 files, one per entity kind, usable from any language. They are generated from the same constants as the codec, and a test fails if the committed files drift.
+- **On npm:** `npm install nexora-ledger` gives the library, the schemas (`nexora-ledger/contract`, `nexora-ledger/schema/*.json`) and the `nexora` CLI. CI packs the package and installs it into a clean project on every push.
+- **Reusable library:** [`ledger/`](../ledger) (`nexora-ledger`, MIT) gives any JavaScript or TypeScript project:
   - `shiftCreate` / `incidentCreate` to write valid entities;
   - `decodeShift` / `decodeIncident` to validate untrusted ones;
   - `fetchShifts` / `fetchIncidents` with typed filters;
   - `comparePlatforms`, `earningsStats`, `monthChange` and `incidentStats` for the analytics;
-  - `seal` / `unseal` for the encrypted details.
+  - `seal` / `unseal` for the encrypted details;
+  - `validateEntity` / `auditEntities` to check data against the JSON Schemas and for personal data.
 - **Permissionless writes and reads:** any app can publish compatible entries from its own wallet, and they show up in Nexora automatically. Any app can read Nexora's data the same way. Examples: a union's WhatsApp bot that logs members' days, a researcher's dashboard, a state welfare board's monitoring page, a journalist's notebook.
 - **Versioning:** `v = 1` is part of every predicate, so a v2 can coexist.
-- **Tests:** `npm test` runs the contract tests: codec round trip, rejection of malformed entities, sealing, query rendering against the node's measured limits, Sybil dampening, month-on-month confirmation, CSV parsing, the read fallback, and every write shape through the real SDK up to signing.
-- **Checked in public:** [GitHub Actions](../.github/workflows/ci.yml) runs typecheck, tests, the build, a headless-Chrome UI test, the single-file build and `npm audit` on every push and pull request.
+- **Tests:** `npm test` runs 80 tests in 13 files, with one file per library module ([`ledger/test`](../ledger/test)) plus the server functions. They cover the codec round trip, rejection of malformed entities, the JSON Schemas (accepting every shape the codec writes, rejecting leaks), the personal-data scan, sealing, query rendering against the node's measured limits, Sybil dampening, month-on-month confirmation, CSV parsing, the read fallback, the sponsor's limits, and every write shape through the real SDK up to signing. A headless-Chrome UI test adds 14 checks against the production build.
+- **Checked in public:** [GitHub Actions](../.github/workflows/ci.yml) runs typecheck, tests, the build, the UI test, the single-file build, `npm audit` and an npm pack-and-install check on every push and pull request. CodeQL runs separately, and so does the daily [privacy audit](../.github/workflows/audit.yml) of live data.
 - **Ready for contributors:** [`CONTRIBUTING.md`](../CONTRIBUTING.md) explains setup, how to add a city, platform, kind of work or language, and the rules that keep the data trustworthy (no personal data on chain, fixed lists, versioned contract). There are issue templates for bugs and new vocabulary, a pull-request checklist, a [security policy](../SECURITY.md) for private privacy reports, and a [code of conduct](../CODE_OF_CONDUCT.md).
 - **Visible in the app:** the header links to the repository, and *How it works* has an "Open source: build on it" section with the CLI command, the data contract, the library and the CI.
 

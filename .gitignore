@@ -16,5 +16,10 @@ Thumbs.db
 .DS_Store
 dist-portable/
 
+# copied into the npm package at pack time (sources: arkiv/schema, LICENSE)
+ledger/schema/
+ledger/LICENSE
+*.tgz
+
 # personal drafts (form answers), never pushed
 .private/

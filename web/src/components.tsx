@@ -1,5 +1,5 @@
 import { readTrustList } from "./cache.ts";
-import { HOURS_BAND_LABELS, explainError, explorerAddress, explorerEntity, explorerTx, type Entry, type Incident, type Shift, type TrustList } from "@nexora/ledger";
+import { HOURS_BAND_LABELS, explainError, explorerAddress, explorerEntity, explorerTx, type Entry, type Incident, type Shift, type TrustList } from "nexora-ledger";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Address, Hex } from "viem";
 import { useArkiv } from "./arkiv.tsx";

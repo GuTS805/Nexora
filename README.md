@@ -9,9 +9,9 @@
 
 **A worker-written record of what gig work in India pays, and what happens when the work goes wrong.**
 
-[Live app](https://nexora-pi-snowy.vercel.app) · [Data contract](arkiv/schema.md) · [Independent reader](examples/read-without-nexora.mjs) · [On-chain evidence](arkiv/evidence.json) · [MIT license](LICENSE)
+[Live app](https://nexora-pi-snowy.vercel.app) · [Data contract](arkiv/schema.md) · [JSON Schemas](arkiv/schema) · [npm: `nexora-ledger`](https://www.npmjs.com/package/nexora-ledger) · [Independent reader](examples/read-without-nexora.mjs) · [On-chain evidence](arkiv/evidence.json) · [MIT license](LICENSE)
 
-[![CI](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml/badge.svg)](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml) [![MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
+[![CI](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml/badge.svg)](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml) [![Privacy audit](https://github.com/GuTS805/Nexora/actions/workflows/audit.yml/badge.svg)](https://github.com/GuTS805/Nexora/actions/workflows/audit.yml) [![npm](https://img.shields.io/npm/v/nexora-ledger.svg)](https://www.npmjs.com/package/nexora-ledger) [![MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 Food delivery riders, grocery couriers, and cab, auto, and bike-taxi drivers can record a shift's **take-home pay after costs** or report an **ID block, pay cut, or penalty**. Other workers can compare pay by city, app, work type, vehicle, and month. Unions and researchers can query the same records directly from Arkiv without Nexora's website or permission.
 
@@ -48,7 +48,7 @@ The web UI supports English and Hindi. Reading needs no account or wallet.
 ```mermaid
 flowchart LR
   W[Worker's browser] --> UI[Static Nexora app]
-  UI --> L[Shared @nexora/ledger library]
+  UI --> L[Shared nexora-ledger library]
   L -->|typed queries and signed writes| A[(Arkiv Tiramisu)]
   A -->|public results| L
   L --> UI
@@ -109,7 +109,10 @@ npx tsx ledger/cli.ts compare --demo --city delhi_ncr --work cab
 npx tsx ledger/cli.ts incidents --demo
 node examples/read-without-nexora.mjs delhi_ncr
 npx tsx ledger/cli.ts verify
+npx tsx ledger/cli.ts audit       # every Nexora entity on chain vs the JSON Schemas + a personal-data scan
 ```
+
+The same CLI ships in the npm package, so none of this needs a clone: `npx -p nexora-ledger nexora audit`.
 
 `--demo` includes synthetic seed data. The CLI prints its query; the UI displays the same query beside each result list. The public Tiramisu RPC has an anonymous query budget. If it is exhausted, use a server-side Arkiv Hub access key through `ARKIV_RPC_URL` or another Tiramisu RPC. Never put an access key in client-side configuration.
 
@@ -132,7 +135,20 @@ This creates `web/dist-portable/nexora.html`, a single-file build with inlined J
 
 ## Build on the data
 
-The [schema](arkiv/schema.md) is public and versioned. A union, researcher, journalist, or another app can read compatible entities and count distinct creators without using Nexora's frontend. [`@nexora/ledger`](ledger) provides the same decoders, predicates, privacy helpers, and comparison rules as the UI. Start with the [SDK-only reader](examples/read-without-nexora.mjs), then follow [CONTRIBUTING.md](CONTRIBUTING.md).
+The [schema](arkiv/schema.md) is public and versioned. A union, researcher, journalist, or another app can read compatible entities and count distinct creators without using Nexora's frontend. [`nexora-ledger`](ledger) provides the same decoders, predicates, privacy helpers, and comparison rules as the UI:
+
+```bash
+npm install nexora-ledger
+```
+
+```js
+import { fetchShifts, readClient } from "nexora-ledger";
+
+const { items, rejected } = await fetchShifts(readClient(), { city: "pune", includeDemo: true });
+console.log(`${items.length} valid days, ${rejected.length} rejected by the contract`);
+```
+
+The contract is also machine-checkable: [`arkiv/schema/`](arkiv/schema) holds JSON Schema (2020-12) files for each entity kind, generated from the same constants as the codec, and usable from any language. `nexora audit` holds every entry on chain to them and scans for personal data; the [privacy audit workflow](.github/workflows/audit.yml) runs it daily. Start with the [SDK-only reader](examples/read-without-nexora.mjs), then follow [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Limits and status
 

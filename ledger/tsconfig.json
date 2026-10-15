@@ -13,5 +13,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src", "test", "cli.ts"]
+  "include": ["src", "test", "cli.ts", "write-schemas.ts"]
 }

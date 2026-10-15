@@ -1,5 +1,5 @@
 import { readIncidents, readShifts } from "../cache.ts";
-import { CITIES, VEHICLES, WORK_TYPES, comparePlatforms, isOneOf, type City, type PlatformComparison, type ShiftFilters, type Vehicle, type WorkType } from "@nexora/ledger";
+import { CITIES, VEHICLES, WORK_TYPES, comparePlatforms, isOneOf, type City, type PlatformComparison, type ShiftFilters, type Vehicle, type WorkType } from "nexora-ledger";
 import { useMemo, useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
 import { Change, EntityLink, ErrorNote, Field, Hourly, QueryBox, VocabSelect, WhatsAppButton, useAsync, useSource } from "../components.tsx";

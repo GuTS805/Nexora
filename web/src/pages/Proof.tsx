@@ -1,4 +1,4 @@
-import { explainError, explorerEntity, explorerTx, getEntityOrNull } from "@nexora/ledger";
+import { explainError, explorerEntity, explorerTx, getEntityOrNull } from "nexora-ledger";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Hex } from "viem";
 import evidence from "../../../arkiv/evidence.json";

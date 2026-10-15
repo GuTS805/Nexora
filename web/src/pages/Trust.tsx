@@ -1,5 +1,5 @@
 import { readTrustLists } from "../cache.ts";
-import { explainError, MAX_TRUST_MEMBERS, WORK_TYPES, trustListCreate, trustListPatch, type TrustList, type WorkType } from "@nexora/ledger";
+import { explainError, MAX_TRUST_MEMBERS, WORK_TYPES, trustListCreate, trustListPatch, type TrustList, type WorkType } from "nexora-ledger";
 import { useState } from "react";
 import type { Address, Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";

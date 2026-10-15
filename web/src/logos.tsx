@@ -1,4 +1,4 @@
-import type { Platform } from "@nexora/ledger";
+import type { Platform } from "nexora-ledger";
 
 /**
  * Platform logos, bundled so the page and the single-file build work offline.

@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv, type Plugin } from "vite";
+import { defaultClientConditions, defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 
@@ -88,6 +88,8 @@ export default defineConfig(({ mode }) => {
     // Preact's React-compatible runtime: same components, about a fifth of the size — it matters on
     // the slow mobile connections many riders use.
     resolve: {
+      // The workspace's nexora-ledger is used from source; only the npm package ships compiled code.
+      conditions: ["nexora-source", ...defaultClientConditions],
       alias: {
         "react-dom/client": "preact/compat/client",
         "react-dom": "preact/compat",

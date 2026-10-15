@@ -2,7 +2,7 @@ import {
   CITIES, CSV_TEMPLATE, EXPIRY_CHOICES_DAYS, HOURS_BAND_LABELS, INCENTIVES, INCIDENT_TYPES, MAX_BATCH, MAX_DAYS_LOST,
   MIN_PASSPHRASE_LENGTH, PLATFORM_WORK, PLATFORMS, VEHICLES, costPct, explainError, hoursBand, incidentCreate, isOneOf,
   netHourly, parseShiftsCsv, seal, shiftCreate, type City, type Platform, type Vehicle, type WorkType,
-} from "@nexora/ledger";
+} from "nexora-ledger";
 import type { CreateEntityParameters } from "@arkiv-network/sdk";
 import { useMemo, useState, type ReactNode } from "react";
 import type { Hex } from "viem";

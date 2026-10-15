@@ -25,6 +25,21 @@ jobs:
         run: npm run test:ui
       - run: npm run build:portable -w web
       - run: npm audit --audit-level=moderate
+      - name: npm package packs, installs and works in a clean project
+        run: |
+          (cd ledger && npm pack --pack-destination "$RUNNER_TEMP")
+          mkdir "$RUNNER_TEMP/consumer" && cd "$RUNNER_TEMP/consumer"
+          echo '{"type":"module"}' > package.json
+          npm install --no-audit --no-fund "$RUNNER_TEMP"/nexora-ledger-*.tgz
+          node --input-type=module -e "
+            import { shiftCreate } from 'nexora-ledger';
+            import { validateEntity } from 'nexora-ledger/contract';
+            import schema from 'nexora-ledger/schema/shift.schema.json' with { type: 'json' };
+            const params = shiftCreate({ platform: 'swiggy', work: 'food_delivery', city: 'pune', vehicle: 'ev_scooter', period: 202610, grossInr: 1000, costsInr: 100, hours: 9, incentive: 'met', expiresInDays: 30 });
+            const errors = validateEntity('shift', params);
+            if (errors.length || !schema.\$id) { console.error(errors); process.exit(1); }
+          "
+          npx --no-install nexora | grep -q audit
       - name: Portable build is one self-contained file
         run: |
           test -f web/dist-portable/nexora.html

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S npx tsx
+#!/usr/bin/env node
 /**
  * nexora — read the public gig-worker ledger straight from Arkiv. No Nexora server, account or
  * wallet involved: if nexora's website disappeared tomorrow, this still works.
@@ -10,6 +10,7 @@
  *   nexora show      <entityKey>
  *   nexora lists
  *   nexora verify    re-check every feature recorded in arkiv/evidence.json against the chain
+ *   nexora audit     check every Nexora entity on chain against the JSON Schemas and for personal data [--json]
  *   nexora watch     live feed of new entries over WebSocket
  *
  *   --rpc <url>      use another Arkiv node (default: Tiramisu public RPC)
@@ -19,8 +20,9 @@ import { getAddress, type Address, type Hex } from "viem";
 import {
   HOURS_BAND_LABELS, comparePlatforms, entryPredicate, explainError, fetchEntries, fetchEntry, fetchIncidents,
   fetchShifts, fetchTrustList, fetchTrustLists, getEntityOrNull, incidentStats, liveClient, queryText, readClient,
-  type EntryFilters, type IncidentFilters, type ShiftFilters,
+  fetchRawEntities, type EntryFilters, type IncidentFilters, type ShiftFilters,
 } from "./src/index.ts";
+import { auditEntities } from "./src/contract.ts";
 
 const [command = "help", ...rest] = process.argv.slice(2);
 const flags = new Map<string, string | true>();
@@ -66,6 +68,7 @@ async function commonFlags(): Promise<EntryFilters> {
 }
 
 const rupees = (n: number) => `₹${n}`;
+const EVIDENCE_URL = "https://raw.githubusercontent.com/GuTS805/Nexora/main/arkiv/evidence.json";
 
 try {
 switch (command) {
@@ -133,8 +136,16 @@ switch (command) {
   }
   case "verify": {
     // Re-check the seed script's recorded evidence against the chain (same checks as the Proof page).
-    const file = new URL("../arkiv/evidence.json", import.meta.url);
-    const evidence = JSON.parse(readFileSync(file, "utf8")) as { features: Record<string, Record<string, unknown>> };
+    // From a clone, the repo's copy; from the npm package (which does not ship it), the published one.
+    let text: string;
+    try {
+      text = readFileSync(new URL("../arkiv/evidence.json", import.meta.url), "utf8");
+    } catch {
+      const response = await fetch(EVIDENCE_URL);
+      if (!response.ok) throw new Error(`could not fetch ${EVIDENCE_URL}: HTTP ${response.status}`);
+      text = await response.text();
+    }
+    const evidence = JSON.parse(text) as { features: Record<string, Record<string, unknown>> };
     const steps = Object.entries(evidence.features);
     if (steps.length === 0) console.log("no recorded evidence yet: run npm run seed with a funded wallet");
     for (const [name, step] of steps) {
@@ -152,6 +163,29 @@ switch (command) {
         entity !== null && !!entityFlags?.readonly;
       console.log(`${verdict ? "ok  " : "FAIL"} ${name}: ${key}${entity ? ` creator ${entity.creator}` : " (gone)"}`);
     }
+    break;
+  }
+  case "audit": {
+    const page = await fetchRawEntities(client);
+    if (page.truncated) throw new Error("more entities than one audit reads; nothing was judged");
+    const report = auditEntities(page.raw);
+    if (flags.has("json")) {
+      json({ query: page.query, blockNumber: page.blockNumber, ...report });
+    } else {
+      console.log(`query @ block ${page.blockNumber}:\n  ${page.query}\n`);
+      console.log(`${report.checked} entities claim to be Nexora data`);
+      console.log(`  shown by readers: ${report.shown.shift} earnings days, ${report.shown.incident} incidents, ${report.shown.trust_list} trust lists`);
+      console.log(`  rejected by readers (never shown or counted): ${report.rejected.length}`);
+      for (const r of report.rejected) console.log(`    ${r.key}  ${r.reason}`);
+      console.log(`\nstrict schema + personal-data scan over every shown entry: ${report.violations.length} violation(s)`);
+      for (const v of report.violations) console.log(`  FAIL ${v.kind} ${v.key} by ${v.creator}${v.demo ? " (demo)" : ""}\n       ${v.problems.join("\n       ")}`);
+      const { real, demo } = report.linkability;
+      console.log("\nincident wallets that also wrote earnings (so a report can be linked to pay):");
+      console.log(`  workers' entries: ${real.alsoWroteEarnings.length} of ${real.incidentWallets}`);
+      console.log(`  demo data: ${demo.alsoWroteEarnings.length} of ${demo.incidentWallets} (seed wallets write both by design; the app defaults to a one-time wallet)`);
+      console.log(report.passed ? "\nPASS: every entry readers show follows the published contract and carries no personal data in clear text" : "\nFAIL");
+    }
+    if (!report.passed) process.exitCode = 1;
     break;
   }
   case "lists": {
@@ -187,7 +221,7 @@ switch (command) {
     break;
   }
   default:
-    console.log("commands: earnings | compare --city <c> | incidents | show <key> | lists | watch | verify   (see header of ledger/cli.ts)");
+    console.log("commands: earnings | compare --city <c> | incidents | show <key> | lists | watch | verify | audit   (see header of ledger/cli.ts)");
 }
 } catch (error) {
   console.error(`error: ${explainError(error)}`);

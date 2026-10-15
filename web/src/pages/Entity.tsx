@@ -1,6 +1,6 @@
 import { readIncidents, readTrustList } from "../cache.ts";
 import { ExpirationTime } from "@arkiv-network/sdk";
-import { explainError, EXTEND_DAYS, HOURS_BAND_LABELS, blockToDate, fetchEntry, resolvedReports, unseal, type Incident, type PrivateDetails } from "@nexora/ledger";
+import { explainError, EXTEND_DAYS, HOURS_BAND_LABELS, blockToDate, fetchEntry, resolvedReports, unseal, type Incident, type PrivateDetails } from "nexora-ledger";
 import { useState } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";

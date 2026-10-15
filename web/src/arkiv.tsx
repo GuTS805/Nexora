@@ -1,7 +1,7 @@
 import { clearReads } from "./cache.ts";
 import { createWalletClient, type WalletArkivClient } from "@arkiv-network/sdk";
 import { tiramisu } from "@arkiv-network/sdk/chains";
-import { TIRAMISU_RPC, arkivHttp, readClient } from "@nexora/ledger";
+import { TIRAMISU_RPC, arkivHttp, readClient } from "nexora-ledger";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { custom, formatEther, parseEther, type Address, type EIP1193Provider } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";

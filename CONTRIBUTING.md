@@ -26,7 +26,11 @@ npm run test:ui       # headless Chrome; needs Chrome installed
 npm run check:secrets
 ```
 
-CI runs the same checks on every pull request.
+CI runs the same checks on every pull request, and also packs the npm package and installs it into a clean project.
+
+Changed anything in [`ledger/src/schema.ts`](ledger/src/schema.ts)? Run `npm run schemas -w nexora-ledger` and commit the regenerated [`arkiv/schema/*.schema.json`](arkiv/schema); a test fails until you do. To check live data against the contract yourself, run `npm run cli -- audit`.
+
+Tests live next to what they test: [`ledger/test`](ledger/test) has one file per module (`codec`, `contract`, `queries`, `insights`, `seal`, …) sharing [`fixtures.ts`](ledger/test/fixtures.ts), and [`web/api`](web/api) covers the server functions.
 
 ## Good first contributions
 

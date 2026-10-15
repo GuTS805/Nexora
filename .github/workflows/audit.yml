@@ -1,0 +1,32 @@
+name: privacy audit
+
+# Holds every Nexora entity on Arkiv Tiramisu to the published JSON Schemas and scans it for
+# personal data. Runs against live chain data, so it is separate from CI: a failure here means
+# something on chain, not in the code, needs attention.
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["ledger/**", "arkiv/schema/**", ".github/workflows/audit.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Audit live data
+        # Optional repository secret: the public RPC with an Arkiv Hub key appended. Without it the
+        # public endpoint is used, which can rate-limit shared runner IPs.
+        env:
+          ARKIV_RPC_URL: ${{ secrets.ARKIV_RPC_URL }}
+        run: npm run cli -- audit

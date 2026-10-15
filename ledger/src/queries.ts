@@ -248,6 +248,16 @@ async function collect(client: PublicArkivClient, expression: Expression, maxIte
   return { raw: raw.slice(0, maxItems), blockNumber, truncated: page.hasNextPage() || raw.length > maxItems };
 }
 
+/**
+ * Every entity that claims to be Nexora data (`app = "nexora"`), any kind, version or demo flag,
+ * undecoded. This is what an audit needs: what is actually on chain, before any reader filters it.
+ */
+export async function fetchRawEntities(client: PublicArkivClient, maxItems = 2_000) {
+  const expression = eq("app", str(APP));
+  const page = await collect(client, expression, maxItems);
+  return { ...page, query: queryText(expression) };
+}
+
 function chunks<T>(list: readonly T[] | undefined): (readonly T[] | undefined)[] {
   if (!list || list.length <= MAX_OR_BRANCHES) return [list];
   const out: T[][] = [];

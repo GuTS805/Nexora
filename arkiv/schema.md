@@ -5,6 +5,10 @@ SDK: `@arkiv-network/sdk` **0.8.1**. The contract is implemented in [`ledger/src
 
 Every Nexora entity carries `app = "nexora"`, `kind`, and `v = 1`. Readers **must** validate entities against this document before using them: anyone can write an entity that claims `app = "nexora"`. The reference decoder rejects anything outside the vocabularies below, and the UI reports how many entities it rejected.
 
+**Machine-checkable copy.** [`schema/shift.schema.json`](schema/shift.schema.json), [`schema/incident.schema.json`](schema/incident.schema.json) and [`schema/trust-list.schema.json`](schema/trust-list.schema.json) are JSON Schema (2020-12) for each entity kind. They are checked against the entity's content type, creation flags, typed attributes (`{ "type": "str" | "i32" | "bool" | "key", "value": … }`, as the SDK reads them) and decoded JSON payload. They are generated from the same constants as the codec ([`ledger/src/contract.ts`](../ledger/src/contract.ts), `npm run schemas -w nexora-ledger`), and a test fails if the committed files fall behind. They are strict: every attribute is listed and nothing else is allowed. Readers are more forgiving and ignore unknown attributes, so a stricter check is needed.
+
+**Public privacy audit.** `nexora audit` (in the CLI and the npm package) reads every entity with `app = "nexora"`, holds each entry readers would show to these schemas, and scans every clear-text string for phone numbers, email addresses and 12-digit ID numbers. It also reports how many incident wallets also wrote earnings, which would let a report be linked to pay. It exits non-zero on any violation. The [audit workflow](../.github/workflows/audit.yml) runs it every day.
+
 ## Shared vocabularies
 
 | Name | Values |

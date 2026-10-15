@@ -1,24 +1,46 @@
 {
-  "name": "@nexora/ledger",
-  "version": "0.1.0",
-  "description": "Open data contract for Nexora gig-worker earnings and incident entities on Arkiv: schema, codec, sealing, queries and insights.",
+  "name": "nexora-ledger",
+  "version": "0.2.0",
+  "description": "Open data contract for Nexora gig-worker earnings and incident entities on Arkiv: JSON Schemas, codec, sealing, queries, insights and a public privacy audit.",
   "license": "MIT",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "repository": { "type": "git", "url": "git+https://github.com/GuTS805/Nexora.git", "directory": "ledger" },
+  "homepage": "https://github.com/GuTS805/Nexora/tree/main/ledger#readme",
+  "bugs": "https://github.com/GuTS805/Nexora/issues",
+  "keywords": ["arkiv", "gig-workers", "india", "open-data", "privacy", "json-schema"],
+  "engines": { "node": ">=20" },
+  "sideEffects": false,
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "nexora-source": "./src/index.ts",
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./contract": {
+      "nexora-source": "./src/contract.ts",
+      "types": "./dist/src/contract.d.ts",
+      "default": "./dist/src/contract.js"
+    },
+    "./schema/*.json": "./schema/*.json"
   },
   "bin": {
-    "nexora": "./cli.ts"
+    "nexora": "./dist/cli.js"
   },
+  "files": ["dist", "schema", "README.md", "LICENSE"],
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "cli": "tsx cli.ts"
+    "cli": "tsx cli.ts",
+    "schemas": "tsx write-schemas.ts",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "prepack": "npm run build && node -e \"const fs=require('fs');fs.cpSync('../arkiv/schema','schema',{recursive:true});fs.copyFileSync('../LICENSE','LICENSE')\"",
+    "prepublishOnly": "npm run typecheck && npm test"
   },
   "dependencies": {
     "@arkiv-network/sdk": "0.8.1",
+    "ajv": "^8.20.0",
     "viem": "^2.57.4"
   },
   "devDependencies": {

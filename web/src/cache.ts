@@ -2,7 +2,7 @@ import type { PublicArkivClient } from "@arkiv-network/sdk";
 import {
   fetchEntries, fetchIncidents, fetchShifts, fetchTrustList, fetchTrustLists,
   type EntryFilters, type IncidentFilters, type ShiftFilters,
-} from "@nexora/ledger";
+} from "nexora-ledger";
 import type { Hex } from "viem";
 
 /**

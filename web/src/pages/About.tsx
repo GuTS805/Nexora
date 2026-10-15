@@ -1,4 +1,4 @@
-import { TIRAMISU_RPC } from "@nexora/ledger";
+import { TIRAMISU_RPC } from "nexora-ledger";
 import { useState, type ReactNode } from "react";
 import { Cube, Icon, PATHS } from "../art.tsx";
 import { useArkiv } from "../arkiv.tsx";
@@ -72,7 +72,7 @@ const EN: Copy = {
     ways: [
       ["Command line", <>Same numbers, no website: <code>npx tsx ledger/cli.ts compare --demo --city delhi_ncr --work cab</code></>],
       ["Any Arkiv client", <>The contract is in <a href={`${REPO}/blob/main/arkiv/schema.md`} target="_blank" rel="noreferrer">arkiv/schema.md</a>; <a href={`${REPO}/blob/main/examples/read-without-nexora.mjs`} target="_blank" rel="noreferrer">examples/read-without-nexora.mjs</a> reads it with only the official SDK.</>],
-      ["Typed library", <><code>@nexora/ledger</code>: codecs, sealing, queries and the confirmation rules the app itself uses, with tests.</>],
+      ["Typed library", <><code>nexora-ledger</code>: codecs, sealing, queries and the confirmation rules the app itself uses, with tests.</>],
       ["Checked in public", <>Every push runs typecheck, tests, a headless-browser UI test and a dependency audit on <a href={`${REPO}/actions`} target="_blank" rel="noreferrer">GitHub Actions</a>.</>],
     ],
     contribute: <>Want your city, your platform or your language? Read <a href={`${REPO}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noreferrer">CONTRIBUTING.md</a>, or <a href={`${REPO}/issues/new/choose`} target="_blank" rel="noreferrer">open an issue</a>.</>,
@@ -129,7 +129,7 @@ const HI: Copy = {
     ways: [
       ["कमांड लाइन", <>वेबसाइट के बिना वही आँकड़े: <code>npx tsx ledger/cli.ts compare --demo --city delhi_ncr --work cab</code></>],
       ["कोई भी Arkiv ऐप", <>ढाँचा <a href={`${REPO}/blob/main/arkiv/schema.md`} target="_blank" rel="noreferrer">arkiv/schema.md</a> में है; <a href={`${REPO}/blob/main/examples/read-without-nexora.mjs`} target="_blank" rel="noreferrer">examples/read-without-nexora.mjs</a> इसे सिर्फ़ आधिकारिक SDK से पढ़ता है।</>],
-      ["टाइप्ड लाइब्रेरी", <><code>@nexora/ledger</code>: कोडेक, सीलिंग, क्वेरी और पक्का मानने के वही नियम जो ऐप खुद इस्तेमाल करता है, टेस्ट के साथ।</>],
+      ["टाइप्ड लाइब्रेरी", <><code>nexora-ledger</code>: कोडेक, सीलिंग, क्वेरी और पक्का मानने के वही नियम जो ऐप खुद इस्तेमाल करता है, टेस्ट के साथ।</>],
       ["सबके सामने जाँच", <>हर बदलाव पर <a href={`${REPO}/actions`} target="_blank" rel="noreferrer">GitHub Actions</a> टाइपचेक, टेस्ट, हेडलेस-ब्राउज़र UI टेस्ट और डिपेंडेंसी ऑडिट चलाता है।</>],
     ],
     contribute: <>अपना शहर, प्लेटफ़ॉर्म या भाषा चाहिए? <a href={`${REPO}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noreferrer">CONTRIBUTING.md</a> पढ़िए, या <a href={`${REPO}/issues/new/choose`} target="_blank" rel="noreferrer">इश्यू खोलिए</a>।</>,
