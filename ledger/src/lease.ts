@@ -4,6 +4,18 @@ import { TRUST_LIST_DAYS } from "./schema.ts";
 export const BLOCKS_PER_DAY = 43_200;
 
 /**
+ * Any entity used as a lease: it lives `days` from when its owner last renewed it. Returns the block
+ * to renew to (`extendEntity` with `ExpirationTime.atBlock(target)`), or null when that would not
+ * move the expiry later, because the node reverts an extension that does not extend. Nothing here is
+ * specific to Nexora; it fits any Arkiv entity that should lapse unless someone keeps renewing it.
+ */
+export function leaseRenewal(expiresAt: bigint, currentBlock: bigint, days: number): bigint | null {
+  if (!Number.isInteger(days) || days <= 0) throw new Error("A lease needs a whole, positive number of days.");
+  const target = currentBlock + BigInt(days * BLOCKS_PER_DAY);
+  return target > expiresAt ? target : null;
+}
+
+/**
  * A trust list is a lease. Vouching for workers should lapse when the group behind it stops
  * curating, or no longer exists, instead of vouching forever. So a list lives TRUST_LIST_DAYS from
  * when its curator last renewed it, and only the curator can renew it (the list is created without
@@ -14,6 +26,5 @@ export const BLOCKS_PER_DAY = 43_200;
  * that does not extend.
  */
 export function trustRenewal(expiresAt: bigint, currentBlock: bigint): bigint | null {
-  const target = currentBlock + BigInt(TRUST_LIST_DAYS * BLOCKS_PER_DAY);
-  return target > expiresAt ? target : null;
+  return leaseRenewal(expiresAt, currentBlock, TRUST_LIST_DAYS);
 }

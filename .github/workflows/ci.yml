@@ -44,6 +44,8 @@ jobs:
             if (errors.length || !schema.\$id) { console.error(errors); process.exit(1); }
           "
           npx --no-install nexora | grep -q audit
+      - name: The published npm package works for a stranger (public registry, empty config, no credentials)
+        run: node scripts/registry-consumer.mjs
       - name: Portable build is one self-contained file
         run: |
           test -f web/dist-portable/nexora.html

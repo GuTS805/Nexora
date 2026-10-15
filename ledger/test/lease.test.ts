@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BLOCKS_PER_DAY, TRUST_LIST_DAYS, trustRenewal } from "../src/index.ts";
+import { BLOCKS_PER_DAY, TRUST_LIST_DAYS, leaseRenewal, trustRenewal } from "../src/index.ts";
 
 const LEASE = BigInt(TRUST_LIST_DAYS * BLOCKS_PER_DAY);
 
@@ -16,5 +16,13 @@ describe("trust list lease", () => {
     expect(trustRenewal(now + LEASE, now)).toBeNull();
     expect(trustRenewal(now + LEASE + 5n, now)).toBeNull();
     expect(trustRenewal(now + LEASE - 1n, now)).toBe(now + LEASE);
+  });
+
+  it("works as a lease of any length for any entity, and refuses a nonsense length", () => {
+    const now = 1_000_000n;
+    expect(leaseRenewal(now, now, 7)).toBe(now + 7n * BigInt(BLOCKS_PER_DAY));
+    expect(leaseRenewal(now + 8n * BigInt(BLOCKS_PER_DAY), now, 7)).toBeNull();
+    expect(() => leaseRenewal(now, now, 0)).toThrow();
+    expect(() => leaseRenewal(now, now, 1.5)).toThrow();
   });
 });

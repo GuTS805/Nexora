@@ -153,7 +153,19 @@ const { items, rejected } = await fetchShifts(readClient(), { city: "pune", incl
 console.log(`${items.length} valid days, ${rejected.length} rejected by the contract`);
 ```
 
-The contract is also machine-checkable: [`arkiv/schema/`](arkiv/schema) holds JSON Schema (2020-12) files for each entity kind, generated from the same constants as the codec, and usable from any language. `nexora audit` holds every entry on chain to them and scans for personal data; the [privacy audit workflow](.github/workflows/audit.yml) runs it daily. Start with the [SDK-only reader](examples/read-without-nexora.mjs), then follow [CONTRIBUTING.md](CONTRIBUTING.md).
+The contract is also machine-checkable: [`arkiv/schema/`](arkiv/schema) holds JSON Schema (2020-12) files for each entity kind, generated from the same constants as the codec, and usable from any language. `nexora audit` holds every entry on chain to them and scans for personal data; the [privacy audit workflow](.github/workflows/audit.yml) runs it daily. Start with the [SDK-only reader](examples/read-without-nexora.mjs), then follow [CONTRIBUTING.md](CONTRIBUTING.md). The contract is written as a specification, with conformance rules for writers and readers and a versioning policy, in [`arkiv/schema.md`](arkiv/schema.md#conformance).
+
+Parts of `nexora-ledger` are useful to **any Arkiv app**, whatever its data. [`examples/any-arkiv-app.mjs`](examples/any-arkiv-app.mjs) uses them on an entity another team published for its own app:
+
+| Helper | What it does for any Arkiv app |
+| --- | --- |
+| `readClient(rpc?, fallback?)`, `arkivHttp(rpc?)` | A read client whose transport fails fast on the public RPC's `429` instead of honouring a half-hour `Retry-After` (friction F6). |
+| `withReadFallback(rpc, fallbackUrl)` | Direct reads first; only after a `429` are queries sent to your own cached relay, until the budget resets. |
+| `isRateLimited(error)`, `explainError(error)` | Tell a rate limit from other failures, through viem's wrapping, and turn either into one readable line. |
+| `blockAtDate(client, date)`, `entityAtBlock(client, key, block)` | What any entity looked like at a past moment, including one deleted or expired since. Finds the block from timestamps, because block times are not constant. |
+| `memberChanges(before, after)` | Who joined and who left an address list between two readings. |
+| `createLocked(reader, wallet, owner, params)`, `isLocked`, `NOBODY` | Create an entity and hand it to `0x…dEaD` in one atomic batch, so nobody can delete it early. Works around the SDK example that no single client can run (friction F7). |
+| `leaseRenewal(expiresAt, block, days)` (0.4.0) | Use any entity as a lease: the block to renew to, or `null` when renewing would add no time (the node reverts that). |
 
 ## Limits and status
 

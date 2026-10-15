@@ -33,6 +33,22 @@ To read what was on record at a past time, `blockAtDate(client, date)` finds the
 
 Replies to a report (from a union, a worker group or the platform) come from `fetchReplies(client, { parent: reportKey })`. `repliesTo(report, replies, trusted?)` leaves out the reporter's own wallet and, given a set of wallets, keeps only theirs.
 
+## General Arkiv helpers (not tied to Nexora)
+
+Some of the library is useful to any Arkiv app, whatever its data:
+
+| Helper | What it does for any Arkiv app |
+| --- | --- |
+| `readClient(rpc?, fallback?)`, `arkivHttp(rpc?)` | A read client whose transport fails fast on the public RPC's `429` instead of honouring a half-hour `Retry-After` (friction F6). |
+| `withReadFallback(rpc, fallbackUrl)` | Direct reads first; only after a `429` are queries sent to your own cached relay, until the budget resets. |
+| `isRateLimited(error)`, `explainError(error)` | Tell a rate limit from other failures, through viem's wrapping, and turn either into one readable line. |
+| `blockAtDate(client, date)`, `entityAtBlock(client, key, block)` | What any entity looked like at a past moment, including one deleted or expired since. Finds the block from timestamps, because block times are not constant. |
+| `memberChanges(before, after)` | Who joined and who left an address list between two readings. |
+| `createLocked(reader, wallet, owner, params)`, `isLocked`, `NOBODY` | Create an entity and hand it to `0x…dEaD` in one atomic batch, so nobody can delete it early. Works around the SDK example that no single client can run (friction F7). |
+| `leaseRenewal(expiresAt, block, days)` (0.4.0) | Use any entity as a lease: the block to renew to, or `null` when renewing would add no time (the node reverts that). |
+
+[`examples/any-arkiv-app.mjs`](https://github.com/GuTS805/Nexora/blob/main/examples/any-arkiv-app.mjs) uses them on an entity another team published for its own app. CI installs this package from the public registry into an empty folder and runs that example, so what is on npm is what is tested.
+
 ## Check (JSON Schema and privacy audit)
 
 ```js

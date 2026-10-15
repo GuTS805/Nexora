@@ -1,4 +1,6 @@
-# Nexora data contract on Arkiv (schema v1)
+# Nexora Ledger v1: an open data contract on Arkiv
+
+This is a specification, not only a description of one app. Any team can write entries that Nexora (and every other conforming reader) shows, or build its own reader, from this page alone, without asking us and without our code. The key words **MUST**, **MUST NOT** and **SHOULD** are used as in RFC 2119.
 
 Network: **Tiramisu testnet**, chain ID `7738577`, RPC `https://rpc.tiramisu.db-chain.testnet.arkiv.network`.
 SDK: `@arkiv-network/sdk` **0.8.1**. The contract is implemented in [`ledger/src/schema.ts`](../ledger/src/schema.ts) (vocabularies, banding), [`ledger/src/codec.ts`](../ledger/src/codec.ts) (writes and validation) and [`ledger/src/queries.ts`](../ledger/src/queries.ts) (reads). The web app, the CLI and the seed script all go through these files, so they write identical entity shapes.
@@ -8,6 +10,35 @@ Every Nexora entity carries `app = "nexora"`, `kind`, and `v = 1`. Readers **mus
 **Machine-checkable copy.** [`schema/shift.schema.json`](schema/shift.schema.json), [`schema/incident.schema.json`](schema/incident.schema.json), [`schema/reply.schema.json`](schema/reply.schema.json) and [`schema/trust-list.schema.json`](schema/trust-list.schema.json) are JSON Schema (2020-12) for each entity kind. They are checked against the entity's content type, creation flags, typed attributes (`{ "type": "str" | "i32" | "bool" | "key", "value": … }`, as the SDK reads them) and decoded JSON payload. They are generated from the same constants as the codec ([`ledger/src/contract.ts`](../ledger/src/contract.ts), `npm run schemas -w nexora-ledger`), and a test fails if the committed files fall behind. They are strict: every attribute is listed and nothing else is allowed. Readers are more forgiving and ignore unknown attributes, so a stricter check is needed.
 
 **Public privacy audit.** `nexora audit` (in the CLI and the npm package) reads every entity with `app = "nexora"`, holds each entry readers would show to these schemas, and scans every clear-text string for phone numbers, email addresses and 12-digit ID numbers. It also reports how many incident wallets also wrote earnings, which would let a report be linked to pay. It exits non-zero on any violation. The [audit workflow](../.github/workflows/audit.yml) runs it every day.
+
+## Conformance
+
+**A conforming writer:**
+
+1. MUST set `app = "nexora"` (str), `kind` (str, one of `shift`, `incident`, `reply`, `trust_list`) and `v = 1` (i32) on every entity.
+2. MUST use only the attributes listed below for that kind, with the listed types and values from the closed vocabularies, and MUST NOT add others. The JSON Schemas reject extra attributes, because an extra attribute is how a name or phone number would leak.
+3. MUST publish hours only as `hours_band`, take-home per hour rounded to ₹10 and cost share rounded to 10%. Exact rupees, hours and free text MUST NOT appear in clear text; they MAY go into a sealed box (AES-256-GCM, PBKDF2-SHA256, see `seal.ts`).
+4. MUST use content type `application/json` and a payload of at most 4 KB in the shape given for the kind.
+5. MUST create shifts, incidents and replies with `readonly = true` and `permissionlessExtension = true`, and trust lists with both `false`.
+6. SHOULD publish incident reports from a fresh one-time wallet, so a report cannot be joined to the author's earnings by `$creator`.
+7. SHOULD check every entity before sending it: `validateEntity(kind, params)` from `nexora-ledger/contract`, or any JSON Schema 2020-12 validator with the files in [`schema/`](schema).
+
+**A conforming reader:**
+
+1. MUST validate every entity against this contract and leave out those that fail, because anyone can write an entity that claims `app = "nexora"`. It SHOULD show how many it left out. It MAY ignore attributes it does not know.
+2. MUST take authorship from Arkiv's `$creator`, never from an attribute.
+3. SHOULD count distinct `$creator` wallets, not entities, and call a figure confirmed only when at least two wallets back it (two members, when a trust list is applied).
+4. MUST treat a reply as a claim by its own `$creator`. Only an update from the report's own `$creator` marks a report resolved.
+5. SHOULD tell its users that deletion and expiry remove an entry from the current state, not from history (friction F9).
+
+**Checking a deployment:** `npx -p nexora-ledger nexora audit` holds every entity on chain that claims `app = "nexora"` to the strict schemas and scans it for personal data. Anyone can run it against anyone's entries.
+
+**Versioning.**
+
+- A new value in a vocabulary (a city, a platform, a kind of work) keeps `v = 1`. Readers that do not know the value reject those entities rather than misread them, so nothing is ever misinterpreted, and they pick the value up when they update.
+- Anything else, such as a new, renamed or retyped attribute, or a changed meaning or rounding, is `v = 2`.
+- `v` is part of every query, so v1 and v2 entities coexist on chain. A reader that understands both queries each version and decodes each with its own rules.
+- The v1 JSON Schemas require `v = 1`, so a v2 entity never passes a v1 check by accident.
 
 ## Shared vocabularies
 
