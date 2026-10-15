@@ -67,7 +67,11 @@ try {
   const pending = new Map();
   ws.addEventListener("message", (event) => {
     const message = JSON.parse(event.data);
-    if (message.id) pending.get(message.id)?.(message);
+    if (message.id) {
+      // Only call back what this script registered: CDP ids are numbers we issued, never names.
+      const resolve = typeof message.id === "number" ? pending.get(message.id) : undefined;
+      if (typeof resolve === "function") resolve(message);
+    }
     else if (message.method === "Runtime.exceptionThrown") errors.push(message.params.exceptionDetails.exception?.description ?? message.params.exceptionDetails.text);
   });
   const send = (method, params = {}) => new Promise((r) => {
