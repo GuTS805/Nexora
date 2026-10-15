@@ -6,7 +6,7 @@
  *
  * Private keys are written only to the gitignored `.env.local` and never printed.
  */
-import { appendFileSync, existsSync, readFileSync } from "node:fs";
+import { appendFileSync, readFileSync } from "node:fs";
 import { createWalletClient } from "@arkiv-network/sdk";
 import { tiramisu } from "@arkiv-network/sdk/chains";
 import { formatEther, parseEther } from "viem";
@@ -18,7 +18,13 @@ import { ENV_FILE, SEED_KEY_NAMES, SPAMMER_KEY_NAME, SPONSOR_KEY_NAME, loadEnv, 
 loadEnv();
 // GLM each seed wallet is topped up to; raise SEED_FUND_GLM if the seed runs out of gas.
 const SEED_TARGET = parseEther(process.env.SEED_FUND_GLM ?? "0.05");
-const existing = existsSync(ENV_FILE) ? readFileSync(ENV_FILE, "utf8") : "";
+// Read directly instead of checking first, so nothing can change the file between check and read.
+let existing = "";
+try {
+  existing = readFileSync(ENV_FILE, "utf8");
+} catch (error) {
+  if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+}
 const roles: [string, string][] = [
   [SPONSOR_KEY_NAME, "sponsor: gas sponsor for visitors' burner wallets + funds seed wallets"],
   ...SEED_KEY_NAMES.map((name, i) => [name, name === SPAMMER_KEY_NAME ? `seed worker ${i + 1}: deliberate spammer (synthetic)` : `seed worker ${i + 1}: synthetic demo worker`] as [string, string]),

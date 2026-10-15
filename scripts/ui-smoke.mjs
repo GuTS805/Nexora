@@ -139,9 +139,11 @@ try {
   cleanup();
 }
 
-for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"} ${r.name}${r.detail ? ` (${r.detail})` : ""}`);
-for (const s of skipped) console.log(`SKIP ${s}`);
-if (errors.length) console.log(`page errors:\n${errors.join("\n")}`);
+// Details and errors come from the page under test; keep each on one line so they cannot forge log entries.
+const oneLine = (value) => String(value).replace(/[\r\n\u2028\u2029]+/g, " ");
+for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"} ${oneLine(r.name)}${r.detail ? ` (${oneLine(r.detail)})` : ""}`);
+for (const s of skipped) console.log(`SKIP ${oneLine(s)}`);
+if (errors.length) console.log(`page errors:\n${errors.map(oneLine).join("\n")}`);
 const failed = results.filter((r) => !r.ok).length + errors.length;
 console.log(failed ? `${failed} problem(s)` : `all ${results.length} checks passed`);
 process.exitCode = failed ? 1 : 0;
