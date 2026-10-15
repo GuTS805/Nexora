@@ -177,7 +177,8 @@ a { text-decoration-color: color-mix(in srgb, var(--accent), transparent 55%); }
   border-bottom: 1px solid #3c291c; box-shadow: 0 2px 18px #0008;
 }
 :root[data-theme="light"] .top { background: #fffaf4; }
-.brand { font-size: 19px; letter-spacing: -.035em; white-space: nowrap; }
+.brand { display: inline-flex; align-items: center; gap: 8px; font-size: 19px; letter-spacing: -.035em; white-space: nowrap; }
+.brand img { flex: none; width: 34px; height: 34px; margin-right: 1px; }
 .brand span { color: var(--accent); }
 .top nav { gap: 5px; margin-left: 27px; }
 .top nav a { color: #ddd4cf; padding: 8px 18px; font-size: 13px; }

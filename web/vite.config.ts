@@ -66,6 +66,11 @@ function inlineEverything(): Plugin {
           const tag = new RegExp(`<link[^>]*href="[^"]*${file.fileName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*>`);
           source = source.replace(tag, () => `<style>${String(file.source)}</style>`);
           delete bundle[name];
+        } else if (file.type === "asset" && file.fileName.endsWith(".png") && source.includes(file.fileName)) {
+          // The favicon is linked from index.html, which Vite never inlines on its own.
+          const uri = `data:image/png;base64,${Buffer.from(file.source).toString("base64")}`;
+          source = source.split(`./${file.fileName}`).join(uri);
+          delete bundle[name];
         }
       }
       html.source = source;

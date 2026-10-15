@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.png">
+    <img src="docs/assets/logo-light.png" alt="Nexora ledger" width="260">
+  </picture>
+</p>
+
 # Nexora Ledger
 
 [![ci](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml/badge.svg)](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE) [![Data on Arkiv](https://img.shields.io/badge/data-Arkiv%20Tiramisu-ff8424.svg)](arkiv/schema.md) [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)

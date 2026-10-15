@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Hex } from "viem";
+import mark from "./assets/mark.png";
 import { useI18n } from "./i18n.tsx";
 import { store } from "./storage.ts";
 import { About } from "./pages/About.tsx";
@@ -56,7 +57,7 @@ export function App() {
   return (
     <>
       <header className="top">
-        <a href="#/" className="brand">Nexora <span>ledger</span></a>
+        <a href="#/" className="brand"><img src={mark} alt="" width="34" height="34" />Nexora <span>ledger</span></a>
         <nav>
           {nav.map(([path, label]) => <a key={path} href={`#${path}`} className={route === path ? "active" : ""}>{label}</a>)}
         </nav>
