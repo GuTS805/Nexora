@@ -9,7 +9,7 @@
 // Set ARKIV_RPC_URL to use a keyed RPC.
 import { blockAtDate, entityAtBlock, explainError, getEntityOrNull, isLocked, readClient } from "nexora-ledger";
 
-const [key = "0x87b3ca310af2954ed6902b69a94877d06fd25912d7b98c4601929730dd83a85d", ...moments] = process.argv.slice(2);
+const [entity = "0x87b3ca310af2954ed6902b69a94877d06fd25912d7b98c4601929730dd83a85d", ...moments] = process.argv.slice(2);
 const when = moments.length ? moments : ["2026-10-15T19:46:00Z", "2026-10-15T19:48:00Z"];
 
 // A read client whose transport fails fast on the public RPC's 429 instead of hanging (friction F6).
@@ -24,7 +24,7 @@ try {
       console.log(`${date.toISOString()}: before the chain began`);
       continue;
     }
-    const then = await entityAtBlock(client, key, block);
+    const then = await entityAtBlock(client, entity, block);
     if (!then) {
       console.log(`${date.toISOString()} (block ${block}): not on chain then`);
       continue;
@@ -32,7 +32,7 @@ try {
     const app = then.attributes?.app?.value ?? "(no app attribute)";
     console.log(`${date.toISOString()} (block ${block}): on record, app ${app}, created by ${then.creator}, owner ${then.owner}${isLocked(then.owner ?? "") ? " (locked: nobody can delete it)" : ""}`);
   }
-  const now = await getEntityOrNull(client, key);
+  const now = await getEntityOrNull(client, entity);
   if (!now) console.log("now: gone from the current state (deleted or expired); history above still reads it");
   else console.log(`now: still on chain, expires at block ${now.expiresAt}`);
 } catch (error) {

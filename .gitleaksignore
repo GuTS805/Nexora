@@ -1,0 +1,4 @@
+# Findings reviewed and confirmed not to be secrets (gitleaks fingerprint format: commit:file:rule:line).
+# A public Arkiv entity key (another team's published entity, readable by anyone on the explorer),
+# assigned to a variable named `key`; the variable was renamed in the next commit.
+ad48c05b03cb0305976162e8516ef4e30d3df423:examples/any-arkiv-app.mjs:generic-api-key:12
