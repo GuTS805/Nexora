@@ -461,6 +461,28 @@ select option:checked { background-color: var(--accent); color: var(--accent-ink
 .voice p { margin: 0.35rem 0 0; }
 .voice button.listening { border-color: var(--accent); color: var(--accent); }
 
+/* home: who it is for, one-tap ways in, the plain promises, a city in one tap */
+.hero .eyebrow { margin: 0 0 6px; font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--accent); }
+.steps li { position: relative; transition: border-color .15s, transform .15s; }
+.steps li span { display: flex; flex-direction: column; gap: 6px; }
+.steps li a { font-weight: 700; color: var(--accent); text-decoration: none; white-space: nowrap; }
+/* The whole card is the link. */
+.steps li a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.steps li:hover, .steps li:focus-within { border-color: var(--accent); transform: translateY(-1px); }
+.steps li a:focus-visible { outline: none; }
+.steps li:focus-within { box-shadow: 0 0 0 2px var(--accent); }
+.trust-strip { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 4px 0 0; padding: 0; font-size: 13px; color: var(--muted); }
+.trust-strip li:before { content: "✓"; margin-right: 6px; color: var(--up); font-weight: 700; }
+.city-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 10px; }
+.city-pick > span { font-size: 13px; font-weight: 600; margin-right: 4px; }
+.chip { font: inherit; padding: 7px 14px; border-radius: 999px; font-size: 14px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; }
+.chip:hover { border-color: var(--accent); }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.more-filters { margin: 0 0 8px; }
+.more-filters > summary { cursor: pointer; font-size: 13px; color: var(--muted); padding: 6px 0; }
+.more-filters > summary .badge { margin-left: 8px; }
+.more-filters[open] > summary { margin-bottom: 8px; }
+
 /* other ways to reach the app (About) */
 .escape { margin: 0.5rem 0 0; padding-left: 1.1rem; }
 .escape li { margin: 0.25rem 0; overflow-wrap: anywhere; }

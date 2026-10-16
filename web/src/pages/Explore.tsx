@@ -160,6 +160,9 @@ function LiveFeed({ onNew }: { onNew: () => void }) {
   );
 }
 
+/** Big cities offered as one-tap choices; every other city is under "More filters". */
+const QUICK_CITIES: City[] = ["delhi_ncr", "mumbai", "bengaluru", "hyderabad", "chennai", "pune", "jaipur"];
+
 export function Explore() {
   const { reader, wallet, revision, bump } = useArkiv();
   const { t, v } = useI18n();
@@ -191,23 +194,29 @@ export function Explore() {
   const latest = [...items].sort((a, b) => b.period - a.period || b.netHourly - a.netHourly).slice(0, 60);
   // The closing phrase of the tagline is highlighted, in either language.
   const tagline = t("tagline"), accent = t("taglineAccent");
+  // How many of the filters tucked under "More filters" are set, so a closed panel still says so.
+  const moreOn = [platform, work, vehicle, since !== "", day, city !== "" && !QUICK_CITIES.includes(city), source.kind !== "all", !includeDemo].filter(Boolean).length;
 
   return (
     <section className="explore-page">
       <div className="hero">
         <div className="hero-copy">
+          <p className="eyebrow">{t("heroFor")}</p>
           <p className="lead">{tagline.endsWith(accent) ? <>{tagline.slice(0, -accent.length)}<em>{accent}</em></> : tagline}</p>
           <div className="steps">
+            {/* Each card is the way in: one tap to compare, to log a day, or to report. */}
             <ol>
-              <li><Icon>{PATHS.chart}</Icon><span>{t("step1")}</span></li>
-              <li><Icon>{PATHS.list}</Icon><span>{t("step2")}</span></li>
-              <li><Icon>{PATHS.shield}</Icon><span>{t("step3")}</span></li>
+              <li><Icon>{PATHS.chart}</Icon><span>{t("step1")}<a href="#/compare">{t("step1Go")} →</a></span></li>
+              <li><Icon>{PATHS.list}</Icon><span>{t("step2")}<a href="#/log">{t("step2Go")} →</a></span></li>
+              <li><Icon>{PATHS.shield}</Icon><span>{t("step3")}<a href="#/log?tab=incident">{t("step3Go")} →</a></span></li>
             </ol>
-            <div className="row">
-              <a className="button" href="#/compare">{t("ctaAdvice")}</a>
-              <a className="button secondary" href="#/log">{t("ctaLog")}</a>
-            </div>
           </div>
+          <ul className="trust-strip">
+            <li>{t("trustNoSignup")}</li>
+            <li>{t("trustNoName")}</li>
+            <li>{t("trustNoDelete")}</li>
+            <li>{t("trustLangs")}</li>
+          </ul>
         </div>
         <div className="hero-art" aria-hidden="true">
           <div className="orbit orbit-one" /><div className="orbit orbit-two" />
@@ -217,6 +226,13 @@ export function Explore() {
       </div>
       <div className="explore-panel">
         <LiveFeed onNew={bump} />
+        <div className="city-pick" role="group" aria-label={t("pickCity")}>
+          <span>{t("pickCity")}</span>
+          <button type="button" className={city === "" ? "chip on" : "chip"} aria-pressed={city === ""} onClick={() => setCity("")}>{t("allCities")}</button>
+          {QUICK_CITIES.map((c) => <button type="button" key={c} className={city === c ? "chip on" : "chip"} aria-pressed={city === c} onClick={() => setCity(c)}>{v(c)}</button>)}
+        </div>
+        <details className="more-filters">
+        <summary>{t("moreFilters")}{moreOn > 0 && <span className="badge">{t("filtersOn", { n: moreOn })}</span>}</summary>
         <div className="filters">
           <Field label="city"><VocabSelect list={CITIES} value={city} onChange={setCity} any /></Field>
           <Field label="work"><VocabSelect list={WORK_TYPES} value={work} onChange={setWork} any /></Field>
@@ -233,6 +249,7 @@ export function Explore() {
           <SourcePicker source={source} setSource={setSource} />
         </div>
         <label className="check"><input type="checkbox" checked={includeDemo} onChange={(e) => setIncludeDemo(e.target.checked)} /> {t("showDemo")}</label>
+        </details>
         {includeDemo && <p className="small muted">{t("demoDisclaimer")}</p>}
 
         <ErrorNote error={result.error} />

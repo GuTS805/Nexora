@@ -98,6 +98,15 @@ try {
   check("language toggles to Hindi", await js(`document.querySelector(".lead")?.textContent.includes("असल कमाई")`));
   await js(`document.querySelector("button.lang").click()`);
   await sleep(300);
+  // The home page says who it is for, and each step card is a link; a city is one tap.
+  const home = await js(`({ forWho: document.querySelector(".hero .eyebrow")?.textContent ?? "", cards: [...document.querySelectorAll(".steps li a")].map((a) => a.getAttribute("href")), promises: document.querySelectorAll(".trust-strip li").length })`);
+  check("the home page says who it is for, and each step card is a one-tap way in", home?.forWho.includes("workers in India") && home.cards.join(",") === "#/compare,#/log,#/log?tab=incident" && home.promises === 4, JSON.stringify(home));
+  await js(`[...document.querySelectorAll(".city-pick .chip")].find((b) => b.textContent === "Bengaluru")?.click()`);
+  await sleep(3000);
+  if (await js(`/rate-limited|query budget/i.test(document.querySelector("main")?.innerText ?? "")`)) skipped.push("city chip (Arkiv RPC rate-limited this IP)");
+  else check("one tap on a city chip filters the query to that city", /city = str\('bengaluru'\)/.test((await js(`[...document.querySelectorAll("details.query pre")].map((p) => p.textContent).join(" | ")`)) ?? ""));
+  await js(`[...document.querySelectorAll(".city-pick .chip")].find((b) => b.textContent === "All")?.click()`);
+  await sleep(300);
   // Day length is a range over the published hours band, in the query and in the equivalent CLI command.
   await js(`(() => { const s = [...document.querySelectorAll(".filters label.field")].find((l) => l.textContent.includes("Day length"))?.querySelector("select"); s.value = "8plus"; s.dispatchEvent(new Event("change", { bubbles: true })); })()`);
   await sleep(3000);
@@ -155,6 +164,14 @@ try {
   await go("#/incidents?ui=en", 3500);
   check("incidents page renders", await js(`document.querySelector("h2")?.textContent.includes("Incidents")`));
   const limitedHere = async () => js(`/rate-limited|query budget/i.test(document.querySelector("main")?.innerText ?? "")`);
+  // Waits until a page has either rendered `selector` or shown the rate-limit notice, so a slow or
+  // rate-limited RPC is reported as a skip rather than read as a half-loaded page.
+  const settle = async (selector, tries = 30) => {
+    for (let i = 0; i < tries; i++) {
+      if (await js(`!!document.querySelector(${JSON.stringify(selector)}) || /rate-limited|query budget/i.test(document.querySelector("main")?.innerText ?? "")`)) return;
+      await sleep(500);
+    }
+  };
   if (await limitedHere()) skipped.push("printable union report (Arkiv RPC rate-limited this IP)");
   else {
     check("incidents say how many reports a union or group replied to", await js(`/\\d+ of \\d+ reports here have a reply/.test(document.querySelector(".answered")?.textContent ?? "")`));
@@ -165,7 +182,8 @@ try {
 
   // The locked incident the seed recorded: its page shows the lock and offers a complaint letter.
   const locked = evidence.features.ownership_lock?.key;
-  await go(`#/e/${locked}?ui=en`, 4000);
+  await go(`#/e/${locked}?ui=en`, 1000);
+  await settle(".replies");
   if (await limitedHere()) skipped.push("complaint letter (Arkiv RPC rate-limited this IP)");
   else {
     const page = await js(`({ lockedNote: document.querySelector("table.kv")?.innerText.includes("locked: handed to an address nobody controls"), noDelete: ![...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Delete"), letter: document.querySelector(".letter-text")?.value ?? "" })`);
@@ -185,7 +203,8 @@ try {
 
   // The day worker 2 deleted: gone from the current state, still readable as of a block before the
   // delete. The moment is fixed in UTC and typed in this browser's local time, so any timezone works.
-  await go(`#/e/${evidence.features.owner_delete?.key}?ui=en`, 4000);
+  await go(`#/e/${evidence.features.owner_delete?.key}?ui=en`, 1000);
+  await settle("details.as-of");
   const past = await js(`(async () => {
     const box = document.querySelector("details.as-of");
     if (!box?.open) return "no open past-record box";
