@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import type { Hex } from "viem";
 import mark from "./assets/mark.png";
+import cityArt from "./assets/editorial/gig-work-city.jpg";
+import incidentArt from "./assets/editorial/incident-report.jpg";
+import evidenceArt from "./assets/editorial/ledger-evidence.jpg";
+import notebookArt from "./assets/editorial/work-notebook.jpg";
+import sharedArt from "./assets/editorial/shared-records.jpg";
 import { useI18n } from "./i18n.tsx";
 import { PendingQueue } from "./pending.tsx";
 import { store } from "./storage.ts";
@@ -34,7 +39,7 @@ function useRoute() {
 export function App() {
   const { route, query } = useRoute();
   const { t, lang, setLang } = useI18n();
-  const [lightTheme, setLightTheme] = useState(() => store.get("theme") === "light");
+  const [lightTheme, setLightTheme] = useState(() => store.get("theme") !== "dark");
   useEffect(() => {
     document.documentElement.dataset.theme = lightTheme ? "light" : "dark";
     store.set("theme", lightTheme ? "light" : "dark");
@@ -44,6 +49,14 @@ export function App() {
     ["/mine", t("navMine")], ["/trust", t("navTrust")], ["/proof", t("navProof")], ["/about", t("navAbout")],
   ];
   const entity = /^\/e\/(0x[0-9a-fA-F]{64})$/.exec(route)?.[1] as Hex | undefined;
+  const sectionArt = route === "/incidents" ? incidentArt :
+    route === "/log" || route === "/mine" ? notebookArt :
+    route === "/trust" ? sharedArt :
+    route === "/compare" || entity ? evidenceArt : cityArt;
+  // Proof and How it works open with their own illustrated hero, so they get no banner.
+  const sectionLabel = route === "/compare" ? t("navCompare") : route === "/log" ? t("navLog") :
+    route === "/incidents" ? t("navIncidents") : route === "/mine" ? t("navMine") :
+    route === "/trust" ? t("navTrust") : entity ? t("navExplore") : "";
   // On phones the nav scrolls sideways; keep the current page's tab in view.
   useEffect(() => {
     document.querySelector(".top nav a.active")?.scrollIntoView({ block: "nearest", inline: "center" });
@@ -68,6 +81,10 @@ export function App() {
       </header>
       <main>
         <PendingQueue />
+        {sectionLabel && <div className="editorial-banner" aria-hidden="true">
+          <div><span>NEXORA / {sectionLabel}</span><strong>{sectionLabel}</strong></div>
+          <img src={sectionArt} alt="" />
+        </div>}
         {entity ? <Entity entityKey={entity} /> :
           route === "/compare" ? <Compare key={query} /> :
           route === "/log" ? <Log key={query} /> :

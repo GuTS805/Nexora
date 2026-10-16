@@ -8,6 +8,9 @@ import { RECOMMENDED_TRUST_LIST } from "../config.ts";
 import { Icon, PATHS } from "../art.tsx";
 import { useI18n } from "../i18n.tsx";
 import { PlatformLogo } from "../logos.tsx";
+import incidentArt from "../assets/editorial/incident-report.jpg";
+import evidenceArt from "../assets/editorial/ledger-evidence.jpg";
+import sharedArt from "../assets/editorial/shared-records.jpg";
 
 /** The months the period filter offers: this one and the five before it. */
 export function recentPeriods(now = new Date()): number[] {
@@ -218,11 +221,12 @@ export function Explore() {
             <li>{t("trustLangs")}</li>
           </ul>
         </div>
-        <div className="hero-art" aria-hidden="true">
-          <div className="orbit orbit-one" /><div className="orbit orbit-two" />
-          <div className="chart-card chart-back"><i /><i /><i /></div>
-          <div className="chart-card chart-front"><div className="chart-lines"><i /><i /></div><div className="chart-bars"><i /><i /><i /><i /><i /><i /></div><span className="chart-arrow">₹</span></div>
-        </div>
+        <div className="hero-art" aria-hidden="true" />
+      </div>
+      <div className="editorial-features">
+        <a href="#/compare"><img src={evidenceArt} alt="" loading="lazy" /><span>01 / {t("navCompare")}</span><strong>{t("navCompare")}</strong><small>{t("cardCompare")}</small></a>
+        <a href="#/incidents"><img src={incidentArt} alt="" loading="lazy" /><span>02 / {t("navIncidents")}</span><strong>{t("navIncidents")}</strong><small>{t("cardIncidents")}</small></a>
+        <a href="#/proof"><img src={sharedArt} alt="" loading="lazy" /><span>03 / {t("navProof")}</span><strong>{t("navProof")}</strong><small>{t("cardProof")}</small></a>
       </div>
       <div className="explore-panel">
         <LiveFeed onNew={bump} />

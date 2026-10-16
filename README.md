@@ -84,7 +84,11 @@ Published shifts, incidents, and replies use `readonly`. The owner can still del
 
 ## Screenshots
 
-Captured from the current local production build at 1440 × 900. The displayed example entries are **synthetic demo data**.
+Current editorial earnings page at 1440 × 900:
+
+![Nexora's editorial earnings interface with an illustrated city scene, feature links and city filters](docs/assets/earnings-editorial.png)
+
+The flow screenshots below show the earlier interface. Their example entries are **synthetic demo data**; updated captures for these flows are pending.
 
 | Earnings: compare take-home pay by city and app | Compare: inspect ranked options and underlying evidence |
 | --- | --- |
