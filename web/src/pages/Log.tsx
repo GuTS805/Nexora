@@ -8,7 +8,7 @@ import type { Hex } from "viem";
 import { useArkiv } from "../arkiv.tsx";
 import { EntityLink, Field, Hourly, TxLink, VocabSelect, WalletBar, useMonth } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
-import { enqueue, formParams, isOffline, type FormEntry } from "../queue.ts";
+import { enqueue, formParams, isOffline, randomSendTime, type FormEntry } from "../queue.ts";
 import { store } from "../storage.ts";
 import { MicButton } from "../voice.tsx";
 import { recentPeriods } from "./Explore.tsx";
@@ -88,9 +88,10 @@ function PublishPanel(props: {
   const { t } = useI18n();
   const [oneOff, setOneOff] = useState(props.defaultOneOff ?? false);
   const [lock, setLock] = useState(false);
+  const [later, setLater] = useState(false);
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
-  const [queued, setQueued] = useState(false);
+  const [queued, setQueued] = useState<"offline" | number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const sealing = props.passphrase.length > 0;
 
@@ -98,16 +99,18 @@ function PublishPanel(props: {
     setBusy(true);
     setError(null);
     setReceipt(null);
-    setQueued(false);
+    setQueued(null);
     try {
       if (!wallet && !oneOff) throw new Error(t("connectFirst"));
       if (sealing && props.passphrase.length < MIN_PASSPHRASE_LENGTH) throw new Error(t("passTooShort", { n: MIN_PASSPHRASE_LENGTH }));
       // Sealing is local, so it works offline too; the passphrase is never part of what is saved.
       const entry = props.entry(sealing ? await seal(props.sealedContent(), props.passphrase) : undefined);
       const params = formParams(entry);
-      if (isOffline()) {
-        enqueue(entry, { oneOff, lock });
-        setQueued(true);
+      // Held back to a random moment: kept on the phone, exactly as it will be published, until then.
+      if (later || isOffline()) {
+        const notBefore = later ? randomSendTime() : undefined;
+        enqueue(entry, { oneOff, lock, notBefore });
+        setQueued(notBefore ?? "offline");
         props.setPassphrase("");
         return;
       }
@@ -162,8 +165,13 @@ function PublishPanel(props: {
         <input type="checkbox" checked={lock} onChange={(e) => setLock(e.target.checked)} /> {t("lockLabel")}
       </label>
       {lock && <p className="small muted">{t("lockHelp")}</p>}
+      <label className="check">
+        <input type="checkbox" checked={later} onChange={(e) => setLater(e.target.checked)} /> {t("laterLabel")}
+      </label>
+      {later && <p className="small muted">{t("laterHelp")}</p>}
       <button disabled={(!wallet && !oneOff) || !props.valid || busy} onClick={publish}>{busy ? t("publishing") : t("publish")}</button>
-      {queued && <p className="card success" role="status">{t("offlineSaved")}</p>}
+      {queued === "offline" && <p className="card success" role="status">{t("offlineSaved")}</p>}
+      {typeof queued === "number" && <p className="card success" role="status">{t("laterSaved", { time: new Date(queued).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) })}</p>}
       <PublishResult receipt={receipt} error={error} />
     </>
   );

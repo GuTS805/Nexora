@@ -146,11 +146,13 @@ try {
   await sleep(300);
   check("incident reports default to a one-time wallet", await js(`[...document.querySelectorAll("label.check")].find(l => l.textContent.includes("one-time wallet"))?.querySelector("input")?.checked === true`));
   check("locking an entry is offered, and off unless the worker turns it on", await js(`[...document.querySelectorAll("label.check")].find(l => l.textContent.includes("Lock it"))?.querySelector("input")?.checked === false`));
+  check("a report can be held back to a random moment 1–6 hours later, so its time does not point to the worker", await js(`[...document.querySelectorAll("label.check")].find(l => l.textContent.includes("random time in the next 1–6 hours"))?.querySelector("input")?.checked === false`));
 
   await go("#/mine?ui=en");
   await js(`document.querySelector("details.card").open = true; [...document.querySelectorAll("details.card button")].find(b => b.textContent.includes("Reveal"))?.click()`);
   await sleep(300);
   check("key backup reveals the test wallet key", await js(`/^main 0x[0-9a-f]{64}/i.test(document.querySelector("details.card pre")?.textContent ?? "")`));
+  check("my data offers to remove every Nexora key and waiting entry from the phone", await js(`document.querySelector("details.wipe button.danger")?.textContent.includes("Remove everything")`));
 
   await go("#/compare?ui=en&city=delhi_ncr&work=cab", 3000);
   check("compare explains the Sybil risk", await js(`!!document.querySelector(".card.notice")`));
@@ -195,6 +197,13 @@ try {
     await sleep(300);
     const labour = (await js(`document.querySelector(".letter-text")?.value`)) ?? "";
     check("letter to the labour department leaves Delhi NCR's state blank and links similar reports", labour.startsWith("To: The Labour Department") && labour.includes("[your state]") && labour.includes("#/incidents?platform=zomato&city=delhi_ncr"), labour.slice(0, 80));
+    // A proof of authorship is checked against the entry's $creator; a made-up signature is refused.
+    await js(`(() => { const d = document.querySelector("details.authorship"); d.open = true; const ta = d.querySelector("textarea"); Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call(ta, "Nexora authorship proof\\nEntry: ${locked}\\nChallenge: (none)\\nSignature: 0x${"1b".repeat(65)}"); ta.dispatchEvent(new Event("input", { bubbles: true })); })()`);
+    await sleep(200);
+    await js(`[...document.querySelectorAll("details.authorship button")].find(b => b.textContent.includes("Check proof"))?.click()`);
+    await sleep(800);
+    const proof = (await js(`document.querySelector("details.authorship")?.innerText`)) ?? "";
+    check("anyone can check a proof that a report is someone's, and a forged one is refused", proof.includes("Check a proof that someone wrote this") && proof.includes("Not valid"), proof.slice(-120));
   }
 
   await go("#/trust?ui=en", 3500);

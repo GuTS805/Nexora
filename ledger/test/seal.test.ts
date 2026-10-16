@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SEAL_ITERATIONS, fromBase64, isSealedBox, seal, toBase64, unseal } from "../src/index.ts";
+import { SEAL_ITERATIONS, SEAL_PAD_BUCKETS, fromBase64, isSealedBox, padPlaintext, seal, toBase64, unseal } from "../src/index.ts";
 import { storedShift } from "./fixtures.ts";
 
 describe("sealing", () => {
@@ -39,5 +39,24 @@ describe("sealed box format", () => {
     expect(text).not.toContain("horse");
     expect(a.ct).not.toBe(b.ct);
     expect(toBase64(fromBase64(a.ct))).toBe(a.ct);
+  });
+});
+
+describe("padding", () => {
+  it("hides how long a note is: short and long notes seal to the same size, and still open", async () => {
+    const short = await seal({ note: "late" }, "correct horse battery");
+    const long = await seal({ note: "blocked after a customer complaint, no reason given, appealed twice" }, "correct horse battery");
+    expect(short.ct.length).toBe(long.ct.length);
+    expect(await unseal(long, "correct horse battery")).toEqual({ note: "blocked after a customer complaint, no reason given, appealed twice" });
+    // A full 1,000-character note in Hindi still fits the largest bucket and the reader's size limit.
+    const hindi = await seal({ note: "आ".repeat(1_000) }, "correct horse battery");
+    expect(fromBase64(hindi.ct).length).toBe(SEAL_PAD_BUCKETS[2] + 16);
+    expect(isSealedBox(hindi)).toBe(true);
+  });
+
+  it("pads to fixed buckets with spaces that JSON ignores", () => {
+    expect(padPlaintext({ note: "x" })).toHaveLength(256);
+    expect(padPlaintext({ note: "x".repeat(300) })).toHaveLength(1_024);
+    expect(JSON.parse(new TextDecoder().decode(padPlaintext({ hours: 9 })))).toEqual({ hours: 9 });
   });
 });

@@ -5,6 +5,10 @@
  * derived with PBKDF2-SHA256; GCM's tag means a tampered blob fails to open instead of decrypting
  * to garbage. A short passphrase can still be brute-forced offline, so the UI enforces a minimum
  * length, says so, and tells workers never to seal their name, phone number or rider ID.
+ *
+ * Ciphertext is as long as its plaintext, so an unpadded box would say how long a private note is
+ * ("two words" or "a full account"). Plaintext is padded with spaces up to a fixed size first, which
+ * JSON.parse ignores, so boxes sealed before padding still open and padded boxes open anywhere.
  */
 
 export const SEAL_ALG = "AES-256-GCM";
@@ -12,6 +16,17 @@ export const SEAL_KDF = "PBKDF2-SHA256";
 // OWASP's 2023 figure for PBKDF2-HMAC-SHA256. Boxes record their own count, so older ones (310,000) still open.
 export const SEAL_ITERATIONS = 600_000;
 export const MIN_PASSPHRASE_LENGTH = 10;
+/** Plaintext sizes in bytes that a box is padded up to. 4,096 holds the longest note the app accepts. */
+export const SEAL_PAD_BUCKETS = [256, 1_024, 4_096] as const;
+
+/** The details as JSON, padded with trailing spaces to the next bucket (or the next 1 KB past the last). */
+export function padPlaintext(details: PrivateDetails): Uint8Array<ArrayBuffer> {
+  const bytes = new TextEncoder().encode(JSON.stringify(details));
+  const size = SEAL_PAD_BUCKETS.find((bucket) => bucket >= bytes.length) ?? Math.ceil(bytes.length / 1_024) * 1_024;
+  const padded = new Uint8Array(size).fill(0x20);
+  padded.set(bytes);
+  return padded;
+}
 
 export type SealedBox = {
   alg: typeof SEAL_ALG;
@@ -71,7 +86,7 @@ export async function seal(details: PrivateDetails, passphrase: string): Promise
   const salt = globalThis.crypto.getRandomValues(new Uint8Array(16));
   const iv = globalThis.crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(passphrase, salt, SEAL_ITERATIONS);
-  const plaintext = new TextEncoder().encode(JSON.stringify(details));
+  const plaintext = padPlaintext(details);
   const ct = new Uint8Array(await subtle().encrypt({ name: "AES-GCM", iv }, key, plaintext));
   return { alg: SEAL_ALG, kdf: SEAL_KDF, iter: SEAL_ITERATIONS, salt: toBase64(salt), iv: toBase64(iv), ct: toBase64(ct) };
 }

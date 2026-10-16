@@ -12,6 +12,8 @@
  *   nexora at        <entityKey> --block <n> | --date <YYYY-MM-DD or ISO time>
  *                    the entity as it stood then, even if it was later deleted or expired;
  *                    for a trust list, who joined and left since
+ *   nexora proof     <file | ->  [--challenge <text>]
+ *                    check an authorship proof a worker gave you against the entry's $creator on chain
  *   nexora lists
  *   nexora verify    re-check every feature recorded in arkiv/evidence.json against the chain
  *   nexora audit     check every Nexora entity on chain against the JSON Schemas and for personal data [--json]
@@ -25,7 +27,7 @@ import {
   DAY_LENGTHS, HOURS_BAND_LABELS, comparePlatforms, entryPredicate, explainError, fetchEntries, fetchEntry, fetchIncidents,
   fetchShifts, fetchTrustList, fetchTrustLists, getEntityOrNull, incidentStats, liveClient, queryText, readClient,
   fetchRawEntities, fetchReplies, decodeReply, decodeTrustList, isLocked, repliesTo, type EntryFilters, type IncidentFilters, type ShiftFilters,
-  blockAtDate, decodeEntry, entityAtBlock, memberChanges, type RawEntity,
+  blockAtDate, decodeEntry, entityAtBlock, memberChanges, parseProof, verifyAuthorship, type RawEntity,
 } from "./src/index.ts";
 import { auditEntities } from "./src/contract.ts";
 
@@ -212,6 +214,21 @@ switch (command) {
     }
     break;
   }
+  case "proof": {
+    const source = positional[0];
+    if (!source) throw new Error("usage: nexora proof <file | -> [--challenge <text>]");
+    const proof = parseProof(readFileSync(source === "-" ? 0 : source, "utf8"));
+    if (!proof) throw new Error("not a Nexora authorship proof");
+    // Authorship is the creator Arkiv recorded, read from the chain, never anything the proof claims.
+    const raw = await getEntityOrNull(client, proof.entityKey);
+    if (!raw?.creator) throw new Error(`entry ${proof.entityKey} is not on chain now (deleted or expired); check it with \`nexora at\` first`);
+    const ok = await verifyAuthorship(proof, { entityKey: proof.entityKey, creator: raw.creator as Address, challenge: flag("challenge") });
+    console.log(`entry ${proof.entityKey}, written by ${raw.creator}`);
+    console.log(`challenge in the proof: ${proof.challenge || "(none)"}`);
+    console.log(ok ? "VALID: signed by the wallet that wrote this entry" : "INVALID: not signed by the entry's author, or not for this challenge");
+    if (!ok) process.exitCode = 1;
+    break;
+  }
   case "verify": {
     // Re-check the seed script's recorded evidence against the chain (same checks as the Proof page).
     // From a clone, the repo's copy; from the npm package (which does not ship it), the published one.
@@ -303,7 +320,7 @@ switch (command) {
     break;
   }
   default:
-    console.log("commands: earnings | compare --city <c> | incidents | show <key> | at <key> --date <d> | lists | watch | verify | audit   (see header of ledger/cli.ts)");
+    console.log("commands: earnings | compare --city <c> | incidents | show <key> | at <key> --date <d> | proof <file> | lists | watch | verify | audit   (see header of ledger/cli.ts)");
 }
 } catch (error) {
   console.error(`error: ${explainError(error)}`);

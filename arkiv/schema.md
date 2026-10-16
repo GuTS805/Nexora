@@ -17,7 +17,7 @@ Every Nexora entity carries `app = "nexora"`, `kind`, and `v = 1`. Readers **mus
 
 1. MUST set `app = "nexora"` (str), `kind` (str, one of `shift`, `incident`, `reply`, `trust_list`) and `v = 1` (i32) on every entity.
 2. MUST use only the attributes listed below for that kind, with the listed types and values from the closed vocabularies, and MUST NOT add others. The JSON Schemas reject extra attributes, because an extra attribute is how a name or phone number would leak.
-3. MUST publish hours only as `hours_band`, take-home per hour rounded to ₹10 and cost share rounded to 10%. Exact rupees, hours and free text MUST NOT appear in clear text; they MAY go into a sealed box (AES-256-GCM, PBKDF2-SHA256, see `seal.ts`).
+3. MUST publish hours only as `hours_band`, take-home per hour rounded to ₹10 and cost share rounded to 10%. Exact rupees, hours and free text MUST NOT appear in clear text; they MAY go into a sealed box (AES-256-GCM, PBKDF2-SHA256, see `seal.ts`). Writers SHOULD pad the box's plaintext with trailing spaces to 256, 1,024 or 4,096 bytes (`padPlaintext`), so its length does not reveal how long a note is; readers need no change, because JSON ignores the spaces.
 4. MUST use content type `application/json` and a payload of at most 4 KB in the shape given for the kind.
 5. MUST create shifts, incidents and replies with `readonly = true` and `permissionlessExtension = true`, and trust lists with both `false`.
 6. SHOULD publish incident reports from a fresh one-time wallet, so a report cannot be joined to the author's earnings by `$creator`.

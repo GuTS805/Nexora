@@ -65,6 +65,17 @@ export function Mine() {
           <button className="secondary" disabled={parseBackup(importKey).length === 0} onClick={restore}>{t("restore")}</button>
         </details>
       )}
+      {/* For a phone that someone else may check: nothing on it should say which reports are this worker's. */}
+      <details className="card wipe">
+        <summary>{t("wipeTitle")}</summary>
+        <p className="small">{t("wipeDesc")}</p>
+        <p className="small muted">{t("wipeLimits")}</p>
+        <button className="danger" onClick={() => {
+          if (!confirm(t("wipeConfirm"))) return;
+          store.wipe();
+          location.replace(location.pathname);
+        }}>{t("wipeButton")}</button>
+      </details>
     </section>
   );
 }

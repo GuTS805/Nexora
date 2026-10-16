@@ -13,6 +13,11 @@ import { store } from "./storage.ts";
  * again by the same decoder readers use before it is sent. An entry is queued only when the device
  * says it is offline before anything is sent, so nothing that may have reached the chain is queued
  * twice.
+ *
+ * The same queue sends entries later on purpose. A report published three minutes after an ID block
+ * can be matched against the platform's own logs of who was blocked then; a worker can instead have
+ * it sent at a random moment one to six hours later. The one-time wallet is created and funded only
+ * at that moment too, so neither the write nor its gas points back to when the form was filled in.
  */
 
 /** What the form produces. */
@@ -37,7 +42,22 @@ export type Pending = {
   oneOff: boolean;
   /** Hand to 0x…dEaD in the same transaction. */
   lock: boolean;
+  /** Not sent before this time (ms since epoch): a random delay the worker chose, to hide when they wrote it. */
+  notBefore?: number;
 };
+
+/** The window for a delayed send: at least one hour, at most six. */
+export const DELAY_MIN_MS = 60 * 60 * 1000;
+export const DELAY_MAX_MS = 6 * 60 * 60 * 1000;
+
+/** A moment picked uniformly at random from the delay window, with the browser's secure randomness. */
+export function randomSendTime(now = Date.now()): number {
+  const [word] = crypto.getRandomValues(new Uint32Array(1));
+  return now + DELAY_MIN_MS + Math.floor((word! / 2 ** 32) * (DELAY_MAX_MS - DELAY_MIN_MS));
+}
+
+/** True when an entry may be sent now. */
+export const isDue = (item: Pending, now = Date.now()) => item.notBefore === undefined || item.notBefore <= now;
 
 const KEY = "pending";
 export const QUEUE_EVENT = "nexora-queue";
@@ -85,6 +105,7 @@ export function pendingEntries(): Pending[] {
     return parsed.filter((item): item is Pending => {
       if (!item || typeof item !== "object" || typeof item.id !== "string" || typeof item.savedAt !== "number") return false;
       if (typeof item.oneOff !== "boolean" || typeof item.lock !== "boolean" || !item.entry || typeof item.entry !== "object") return false;
+      if (item.notBefore !== undefined && typeof item.notBefore !== "number") return false;
       try {
         paramsFor(item.entry);
         return true;
@@ -102,10 +123,11 @@ function save(items: Pending[]): void {
   dispatchEvent(new Event(QUEUE_EVENT));
 }
 
-export function enqueue(form: FormEntry, options: { oneOff: boolean; lock: boolean }): Pending {
+export function enqueue(form: FormEntry, options: { oneOff: boolean; lock: boolean; notBefore?: number }): Pending {
   const entry = toQueued(form);
   paramsFor(entry);
-  const item: Pending = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`, savedAt: Date.now(), entry, ...options };
+  const { notBefore, ...rest } = options;
+  const item: Pending = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`, savedAt: Date.now(), entry, ...rest, ...(notBefore !== undefined && { notBefore }) };
   save([...pendingEntries(), item]);
   return item;
 }

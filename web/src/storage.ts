@@ -20,4 +20,14 @@ export const store = {
       /* storage unavailable: preference is not remembered */
     }
   },
+  /** Removes everything Nexora keeps on this device: keys, waiting entries, usual city, followed list. */
+  wipe(): number {
+    try {
+      const names = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)).filter((k): k is string => k?.startsWith(PREFIX) ?? false);
+      for (const name of names) localStorage.removeItem(name);
+      return names.length;
+    } catch {
+      return 0;
+    }
+  },
 };

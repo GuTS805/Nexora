@@ -7,3 +7,4 @@ export * from "./csv.ts";
 export * from "./lock.ts";
 export * from "./lease.ts";
 export * from "./history.ts";
+export * from "./proof.ts";

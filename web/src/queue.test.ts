@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { shiftCreate } from "nexora-ledger";
-import { dequeue, enqueue, paramsFor, pendingEntries, type FormEntry } from "./queue.ts";
+import { DELAY_MAX_MS, DELAY_MIN_MS, dequeue, enqueue, isDue, paramsFor, pendingEntries, randomSendTime, type FormEntry } from "./queue.ts";
 
 const shift: FormEntry = {
   kind: "shift",
@@ -44,5 +44,23 @@ describe("offline queue", () => {
     const b = enqueue(shift, { oneOff: false, lock: false });
     dequeue(a.id);
     expect(pendingEntries().map((p) => p.id)).toEqual([b.id]);
+  });
+  it("keeps a delayed entry until its random moment, between one and six hours away", () => {
+    const now = 1_760_000_000_000;
+    const times = Array.from({ length: 200 }, () => randomSendTime(now) - now);
+    expect(Math.min(...times)).toBeGreaterThanOrEqual(DELAY_MIN_MS);
+    expect(Math.max(...times)).toBeLessThan(DELAY_MAX_MS);
+    // Spread across the window, not bunched at one end.
+    expect(new Set(times.map((t) => Math.floor(t / 3_600_000))).size).toBeGreaterThanOrEqual(4);
+    const later = enqueue(shift, { oneOff: true, lock: false, notBefore: now + DELAY_MIN_MS });
+    const soon = enqueue(shift, { oneOff: true, lock: false });
+    const [a, b] = pendingEntries();
+    expect(a).toEqual(later);
+    expect(isDue(a!, now)).toBe(false);
+    expect(isDue(a!, now + DELAY_MIN_MS)).toBe(true);
+    expect(isDue(b!, now)).toBe(true);
+    expect("notBefore" in soon).toBe(false);
+    localStorage.setItem("nexora.pending", JSON.stringify([{ ...later, notBefore: "soon" }]));
+    expect(pendingEntries()).toEqual([]);
   });
 });

@@ -87,7 +87,8 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
   - Hours are published as one of six bands; take-home per hour is rounded to ₹10 and cost share to 10% (`hoursBand`, `netHourly`, `costPct` in [`ledger/src/schema.ts`](../ledger/src/schema.ts)).
   - Exact values are either discarded or sealed with AES-256-GCM, using a key from PBKDF2-SHA256 at 600,000 iterations (OWASP's current recommendation; each box records its count, so older boxes still open). The passphrase must be at least 10 characters ([`ledger/src/seal.ts`](../ledger/src/seal.ts)).
   - GCM authentication makes a tampered box fail to open.
-- **Test:** *never writes rupee amounts or exact hours into attributes or the public payload*; the UI test checks the privacy preview's public column.
+  - Ciphertext is as long as its plaintext, so the plaintext is padded to 256, 1,024 or 4,096 bytes before sealing (`padPlaintext`). A two-word note and a full account seal to the same size.
+- **Test:** *never writes rupee amounts or exact hours into attributes or the public payload*; *short and long notes seal to the same size*; the UI test checks the privacy preview's public column.
 - **Residual:**
   - A weak passphrase can be brute-forced offline, because the ciphertext is public, and stays readable at earlier blocks even after expiry or deletion (friction F9). The UI enforces a minimum length.
   - Deletion and expiry remove an entry from the current state, not from history. Anything public must be safe to stay public, which is why only bands and rounded figures are published and the app says so before publishing.
@@ -101,8 +102,12 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
   - The burner wallet is not tied to any identity.
   - **Incident reports default to a fresh one-time wallet**, so a report about a block or a pay cut cannot be linked to the worker's earnings history, or to their other reports. Any entry can opt into a one-time wallet.
   - Month (not date) and banded hours make day-level matching against platform logs harder.
+  - **Sending later, at a random moment.** The block time of a write is public, and a report published minutes after an ID block can be matched against the platform's own log of who was blocked then. The form offers "send it at a random time in the next 1–6 hours": the entry waits on the phone, already banded and sealed, and goes out by itself at a moment drawn with the browser's secure randomness ([`web/src/queue.ts`](../web/src/queue.ts)). The one-time wallet is created and funded only at that moment, so the sponsor's gas transfer does not point back to when the form was filled in either.
   - The one-time keys stay in the browser, so *My data* still lists, extends and deletes those entries, and can back the keys up and restore them (`createOneOff` / `walletFor` in [`web/src/arkiv.tsx`](../web/src/arkiv.tsx)).
-- **Residual:** timing and gas funding (the sponsor's transfers) are public and can correlate wallets. A platform that sees an entry's exact block time could compare it with who was online. Workers who are at risk should log days in batches rather than right after a shift.
+- **Residual:**
+  - A delayed entry goes out only while a Nexora page is open (or the next time one is opened), and a very small group of workers reporting in the same window can still be narrowed down.
+  - Earnings days sent at once still carry their time; workers at risk can delay those too, or log days in batches.
+  - The RPC node, and the gas sponsor when it is used, see the IP address that sends a write. A worker who needs to hide that from Nexora's deployment as well can fund the one-time wallet from the public faucet, use another RPC, or connect through Tor or a VPN.
 
 ### T10. Censorship and takedown
 
@@ -157,7 +162,7 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
   - It is a testnet key with a few test GLM.
   - The CSP blocks inline and third-party scripts, plugins (`object-src 'none'`) and framing. `connect-src` allows any `https:`/`wss:` host on purpose, because readers can switch to any Arkiv RPC (T10). So an injected script could send data out, and the CSP's job is to keep scripts from being injected. `Permissions-Policy` turns off camera, location and payment APIs and allows the microphone only to the app's own origin (for "Say your day"), and `Cross-Origin-Opener-Policy: same-origin` cuts the window off from pages it opens.
   - Users can bring their own browser wallet instead.
-- **Residual:** with the key, an attacker could delete that wallet's own entries, or learn which entries a phone published if they get the phone.
+- **Residual:** with the key, an attacker could delete that wallet's own entries, or learn which entries a phone published if they get the phone (T17).
 
 ### T14. Supply chain
 
@@ -186,6 +191,23 @@ Nexora is a public ledger: anyone can read it and anyone can write to it. This d
 - **Offline queue:** an entry saved with no network is kept in `localStorage` as exactly what will be published: the banded, rounded attributes and the payload, with any private details already sealed. The exact rupees and hours and the passphrase are never stored, not even on the phone. Before sending, the saved entry goes through the same decoder readers use, so a tampered one is dropped.
 - **Double publishing:** an entry is queued only when the browser reports it is offline before anything is sent, so an entry that may already be on chain is never queued again.
 
+### T17. Someone checks the worker's phone
+
+- **Threat:** a fleet manager, a family member, or anyone who takes the phone opens Nexora and finds the one-time keys, so every report the worker made becomes linkable to them.
+- **Mitigations:**
+  - *My data → Remove everything from this phone* deletes every Nexora key, entries waiting to be sent, the remembered app and city, and the followed trust list in one tap (`store.wipe` in [`web/src/storage.ts`](../web/src/storage.ts)). The screen says first what it cannot undo.
+  - Keys can be backed up first (*My data → Test wallet backup*) and restored on another phone, to keep the power to delete or extend.
+- **Residual:** entries stay on Arkiv, and without a backup the worker loses the power to delete or extend them. Visited pages stay in the browser's history, which the app cannot clear; the screen says so.
+
+### T18. Proving a report is yours without exposing it
+
+- **Need:** a worker who reported from a one-time wallet has nothing on chain linking them to the report. A union or a lawyer helping them needs to know the report is really theirs, and an impostor should not be able to claim someone else's report.
+- **Mechanism:** the worker signs a short statement with the report's key: "Nexora authorship proof, entry 0x…, challenge …" ([`ledger/src/proof.ts`](../ledger/src/proof.ts)). The checker pastes it on the report's page or runs `nexora proof <file>`; it is accepted only if the signer is the `$creator` Arkiv recorded, which a writer cannot set.
+- **Privacy:** nothing is written to Arkiv, and the proof contains no name, phone number or wallet address. It goes only to the person the worker chooses.
+- **Replay:** a proof carries a word or number the checker picked, and a check with a different word fails. A proof for one report does not verify for another.
+- **Residual:** whoever receives a proof can show it to others; it proves that the holder of the key made it, not who that person is.
+- **Tests:** *accepted only from the wallet that wrote the entry, for that entry and that challenge*; the UI test pastes a forged proof and expects it refused.
+
 ## Known limitations
 
 Stated plainly, so nobody has to find them:
@@ -194,7 +216,7 @@ Stated plainly, so nobody has to find them:
 2. **Entries are claims, not verified payslips.** Nothing proves a worker earned what they say. Independent agreement between trusted workers is the only evidence the app offers, and the UI says so.
 3. **The test-wallet key sits in the browser's local storage** (T13). A malicious extension on the same browser could read it.
 4. **Sponsor limits are per serverless instance** (T12), a speed bump rather than a guarantee.
-5. **Timing and wallet correlation.** Reports go out from a one-time wallet, but a very small group of workers publishing at the same moment could be correlated by someone watching the chain (T9).
+5. **Timing and wallet correlation.** Reports go out from a one-time wallet and can be held back to a random moment, but a very small group of workers reporting in the same window could still be narrowed down, and the RPC node sees the sender's IP address (T9).
 6. **Testnet only.** Nothing here has been audited by an outside party; the checks are our own tests, `npm audit`, CodeQL and review.
 
 ## Out of scope

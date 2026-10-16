@@ -41,7 +41,8 @@ Platforms hold detailed pay and account records, while workers see only fragment
 ### 3. Report an incident and follow up
 
 1. Open **Incidents** to read reports of ID blocks, pay cuts, and penalties, filtered by place, platform, type, and time.
-2. Publish from a fresh one-time wallet by default, reducing linkage with the worker's other entries.
+2. Publish from a fresh one-time wallet by default, reducing linkage with the worker's other entries. Optionally have it **sent at a random moment one to six hours later**, so its time cannot be matched against the platform's record of who was blocked when.
+   Later, the worker can **prove the report is theirs** to a union or a lawyer, without publishing anything: a signature from the report's one-time key, checked against its `$creator`. A phone someone else may check can be wiped of every Nexora key in one tap (*My data*).
 3. Post a later update as a new read-only entity linked to the original by a typed `parent` key. The original is not silently rewritten.
 4. Optionally **lock** the report. It is created and handed to `0x…dEaD` in the same transaction, so nobody can pressure the worker, or anyone else, into deleting it before its lifetime ends.
 5. **Turn it into a complaint.** The report's page drafts a letter to the platform's grievance officer, a union, or the state labour department or welfare board. The letter carries the facts and links anyone can use to check the record, and the worker fills in their name and ID only after copying. **Incidents** prints, or saves as PDF, a report for a union: the summary, every entry with its explorer link, and the exact query. Workers who have not yet registered are pointed to [e-Shram](https://register.eshram.gov.in), the Labour Ministry's portal for platform workers' social security schemes.
@@ -172,6 +173,7 @@ Parts of `nexora-ledger` are useful to **any Arkiv app**, whatever its data. [`e
 | `memberChanges(before, after)` | Who joined and who left an address list between two readings. |
 | `createLocked(reader, wallet, owner, params)`, `isLocked`, `NOBODY` | Create an entity and hand it to `0x…dEaD` in one atomic batch, so nobody can delete it early. Works around the SDK example that no single client can run (friction F7). |
 | `leaseRenewal(expiresAt, block, days)` (0.4.0) | Use any entity as a lease: the block to renew to, or `null` when renewing would add no time (the node would revert a shorter expiry, and charge for an equal one, friction F11). |
+| `authorshipMessage`, `formatProof`, `parseProof`, `verifyAuthorship` (0.5.0) | Let the author of any entity prove it to one person, off chain: they sign a statement with the entity's key, and the checker compares the signer with the `$creator` Arkiv recorded. Works for entities written from throwaway wallets, where nothing else ties author to entry. |
 
 ## Limits and status
 
