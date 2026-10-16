@@ -5,7 +5,9 @@ import { useI18n } from "../i18n.tsx";
 import { appUrl } from "../share.ts";
 
 /** Where the poster's QR code points: this host, or the main one when opened from the single file. */
-const HOME = /^https?:$/.test(location.protocol) ? appUrl("#/?ui=hi") : "https://nexora-pi-snowy.vercel.app/#/?ui=hi";
+const HOME = import.meta.env.VITE_README_CAPTURE === "1"
+  ? "https://nexora-pi-snowy.vercel.app/#/?ui=hi"
+  : /^https?:$/.test(location.protocol) ? appUrl("#/?ui=hi") : "https://nexora-pi-snowy.vercel.app/#/?ui=hi";
 
 /** A QR code drawn as SVG squares from the encoder's matrix; no generated markup is injected. */
 function Qr({ text, label }: { text: string; label: string }) {

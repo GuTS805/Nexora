@@ -89,19 +89,19 @@ Published shifts, incidents, and replies use `readonly`. The owner can still del
 
 ## Screenshots
 
-Current editorial earnings page at 1440 × 900:
+Current earnings page at 1440 × 900:
 
 ![Nexora's editorial earnings interface with an illustrated city scene, feature links and city filters](docs/assets/earnings-editorial.png)
 
-The flow screenshots below show the earlier interface. Their example entries are **synthetic demo data**; updated captures for these flows are pending.
+Current Compare, language, Rights, and union kit views. The Compare survey note and Rights cards use the checked guide content in [`arkiv/guides.json`](arkiv/guides.json) for these captures because the public Arkiv RPC was unavailable during capture. The kit QR points to the live app.
 
-| Earnings: compare take-home pay by city and app | Compare: inspect ranked options and underlying evidence |
+| Compare: independent survey note beside the filters | Language menu: seven UI languages |
 | --- | --- |
-| ![Earnings page with filters, synthetic data notice, summary cards and take-home pay table](docs/assets/earnings.png) | ![Compare page showing pay per hour, confirmation, month-on-month change and evidence links](docs/assets/compare.png) |
+| ![Compare page with Bengaluru food delivery filters, synthetic data notice, and independent worker survey note](docs/assets/compare-survey.png) | ![Earnings page with the language menu showing English, Hindi, Kannada, Tamil, Telugu, Bengali, and Marathi](docs/assets/languages.png) |
 
-| Log my day: preview public and sealed fields | Incidents: track blocks, cuts, penalties and updates |
+| Your rights: Bengaluru law with checked sources | Union kit: printable bilingual poster and QR |
 | --- | --- |
-| ![Log my day form showing the privacy preview before publishing](docs/assets/log.png) | ![Incidents page showing synthetic reports, summary table and linked cards](docs/assets/incidents.png) |
+| ![Your rights page showing the Karnataka gig workers law and source links for Bengaluru](docs/assets/rights.png) | ![Union kit page with print and share buttons, Hindi and English poster, and QR code for the live app](docs/assets/kit.png) |
 
 ## Try it yourself
 

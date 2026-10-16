@@ -5,11 +5,27 @@ import { Addr, ExplorerEntity, useAsync } from "./components.tsx";
 import { GUIDE_CURATOR } from "./config.ts";
 import { AsOf } from "./history.tsx";
 import { useI18n } from "./i18n.tsx";
+import guideFixtures from "../../arkiv/guides.json";
+import guideKeys from "../../arkiv/guides-onchain.json";
 
 /** Guides from the curator this app trusts by default (the recommended trust list's curator). */
 export function useGuides() {
   const { reader } = useArkiv();
-  return useAsync(async () => (GUIDE_CURATOR ? readGuides(reader, GUIDE_CURATOR) : null), [reader]);
+  return useAsync(async () => {
+    if (import.meta.env.VITE_README_CAPTURE === "1") {
+      return {
+        items: guideFixtures.guides.map((guide) => ({
+          ...guide,
+          key: guideKeys.guides.find((item) => item.scope === guide.scope && item.topic === guide.topic)?.key ?? "0x0",
+          creator: GUIDE_CURATOR,
+          owner: GUIDE_CURATOR,
+          expiresAt: 0n,
+        })) as unknown as Guide[],
+        rejected: [], query: "README capture fixture from arkiv/guides.json", truncated: false, blockNumber: undefined,
+      };
+    }
+    return GUIDE_CURATOR ? readGuides(reader, GUIDE_CURATOR) : null;
+  }, [reader]);
 }
 
 /** A guide's wording in the reader's language, falling back to English where there is no translation. */
