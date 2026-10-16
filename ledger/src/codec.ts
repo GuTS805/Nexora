@@ -316,6 +316,10 @@ function decodeMeta(raw: RawEntity, kind: string): { meta: Omit<Meta, "sealed">;
   if (!raw.key || !raw.creator || !raw.owner || raw.expiresAt === undefined) return "missing metadata";
   if (attrValue(raw, "app", "str") !== APP || attrValue(raw, "kind", "str") !== kind) return `not a ${kind}`;
   if (attrValue(raw, "v", "i32") !== SCHEMA_VERSION) return "unsupported schema version";
+  // An entry its writer could still edit might change after people relied on it, so it is left out.
+  // Flags and content type are checked whenever the read returned them.
+  if (raw.creationFlags && !raw.creationFlags.readonly) return "editable (not created readonly)";
+  if (raw.contentType !== undefined && raw.contentType !== "application/json") return "not application/json";
   if (!isPeriod(attrValue(raw, "period", "i32"))) return "bad month";
   const demo = attrValue(raw, "demo", "bool");
   if (typeof demo !== "boolean") return "bad demo flag";

@@ -19,6 +19,7 @@ dist-portable/
 # copied into the npm package at pack time (sources: arkiv/schema, LICENSE)
 ledger/schema/
 ledger/LICENSE
+ledger/vectors.json
 *.tgz
 
 # personal drafts (form answers), never pushed

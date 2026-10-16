@@ -28,7 +28,19 @@ npm run check:secrets
 
 CI runs the same checks on every pull request, and also packs the npm package and installs it into a clean project.
 
-Changed anything in [`ledger/src/schema.ts`](ledger/src/schema.ts)? Run `npm run schemas -w nexora-ledger` and commit the regenerated [`arkiv/schema/*.schema.json`](arkiv/schema); a test fails until you do. To check live data against the contract yourself, run `npm run cli -- audit`.
+Changed anything in [`ledger/src/schema.ts`](ledger/src/schema.ts)? Run `npm run schemas -w nexora-ledger` and `npm run vectors -w nexora-ledger`, and commit the regenerated [`arkiv/schema/*.schema.json`](arkiv/schema) and [`arkiv/vectors/vectors.json`](arkiv/vectors); a test fails until you do. Changed a dependency? Run `node scripts/notices.mjs` to refresh [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). A change to `nexora-ledger` gets a line in [`ledger/CHANGELOG.md`](ledger/CHANGELOG.md). To check live data against the contract yourself, run `npm run cli -- audit`.
+
+Where things live in the library:
+
+| Module | What it holds |
+| --- | --- |
+| [`schema.ts`](ledger/src/schema.ts) | The fixed lists (cities, platforms, work, vehicles, incident types) and banding |
+| [`codec.ts`](ledger/src/codec.ts) | Building entities to write, and strict decoding of untrusted ones |
+| [`contract.ts`](ledger/src/contract.ts) | JSON Schemas, `validateEntity` / `validateWire`, and the privacy audit |
+| [`queries.ts`](ledger/src/queries.ts) | Typed filters, query predicates, paged reads, the fail-fast transport and read fallback |
+| [`insights.ts`](ledger/src/insights.ts) | Medians, confirmation by distinct wallets, month-on-month change, incident counts |
+| [`seal.ts`](ledger/src/seal.ts) | AES-256-GCM sealing with padding |
+| [`history.ts`](ledger/src/history.ts), [`lease.ts`](ledger/src/lease.ts), [`lock.ts`](ledger/src/lock.ts), [`proof.ts`](ledger/src/proof.ts) | Past reads, leases, locked entries and authorship proofs, usable by any Arkiv app |
 
 Tests live next to what they test: [`ledger/test`](ledger/test) has one file per module (`codec`, `contract`, `queries`, `insights`, `seal`, …) sharing [`fixtures.ts`](ledger/test/fixtures.ts), and [`web/api`](web/api) covers the server functions.
 

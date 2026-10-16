@@ -24,6 +24,14 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      # The contract is language-neutral: the same vectors, checked in Python with only the schema
+      # files and the jsonschema package, none of this repository's JavaScript.
+      - name: Conformance vectors give the same verdicts in Python
+        run: |
+          python3 -m venv "$RUNNER_TEMP/py"
+          "$RUNNER_TEMP/py/bin/pip" install --quiet "jsonschema==4.23.0"
+          "$RUNNER_TEMP/py/bin/python" examples/check_vectors.py
+          python3 -m py_compile examples/nexora_reader.py
       - run: npm run build
       - name: UI smoke test (headless Chrome against the production build)
         run: npm run test:ui
@@ -39,6 +47,8 @@ jobs:
             import { shiftCreate } from 'nexora-ledger';
             import { validateEntity } from 'nexora-ledger/contract';
             import schema from 'nexora-ledger/schema/shift.schema.json' with { type: 'json' };
+            import vectors from 'nexora-ledger/vectors.json' with { type: 'json' };
+            if (vectors.vectors.length < 20) { console.error('vectors missing from the package'); process.exit(1); }
             const params = shiftCreate({ platform: 'swiggy', work: 'food_delivery', city: 'pune', vehicle: 'ev_scooter', period: 202610, grossInr: 1000, costsInr: 100, hours: 9, incentive: 'met', expiresInDays: 30 });
             const errors = validateEntity('shift', params);
             if (errors.length || !schema.\$id) { console.error(errors); process.exit(1); }

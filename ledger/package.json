@@ -1,6 +1,6 @@
 {
   "name": "nexora-ledger",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Open data contract for Nexora gig-worker earnings and incident entities on Arkiv: JSON Schemas, codec, sealing, queries, insights and a public privacy audit.",
   "license": "MIT",
   "type": "module",
@@ -23,19 +23,21 @@
       "types": "./dist/src/contract.d.ts",
       "default": "./dist/src/contract.js"
     },
-    "./schema/*.json": "./schema/*.json"
+    "./schema/*.json": "./schema/*.json",
+    "./vectors.json": "./vectors.json"
   },
   "bin": {
     "nexora": "./dist/cli.js"
   },
-  "files": ["dist", "schema", "README.md", "LICENSE"],
+  "files": ["dist", "schema", "vectors.json", "CHANGELOG.md", "README.md", "LICENSE"],
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "cli": "tsx cli.ts",
     "schemas": "tsx write-schemas.ts",
+    "vectors": "tsx vectors.ts",
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
-    "prepack": "npm run build && node -e \"const fs=require('fs');fs.cpSync('../arkiv/schema','schema',{recursive:true});fs.copyFileSync('../LICENSE','LICENSE')\"",
+    "prepack": "npm run build && node -e \"const fs=require('fs');fs.cpSync('../arkiv/schema','schema',{recursive:true});fs.copyFileSync('../arkiv/vectors/vectors.json','vectors.json');fs.copyFileSync('../LICENSE','LICENSE')\"",
     "prepublishOnly": "npm run typecheck && npm test"
   },
   "dependencies": {

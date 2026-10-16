@@ -3,3 +3,6 @@ contact_links:
   - name: Report a security or privacy problem
     url: https://github.com/GuTS805/Nexora/security/advisories/new
     about: Please report privately, not in a public issue.
+  - name: The data contract
+    url: https://github.com/GuTS805/Nexora/blob/main/arkiv/schema.md
+    about: What every Nexora entity contains, the rules for compatible apps, and conformance vectors.

@@ -162,6 +162,14 @@ console.log(`${items.length} valid days, ${rejected.length} rejected by the cont
 
 The contract is also machine-checkable: [`arkiv/schema/`](arkiv/schema) holds JSON Schema (2020-12) files for each entity kind, generated from the same constants as the codec, and usable from any language. `nexora audit` holds every entry on chain to them and scans for personal data; the [privacy audit workflow](.github/workflows/audit.yml) runs it daily. Start with the [SDK-only reader](examples/read-without-nexora.mjs), then follow [CONTRIBUTING.md](CONTRIBUTING.md). The contract is written as a specification, with conformance rules for writers and readers and a versioning policy, in [`arkiv/schema.md`](arkiv/schema.md#conformance).
 
+To check your own implementation, in any language, run it over the conformance vectors in [`arkiv/vectors/`](arkiv/vectors): entities that must be accepted or rejected, each with the reason. [`examples/check_vectors.py`](examples/check_vectors.py) does that in Python, and [`examples/nexora_reader.py`](examples/nexora_reader.py) reads the live ledger with the Python standard library alone, no SDK, giving the same figures as the CLI:
+
+```bash
+python examples/nexora_reader.py --city bengaluru --demo
+```
+
+Every release is in [`ledger/CHANGELOG.md`](ledger/CHANGELOG.md), and shipped dependencies and their licences are in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
 Parts of `nexora-ledger` are useful to **any Arkiv app**, whatever its data. [`examples/any-arkiv-app.mjs`](examples/any-arkiv-app.mjs) uses them on an entity another team published for its own app:
 
 | Helper | What it does for any Arkiv app |

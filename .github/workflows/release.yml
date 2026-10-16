@@ -1,0 +1,60 @@
+name: release
+
+# A tag vX.Y.Z publishes nexora-ledger X.Y.Z from this workflow, with npm provenance: the npm page
+# then links the exact commit and workflow run that built the package, so nobody has to trust a
+# laptop. It also opens a GitHub release with that version's CHANGELOG section.
+# Publishing needs an npm automation token in the repository secret NPM_TOKEN; without it the
+# workflow still checks, tests and writes the release, and says that publishing was skipped.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # the GitHub release
+      id-token: write # npm provenance
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - name: The tag names the version in ledger/package.json
+        id: version
+        run: |
+          version="$(node -p "require('./ledger/package.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "${GITHUB_REF_NAME#v}" != "$version" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match nexora-ledger $version"; exit 1
+          fi
+      - run: npm run typecheck
+      - run: npm test
+      - name: Publish to npm with provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then echo "::notice::NPM_TOKEN is not set; publishing skipped"; exit 0; fi
+          if npm view "nexora-ledger@$VERSION" version >/dev/null 2>&1; then echo "::notice::nexora-ledger@$VERSION is already on npm"; exit 0; fi
+          npm publish -w nexora-ledger --provenance --access public
+      - name: GitHub release with the changelog section
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          awk -v v="## $VERSION " 'index($0, v) == 1 { on = 1; next } /^## / { if (on) exit } on' ledger/CHANGELOG.md > notes.md
+          test -s notes.md || echo "See ledger/CHANGELOG.md." > notes.md
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "nexora-ledger $VERSION" --notes-file notes.md

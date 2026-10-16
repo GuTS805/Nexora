@@ -273,6 +273,12 @@ export function validateEntity(kind: ContractKind, entity: EntityLike): string[]
   return validate(toWire(entity)) ? [] : (validate.errors ?? []).map(describeError);
 }
 
+/** The same check for an entity already in wire shape, as the conformance vectors in arkiv/vectors/ are. */
+export function validateWire(kind: ContractKind, wire: WireEntity): string[] {
+  const validate = compiled()[kind];
+  return validate(wire) ? [] : (validate.errors ?? []).map(describeError);
+}
+
 // ---------------------------------------------------------------------------------------------
 // Privacy audit
 // ---------------------------------------------------------------------------------------------

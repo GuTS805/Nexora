@@ -33,6 +33,19 @@ To read what was on record at a past time, `blockAtDate(client, date)` finds the
 
 Replies to a report (from a union, a worker group or the platform) come from `fetchReplies(client, { parent: reportKey })`. `repliesTo(report, replies, trusted?)` leaves out the reporter's own wallet and, given a set of wallets, keeps only theirs.
 
+## Conformance vectors
+
+`nexora-ledger/vectors.json` holds entities a Nexora Ledger v1 implementation must accept or reject, each with the reason and, for rejections, the JSON Pointer where the problem must be reported ([details](../arkiv/vectors/README.md)). Check an entity already in that wire shape with `validateWire`:
+
+```js
+import { validateWire } from "nexora-ledger/contract";
+import data from "nexora-ledger/vectors.json" with { type: "json" };
+const wrong = data.vectors.filter((v) => (validateWire(v.kind, v.entity).length === 0) !== v.valid);
+console.log(wrong.length === 0 ? "all vectors give the stated verdict" : wrong.map((v) => v.id));
+```
+
+Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+
 ## General Arkiv helpers (not tied to Nexora)
 
 Some of the library is useful to any Arkiv app, whatever its data:

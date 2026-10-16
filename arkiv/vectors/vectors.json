@@ -1,0 +1,1419 @@
+{
+  "contract": "nexora ledger v1",
+  "schemas": "arkiv/schema/<kind>.schema.json",
+  "vectors": [
+    {
+      "id": "shift-basic",
+      "kind": "shift",
+      "valid": true,
+      "description": "A day of food delivery: banded hours, take-home rounded to ₹10, cost share rounded to 10%.",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "swiggy"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "bengaluru"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "petrol_bike"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 2
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 100
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 20
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "met"
+        }
+      }
+    },
+    {
+      "id": "shift-sealed-demo",
+      "kind": "shift",
+      "valid": true,
+      "description": "Synthetic demo day with the exact figures in a sealed box.",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "blinkit"
+          },
+          "work": {
+            "type": "str",
+            "value": "grocery_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "pune"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "ev_scooter"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202609
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 2
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 110
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 10
+          },
+          "demo": {
+            "type": "bool",
+            "value": true
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "none",
+          "sealed": {
+            "alg": "AES-256-GCM",
+            "kdf": "PBKDF2-SHA256",
+            "iter": 600000,
+            "salt": "qXKoCSiYmCFu9wpgwo3LVQ==",
+            "iv": "yDrSnoxfONye80cE",
+            "ct": "Wk+8D6XEiRSWw5pebziolrltbWARXen0TDPBXLF9VTktNcVzJkh/AYh9Gm7Vw3HHTMY51rQt/iR2gonCYHbkWLAE7h0Hmt+CPhhdKkbcT1O+h5EBHmTfluKeTtshRDaz8Y99gErphKZFRhQA0NIFlD2LFKPmScoxG4MvASluv17+c+QrbZPYfnBiqqLpIyLFngzkOUnR5Ur9MQVDiYU8e6Irh94UymkBE88ZgwOYmE1KR6uACft51M6rF6pDJlgLZbLlbz2doYIi1i9SBXhhNhaVImLCwuEhSXj1QCTK6f11qpNz84R9UhNQjImbLs14CFk9ubVJ3qTSI5sa88MKUTdTTOcDE4wC4fTQnx8ao4k="
+          }
+        }
+      }
+    },
+    {
+      "id": "incident-basic",
+      "kind": "incident",
+      "valid": true,
+      "description": "An ID block reported with days lost and three yes/no outcomes.",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "incident"
+          },
+          "platform": {
+            "type": "str",
+            "value": "zomato"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "delhi_ncr"
+          },
+          "type": {
+            "type": "str",
+            "value": "id_blocked"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "days_lost": {
+            "type": "i32",
+            "value": 6
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1,
+          "reasonGiven": false,
+          "appealed": true,
+          "resolved": false
+        }
+      }
+    },
+    {
+      "id": "incident-update",
+      "kind": "incident",
+      "valid": true,
+      "description": "The worker's own update to a report, linked by parent, with a sealed note.",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "incident"
+          },
+          "platform": {
+            "type": "str",
+            "value": "zomato"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "delhi_ncr"
+          },
+          "type": {
+            "type": "str",
+            "value": "id_blocked"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "days_lost": {
+            "type": "i32",
+            "value": 6
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          },
+          "parent": {
+            "type": "key",
+            "value": "0x0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e"
+          }
+        },
+        "payload": {
+          "v": 1,
+          "reasonGiven": true,
+          "appealed": true,
+          "resolved": true,
+          "sealed": {
+            "alg": "AES-256-GCM",
+            "kdf": "PBKDF2-SHA256",
+            "iter": 600000,
+            "salt": "qXKoCSiYmCFu9wpgwo3LVQ==",
+            "iv": "yDrSnoxfONye80cE",
+            "ct": "Wk+8D6XEiRSWw5pebziolrltbWARXen0TDPBXLF9VTktNcVzJkh/AYh9Gm7Vw3HHTMY51rQt/iR2gonCYHbkWLAE7h0Hmt+CPhhdKkbcT1O+h5EBHmTfluKeTtshRDaz8Y99gErphKZFRhQA0NIFlD2LFKPmScoxG4MvASluv17+c+QrbZPYfnBiqqLpIyLFngzkOUnR5Ur9MQVDiYU8e6Irh94UymkBE88ZgwOYmE1KR6uACft51M6rF6pDJlgLZbLlbz2doYIi1i9SBXhhNhaVImLCwuEhSXj1QCTK6f11qpNz84R9UhNQjImbLs14CFk9ubVJ3qTSI5sa88MKUTdTTOcDE4wC4fTQnx8ao4k="
+          }
+        }
+      }
+    },
+    {
+      "id": "reply-basic",
+      "kind": "reply",
+      "valid": true,
+      "description": "A union says it escalated a report.",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "reply"
+          },
+          "parent": {
+            "type": "key",
+            "value": "0x0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e"
+          },
+          "status": {
+            "type": "str",
+            "value": "escalated"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1
+        }
+      }
+    },
+    {
+      "id": "trust-list-basic",
+      "kind": "trust_list",
+      "valid": true,
+      "description": "A list of wallets a union vouches for, for food delivery.",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": false,
+          "permissionlessExtension": false
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "trust_list"
+          },
+          "name": {
+            "type": "str",
+            "value": "Bengaluru riders union"
+          },
+          "scope": {
+            "type": "str",
+            "value": "food_delivery"
+          }
+        },
+        "payload": {
+          "v": 1,
+          "description": "Members we have met in person.",
+          "members": [
+            "0x1111111111111111111111111111111111111111",
+            "0x2222222222222222222222222222222222222222"
+          ]
+        }
+      }
+    },
+    {
+      "id": "shift-exact-hours-attribute",
+      "kind": "shift",
+      "valid": false,
+      "description": "Exact hours as an extra attribute. Only hours_band may be published.",
+      "at": "/attributes",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "swiggy"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "bengaluru"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "petrol_bike"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 2
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 100
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 20
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          },
+          "hours": {
+            "type": "i32",
+            "value": 9
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "met"
+        }
+      }
+    },
+    {
+      "id": "shift-name-attribute",
+      "kind": "shift",
+      "valid": false,
+      "description": "A rider's name as an extra attribute: the leak the closed attribute list exists to stop.",
+      "at": "/attributes",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "swiggy"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "bengaluru"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "petrol_bike"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 2
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 100
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 20
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          },
+          "rider_name": {
+            "type": "str",
+            "value": "Ravi"
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "met"
+        }
+      }
+    },
+    {
+      "id": "shift-exact-rupees-in-payload",
+      "kind": "shift",
+      "valid": false,
+      "description": "The exact day's pay in clear text in the payload.",
+      "at": "/payload",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "swiggy"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "bengaluru"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "petrol_bike"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 2
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 100
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 20
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "met",
+          "grossInr": 1180
+        }
+      }
+    },
+    {
+      "id": "shift-net-not-rounded",
+      "kind": "shift",
+      "valid": false,
+      "description": "Take-home per hour of ₹73, not rounded to ₹10.",
+      "at": "/attributes/net_hourly",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "swiggy"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "bengaluru"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "petrol_bike"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 2
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 73
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 20
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "met"
+        }
+      }
+    },
+    {
+      "id": "shift-cost-not-rounded",
+      "kind": "shift",
+      "valid": false,
+      "description": "Cost share of 35%, not rounded to 10%.",
+      "at": "/attributes/cost_pct",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "swiggy"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "bengaluru"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "petrol_bike"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 2
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 100
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 35
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "met"
+        }
+      }
+    },
+    {
+      "id": "shift-hours-band-out-of-range",
+      "kind": "shift",
+      "valid": false,
+      "description": "An hours band that does not exist (bands are 0–5).",
+      "at": "/attributes/hours_band",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "swiggy"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "bengaluru"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "petrol_bike"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 9
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 100
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 20
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "met"
+        }
+      }
+    },
+    {
+      "id": "shift-unknown-city",
+      "kind": "shift",
+      "valid": false,
+      "description": "A city outside the closed vocabulary.",
+      "at": "/attributes/city",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "swiggy"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "atlantis"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "petrol_bike"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 2
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 100
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 20
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "met"
+        }
+      }
+    },
+    {
+      "id": "shift-untyped-attribute",
+      "kind": "shift",
+      "valid": false,
+      "description": "An attribute without its Arkiv type.",
+      "at": "/attributes/city",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "swiggy"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "untyped",
+            "value": "bengaluru"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "petrol_bike"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 2
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 100
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 20
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "met"
+        }
+      }
+    },
+    {
+      "id": "shift-editable",
+      "kind": "shift",
+      "valid": false,
+      "description": "Created without readonly, so it could be rewritten after others relied on it.",
+      "at": "/flags",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": false,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "swiggy"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "bengaluru"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "petrol_bike"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 2
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 100
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 20
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "met"
+        }
+      }
+    },
+    {
+      "id": "shift-wrong-content-type",
+      "kind": "shift",
+      "valid": false,
+      "description": "A payload that is not application/json.",
+      "at": "/contentType",
+      "entity": {
+        "contentType": "text/plain",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "swiggy"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "bengaluru"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "petrol_bike"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 2
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 100
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 20
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "met"
+        }
+      }
+    },
+    {
+      "id": "shift-future-version",
+      "kind": "shift",
+      "valid": false,
+      "description": "Contract version 2. A v1 reader must not guess at it.",
+      "at": "/attributes/v",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 2
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "swiggy"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "bengaluru"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "petrol_bike"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 2
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 100
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 20
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "met"
+        }
+      }
+    },
+    {
+      "id": "shift-weak-sealed-box",
+      "kind": "shift",
+      "valid": false,
+      "description": "A sealed box that claims another cipher.",
+      "at": "/payload/sealed",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "shift"
+          },
+          "platform": {
+            "type": "str",
+            "value": "blinkit"
+          },
+          "work": {
+            "type": "str",
+            "value": "grocery_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "pune"
+          },
+          "vehicle": {
+            "type": "str",
+            "value": "ev_scooter"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202609
+          },
+          "hours_band": {
+            "type": "i32",
+            "value": 2
+          },
+          "net_hourly": {
+            "type": "i32",
+            "value": 110
+          },
+          "cost_pct": {
+            "type": "i32",
+            "value": 10
+          },
+          "demo": {
+            "type": "bool",
+            "value": true
+          }
+        },
+        "payload": {
+          "v": 1,
+          "incentive": "none",
+          "sealed": {
+            "alg": "AES-128-CBC",
+            "kdf": "PBKDF2-SHA256",
+            "iter": 600000,
+            "salt": "qXKoCSiYmCFu9wpgwo3LVQ==",
+            "iv": "yDrSnoxfONye80cE",
+            "ct": "Wk+8D6XEiRSWw5pebziolrltbWARXen0TDPBXLF9VTktNcVzJkh/AYh9Gm7Vw3HHTMY51rQt/iR2gonCYHbkWLAE7h0Hmt+CPhhdKkbcT1O+h5EBHmTfluKeTtshRDaz8Y99gErphKZFRhQA0NIFlD2LFKPmScoxG4MvASluv17+c+QrbZPYfnBiqqLpIyLFngzkOUnR5Ur9MQVDiYU8e6Irh94UymkBE88ZgwOYmE1KR6uACft51M6rF6pDJlgLZbLlbz2doYIi1i9SBXhhNhaVImLCwuEhSXj1QCTK6f11qpNz84R9UhNQjImbLs14CFk9ubVJ3qTSI5sa88MKUTdTTOcDE4wC4fTQnx8ao4k="
+          }
+        }
+      }
+    },
+    {
+      "id": "incident-unknown-type",
+      "kind": "incident",
+      "valid": false,
+      "description": "An incident type outside the closed vocabulary.",
+      "at": "/attributes/type",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "incident"
+          },
+          "platform": {
+            "type": "str",
+            "value": "zomato"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "delhi_ncr"
+          },
+          "type": {
+            "type": "str",
+            "value": "fired_for_complaining"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "days_lost": {
+            "type": "i32",
+            "value": 6
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1,
+          "reasonGiven": false,
+          "appealed": true,
+          "resolved": false
+        }
+      }
+    },
+    {
+      "id": "incident-too-many-days",
+      "kind": "incident",
+      "valid": false,
+      "description": "More than 90 days lost.",
+      "at": "/attributes/days_lost",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "incident"
+          },
+          "platform": {
+            "type": "str",
+            "value": "zomato"
+          },
+          "work": {
+            "type": "str",
+            "value": "food_delivery"
+          },
+          "city": {
+            "type": "str",
+            "value": "delhi_ncr"
+          },
+          "type": {
+            "type": "str",
+            "value": "id_blocked"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "days_lost": {
+            "type": "i32",
+            "value": 91
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1,
+          "reasonGiven": false,
+          "appealed": true,
+          "resolved": false
+        }
+      }
+    },
+    {
+      "id": "reply-unknown-status",
+      "kind": "reply",
+      "valid": false,
+      "description": "A reply status outside the closed vocabulary, which could carry a message.",
+      "at": "/attributes/status",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": true,
+          "permissionlessExtension": true
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "reply"
+          },
+          "parent": {
+            "type": "key",
+            "value": "0x0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e"
+          },
+          "status": {
+            "type": "str",
+            "value": "call me on this number"
+          },
+          "period": {
+            "type": "i32",
+            "value": 202610
+          },
+          "demo": {
+            "type": "bool",
+            "value": false
+          }
+        },
+        "payload": {
+          "v": 1
+        }
+      }
+    },
+    {
+      "id": "trust-list-name-too-long",
+      "kind": "trust_list",
+      "valid": false,
+      "description": "A list name longer than 48 characters.",
+      "at": "/attributes/name",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": false,
+          "permissionlessExtension": false
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "trust_list"
+          },
+          "name": {
+            "type": "str",
+            "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "scope": {
+            "type": "str",
+            "value": "food_delivery"
+          }
+        },
+        "payload": {
+          "v": 1,
+          "description": "Members we have met in person.",
+          "members": [
+            "0x1111111111111111111111111111111111111111",
+            "0x2222222222222222222222222222222222222222"
+          ]
+        }
+      }
+    }
+  ]
+}

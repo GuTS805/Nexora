@@ -58,6 +58,24 @@ try {
     out.lock = locked.entityKey === key;
     const ts = (n) => 1_700_000_000n + n * 2n;
     out.block = await lib.blockAtDate({ getBlock: async (a) => ({ number: a?.blockNumber ?? 1000n, timestamp: ts(a?.blockNumber ?? 1000n) }) }, new Date(Number(ts(400n)) * 1000));
+    // Authorship proofs (0.5.0 and later): signed with one key, accepted only for that key.
+    if (typeof lib.verifyAuthorship === "function") {
+      const { generatePrivateKey, privateKeyToAccount } = await import("viem/accounts");
+      const author = privateKeyToAccount(generatePrivateKey());
+      const entry = "0x" + "ab".repeat(32);
+      const signature = await author.signMessage({ message: lib.authorshipMessage(entry, "desk 1") });
+      const proof = lib.parseProof(lib.formatProof({ entityKey: entry, challenge: "desk 1", signature }));
+      out.proof = (await lib.verifyAuthorship(proof, { entityKey: entry, creator: author.address, challenge: "desk 1" }))
+        && !(await lib.verifyAuthorship(proof, { entityKey: entry, creator: "0x" + "44".repeat(20) }));
+    }
+    // Conformance vectors (0.6.0 and later): shipped, and every verdict holds.
+    try {
+      const { default: data } = await import("nexora-ledger/vectors.json", { with: { type: "json" } });
+      const { validateWire } = await import("nexora-ledger/contract");
+      out.vectors = data.vectors.length >= 20 && data.vectors.every((v) => (validateWire(v.kind, v.entity).length === 0) === v.valid);
+    } catch {
+      out.vectors = null;
+    }
     console.log(JSON.stringify(out, (_, v) => (typeof v === "bigint" ? String(v) : v)));
   `);
   const used = JSON.parse(run("node use.mjs").trim().split("\n").pop());
@@ -67,6 +85,10 @@ try {
   check("sealing round-trips, and the audit runs", used.seal && used.audit);
   check("createLocked names the predicted key in the same batch", used.lock);
   check("blockAtDate finds the block for a moment", used.block === "400", used.block);
+  if (used.proof === undefined) console.log(`SKIP authorship proofs (not in ${target})`);
+  else check("an authorship proof verifies for its signer only", used.proof);
+  if (used.vectors === null) console.log(`SKIP conformance vectors (not in ${target})`);
+  else check("the conformance vectors ship, and every verdict holds", used.vectors);
 
   const cli = run("npx --no-install nexora");
   check("the nexora CLI runs from the package", cli.includes("audit") && cli.includes("at <key>"), cli.trim());

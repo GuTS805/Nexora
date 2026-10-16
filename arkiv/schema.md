@@ -25,11 +25,13 @@ Every Nexora entity carries `app = "nexora"`, `kind`, and `v = 1`. Readers **mus
 
 **A conforming reader:**
 
-1. MUST validate every entity against this contract and leave out those that fail, because anyone can write an entity that claims `app = "nexora"`. It SHOULD show how many it left out. It MAY ignore attributes it does not know.
+1. MUST validate every entity against this contract and leave out those that fail, because anyone can write an entity that claims `app = "nexora"`. That includes entries not created `readonly` (their writer could change them after people relied on them) and payloads that are not `application/json`. It SHOULD show how many it left out. It MAY ignore attributes and payload fields it does not know.
 2. MUST take authorship from Arkiv's `$creator`, never from an attribute.
 3. SHOULD count distinct `$creator` wallets, not entities, and call a figure confirmed only when at least two wallets back it (two members, when a trust list is applied).
 4. MUST treat a reply as a claim by its own `$creator`. Only an update from the report's own `$creator` marks a report resolved.
 5. SHOULD tell its users that deletion and expiry remove an entry from the current state, not from history (friction F9).
+
+**Checking an implementation:** [`vectors/`](vectors) holds conformance vectors: entities a writer or reader must accept or reject, each with the reason and the JSON Pointer where a validator must report the problem. They run in any language with a JSON Schema 2020-12 validator; [`examples/check_vectors.py`](../examples/check_vectors.py) does it in Python, and [`examples/nexora_reader.py`](../examples/nexora_reader.py) reads the live ledger with the Python standard library alone.
 
 **Checking a deployment:** `npx -p nexora-ledger nexora audit` holds every entity on chain that claims `app = "nexora"` to the strict schemas and scans it for personal data. Anyone can run it against anyone's entries.
 

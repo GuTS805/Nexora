@@ -1,0 +1,24 @@
+name: I built on the Nexora data
+description: Tell us about a reader, writer, report or app that uses the contract, so it can be listed.
+labels: [implementation]
+body:
+  - type: input
+    id: link
+    attributes:
+      label: Link
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: What it does
+      options: [Reads the ledger, Writes entries, Both, A report or analysis]
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Conformance
+      options:
+        - label: It gives the stated verdict on every vector in arkiv/vectors/vectors.json
+        - label: It takes authorship from $creator and counts wallets, not entries
