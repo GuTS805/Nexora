@@ -28,6 +28,24 @@ Nexora is a shared, worker-written record of pay and incidents. Every entry is s
 
 ## Best Indian Use Case: who in India uses it, and what changes for them
 
+### Why India: the evidence, from the workers' own survey
+
+The *Prisoners on Wheels?* report ([PDF](https://tgpwu.org/wp-content/uploads/2024/03/Report-Final-Print-1.pdf); page numbers are the report's own) is the strongest case we know for this product, and it was written before Nexora existed:
+
+| What the report found | What Nexora does about it |
+| --- | --- |
+| **The data exists, but only the companies can see it.** "There is … an abundance of data that is being captured and held, but none of it is accessible to anyone except the companies" (foreword, p. 4). | Workers publish their own pay and incidents, and anyone can query them without asking anybody, platforms included. |
+| **Companies erase it.** "The companies have also reportedly deleted the data of aggrieved workers as per their whims and fancies" (p. 65). | On Arkiv nobody can delete a worker's entry but the worker, and a locked report not even them; what was on record on any past day stays readable. |
+| **The researchers ask for exactly this.** Their recommendation 10 calls for "data transparency, data sharing provisions and data rights of the workers" (p. 65). | A worker-held, openly specified record ([`schema.md`](../arkiv/schema.md)) that a union, a welfare board or a researcher can read with the npm package, the CLI or a short Python script that uses only the standard library. |
+| **Workers do share pay data when they trust where it goes.** Workers volunteered as surveyors, about 1,700 screenshots of real rides came from 50 drivers, and respondents shared their app screenshots and sat for group discussions (pp. 14–16). | Logging takes under a minute, in seven languages or by voice, from the worker's own phone, with nothing that identifies them. |
+| **Taking part can cost a worker their ID.** At Delhi airport, Ola representatives told drivers that anyone who took part in the survey would be blacklisted and have their ID blocked (pp. 16–17). | No name, phone or rider ID is ever asked for; reports go out from a one-time wallet, at a random later moment, and exact figures are banded or sealed. |
+
+**Where the law now stands.** The Code on Social Security, 2020 (in force since 21 November 2025) recognises platform workers, Karnataka's 2025 Act gives them reasons and notice before termination, and Fairwork India 2024 found that no platform earned a point for paying a living wage after costs. Every one of these is a cited guide on Arkiv, shown on *Your rights*.
+
+**What we have not done yet, honestly.** We have not yet run a pilot with workers: the entries on Tiramisu today are the labelled synthetic demo, and the real figures in the app are the cited survey, laws and ratings. *For unions and riders' groups* is how the first real entries are meant to come: a poster for wherever riders wait and five rules that keep a union from ever collecting pay, names or IDs itself.
+
+### Who uses it and what changes
+
 - **Users:** food and grocery delivery riders, cab, auto and bike-taxi drivers, and parcel and home-services workers. They work 8–14 hours a day across Swiggy, Zomato, Blinkit, Zepto, Uber, Ola, Rapido and others, in metros and tier-2 cities. Then the people who act for them: unions, riders' WhatsApp groups, labour researchers, journalists and state welfare boards.
 - **What changes on day one:**
   - Before joining an app or a new city, a worker opens *Compare*, picks city and kind of work, and sees take-home per hour after fuel and costs, per app. Only figures that at least two independent workers confirm rank first, and every figure links to its evidence.
@@ -167,6 +185,10 @@ Each row says what the feature changes for the user and why we chose it. Every c
 
 ## Why Arkiv (what would break elsewhere)
 
+**In three sentences.** The people a rider needs protection from are the platform, and whoever runs the app, including us: the survey above records a platform threatening to block the IDs of drivers who spoke, and companies deleting aggrieved workers' data. On Arkiv no operator sits between the rider and the record: entries are signed by the rider's wallet, cannot be edited or taken down by anyone else, expire when the rider chose, and can be queried by anyone, as of today or of any past block. We could not get all of that from a database we run, from IPFS, or from a contract on a general-purpose chain.
+
+**Check it yourself in a minute.** Open **Proof** in the app: it re-reads every recorded transaction from the chain in your browser, including a read-only day still unchanged after the chain refused its author's patch, a report locked to `0x…dEaD` that nobody can delete, and a deleted day read back as of a block before its deletion. From a terminal, `npx tsx ledger/cli.ts verify` does the same, and `npx -p nexora-ledger nexora audit` checks every entry on the ledger against the published contract.
+
 A rider needs two things that pull against each other: a record that **nobody can take down or quietly edit**, and **control over how long it stays in the current record**. Most stacks give one or the other. Arkiv gives both, lets anyone query the record without a server in between, and answers as of any past block, so anyone can show what was on record when.
 
 | If we used… | What breaks for a rider |
@@ -174,6 +196,7 @@ A rider needs two things that pull against each other: a record that **nobody ca
 | Signed records in our own database | Signatures stop forgery but nothing else. We still choose which reports are shown, so one legal notice to us silences every report about a platform. The rider has to trust us to really delete a day when it expires, and a union reads the data only through our API, on our terms. When our server goes, the record goes. |
 | Postgres + our API | We become the gatekeeper a rider has to trust not to edit, delete or hand over their data, and that is exactly the trust this problem lacks. Riders complain because the platform holds all the data; a second company holding it changes nothing. |
 | IPFS | Content stays put, but nothing answers "Bengaluru bike-taxi days since August, from riders a union vouches for" without an indexer, which is our API again. Data stays only while someone pays to pin it, yet nothing can be made to expire, so a rider who regrets publishing cannot make it go away. |
+| A contract on Ethereum or an L2 | Every day logged would be stored for ever at L1 or rollup storage prices, paid by a worker or by us. Nothing expires, so the rider's control over how long a day stays in the record is gone, and there is still no way to ask "Bengaluru bike-taxi days since August from riders a union vouches for" without building an indexer. |
 | Subgraph over contract events | A contract, an indexer and its operator: one more layer that can lag or be switched off. Filters over many attributes plus `OR` over a list of creators are awkward, payloads as events are expensive, and there is no native expiry or deletion. |
 
 **What Nexora gets only from Arkiv, and the rule that breaks without it:**

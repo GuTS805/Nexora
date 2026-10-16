@@ -21,6 +21,8 @@ Nexora is a **testnet prototype**. Seed entries are synthetic and labelled. A wa
 
 Platforms hold detailed pay and account records, while workers see only fragments of their own history. A worker weighing two apps or a move to another city needs to know what people take home after fuel and other costs. A worker reporting a blocked account may also need to avoid attaching their name or rider ID to the report. Nexora makes comparable, inspectable records available across platforms while keeping names and exact figures out of public attributes.
 
+The need is documented: in the 2024 *Prisoners on Wheels?* survey of 10,384 app-based workers in eight Indian cities, the researchers write that the data "is being captured and held, but none of it is accessible to anyone except the companies", that companies "reportedly deleted the data of aggrieved workers", and that Ola representatives threatened to block the IDs of drivers who took part ([report](https://tgpwu.org/wp-content/uploads/2024/03/Report-Final-Print-1.pdf), pp. 4, 65 and 16–17). On Arkiv, neither a platform nor whoever runs this app can edit or delete a worker's entry, and anyone can read the ledger without going through the app.
+
 **Hosts:** https://nexora-pi-snowy.vercel.app · mirror https://guts805.github.io/Nexora/ (built by GitHub from this repository) · the whole app as one file: `nexora.html` on either host, under *How it works*.
 
 ## The product in three flows
