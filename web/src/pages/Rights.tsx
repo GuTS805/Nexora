@@ -59,6 +59,7 @@ export function Rights() {
             </>
           )}
           <p className="small muted">{t("rightsDisclaimer")}</p>
+          <p><a href="#/kit">{t("kitLink")} →</a></p>
           <QueryBox query={guides.data.query} block={guides.data.blockNumber} cli={`npx -p nexora-ledger nexora guides --curator ${GUIDE_CURATOR}`} rejected={guides.data.rejected} />
         </>
       )}

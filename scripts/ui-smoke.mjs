@@ -228,6 +228,11 @@ try {
   if (await limitedHere()) skipped.push("trust list lease (Arkiv RPC rate-limited this IP)");
   else check("a trust list says when its vouching lapses unless the curator renews it", await js(`document.querySelector("main")?.innerText.includes("Vouching lapses on about")`));
 
+  // Kit for unions: a bilingual poster with a QR code that points at this host, and a WhatsApp message.
+  await go("#/kit?ui=en", 1500);
+  const kit = await js(`({ qr: document.querySelectorAll(".poster svg.qr rect").length, caption: document.querySelector(".poster-qr figcaption")?.textContent ?? "", hindi: /[ऀ-ॿ]/.test(document.querySelector(".poster-title")?.textContent ?? ""), wa: document.querySelector(".kit-page a.whatsapp")?.href ?? "" })`);
+  check("the union kit has a Hindi and English poster with a QR code for this host, and a WhatsApp message", kit?.qr > 100 && kit.caption.includes(new URL(BASE).host) && kit.hindi && kit.wa.startsWith("https://wa.me/?text="), JSON.stringify({ ...kit, wa: kit?.wa.slice(0, 30) }));
+
   // Rights: the worker's state law and the all-India code, read from Arkiv, every point with sources.
   await go("#/rights?ui=en&city=bengaluru", 1000);
   await settle("details.guide");

@@ -2,7 +2,7 @@
 
 Nexora is MIT licensed ([LICENSE](LICENSE)). The web app and the `nexora-ledger` npm package include or depend on the open-source packages below, each under its own licence. Generated from `node_modules` by [`scripts/notices.mjs`](scripts/notices.mjs); development-only tools (test runners, bundlers, type checkers) are not shipped and not listed.
 
-Licences: MIT (21), MIT (LICENSE file) (1), Apache-2.0 (1), BSD-3-Clause (1).
+Licences: MIT (22), MIT (LICENSE file) (1), Apache-2.0 (1), BSD-3-Clause (1).
 
 | Package | Version | Licence | Source |
 | --- | --- | --- | --- |
@@ -24,6 +24,7 @@ Licences: MIT (21), MIT (LICENSE file) (1), Apache-2.0 (1), BSD-3-Clause (1).
 | json-schema-traverse | 1.0.0 | MIT | https://github.com/epoberezkin/json-schema-traverse |
 | ox | 0.14.54 | MIT | wevm/ox |
 | preact | 10.29.8 | MIT | preactjs/preact |
+| qrcode-generator | 2.0.4 | MIT | https://github.com/kazuhikoarase/qrcode-generator |
 | react | 19.3.0 | MIT | https://github.com/react/react |
 | react-dom | 19.3.0 | MIT | https://github.com/react/react |
 | require-from-string | 2.0.2 | MIT | floatdrop/require-from-string |

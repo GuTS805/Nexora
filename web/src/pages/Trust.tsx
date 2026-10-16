@@ -115,6 +115,7 @@ export function Trust() {
     <section>
       <h2>{t("navTrust")}</h2>
       <p className="muted">{t("trustIntro")}</p>
+      <p className="small"><a href="#/kit">{t("kitLink")} →</a></p>
       <WalletBar />
       {wallet && editing === null && <button onClick={() => setEditing("new")}>{t("createList")}</button>}
       {editing && <Editor existing={editing === "new" ? undefined : editing} onDone={() => setEditing(null)} />}

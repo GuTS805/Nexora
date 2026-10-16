@@ -16,6 +16,7 @@
     "@arkiv-network/sdk": "0.8.1",
     "nexora-ledger": "*",
     "preact": "^10.29.8",
+    "qrcode-generator": "2.0.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "viem": "^2.57.4"
