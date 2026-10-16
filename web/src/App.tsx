@@ -6,7 +6,8 @@ import incidentArt from "./assets/editorial/incident-report.jpg";
 import evidenceArt from "./assets/editorial/ledger-evidence.jpg";
 import notebookArt from "./assets/editorial/work-notebook.jpg";
 import sharedArt from "./assets/editorial/shared-records.jpg";
-import { useI18n } from "./i18n.tsx";
+import { UI_LANGS, useI18n, type UiLang } from "./i18n.tsx";
+import { REGIONAL_NOTE } from "./strings-regional.ts";
 import { PendingQueue } from "./pending.tsx";
 import { store } from "./storage.ts";
 import { About } from "./pages/About.tsx";
@@ -39,7 +40,7 @@ function useRoute() {
 
 export function App() {
   const { route, query } = useRoute();
-  const { t, lang, setLang } = useI18n();
+  const { t, ui, setLang } = useI18n();
   const [lightTheme, setLightTheme] = useState(() => store.get("theme") !== "dark");
   useEffect(() => {
     document.documentElement.dataset.theme = lightTheme ? "light" : "dark";
@@ -64,8 +65,8 @@ export function App() {
   }, [route]);
   // A shared link opened in this tab may carry the sender's language (?ui=hi).
   useEffect(() => {
-    const ui = new URLSearchParams(query).get("ui");
-    if ((ui === "hi" || ui === "en") && ui !== lang) setLang(ui);
+    const fromLink = new URLSearchParams(query).get("ui");
+    if (UI_LANGS.some(([code]) => code === fromLink) && fromLink !== ui) setLang(fromLink as UiLang);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
@@ -78,10 +79,13 @@ export function App() {
         </nav>
         <a className="gh-link" href="https://github.com/GuTS805/Nexora" target="_blank" rel="noreferrer" title={t("openSourceTitle")} aria-label={t("openSourceTitle")}><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z" /></svg><span>{t("openSource")}</span></a>
         <button className="icon-control" onClick={() => setLightTheme(!lightTheme)} title={t(lightTheme ? "themeDark" : "themeLight")} aria-label={t(lightTheme ? "themeDark" : "themeLight")}>{lightTheme ? "☾" : "☼"}</button>
-        <button className="icon-control lang" onClick={() => setLang(lang === "en" ? "hi" : "en")}>{t("switchLang")}</button>
+        <select className="icon-control lang" aria-label="Language / भाषा" value={ui} onChange={(e) => setLang(e.target.value as UiLang)}>
+          {UI_LANGS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+        </select>
       </header>
       <main>
         <PendingQueue />
+        {(ui === "kn" || ui === "ta") && <p className="card notice small regional-note" role="note">{REGIONAL_NOTE[ui]}</p>}
         {sectionLabel && <div className="editorial-banner" aria-hidden="true">
           <div><span>NEXORA / {sectionLabel}</span><strong>{sectionLabel}</strong></div>
           <img src={sectionArt} alt="" />

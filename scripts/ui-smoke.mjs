@@ -93,26 +93,44 @@ try {
   await go("#/?ui=en", 3000);
   check("earnings page renders", await js(`document.querySelector(".lead")?.textContent.includes("What delivery and ride work really pays")`));
   check("no horizontal overflow at 390px", await js(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`));
-  await js(`document.querySelector("button.lang").click()`);
+  // The language menu is a select; React listens for change events on it.
+  const pickLang = (code) => js(`(() => { const s = document.querySelector("select.lang"); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(s, "${code}"); s.dispatchEvent(new Event("change", { bubbles: true })); })()`);
+  await pickLang("hi");
   await sleep(400);
   check("language toggles to Hindi", await js(`document.querySelector(".lead")?.textContent.includes("असल कमाई")`));
-  await js(`document.querySelector("button.lang").click()`);
+  await pickLang("kn");
+  await sleep(400);
+  const kannada = await js(`({ lead: document.querySelector(".lead")?.textContent ?? "", note: document.querySelector(".regional-note")?.textContent ?? "", nav: document.querySelector(".top nav")?.innerText ?? "" })`);
+  check("Kannada shows the home page and nav in Kannada, and says it is machine-translated", /[\u0C80-\u0CFF]/.test(kannada?.lead) && kannada.nav.includes("ಹೋಲಿಕೆ") && kannada.note.includes("ಯಂತ್ರ"), kannada?.lead.slice(0, 60));
+  await pickLang("ta");
+  await sleep(400);
+  check("Tamil shows the home page in Tamil", await js(`/[\u0B80-\u0BFF]/.test(document.querySelector(".lead")?.textContent ?? "") && (document.querySelector(".top nav")?.innerText ?? "").includes("ஒப்பீடு")`));
+  await pickLang("en");
   await sleep(300);
   // The home page says who it is for, and each step card is a link; a city is one tap.
   const home = await js(`({ forWho: document.querySelector(".hero .eyebrow")?.textContent ?? "", cards: [...document.querySelectorAll(".steps li a")].map((a) => a.getAttribute("href")), promises: document.querySelectorAll(".trust-strip li").length })`);
   check("the home page says who it is for, and each step card is a one-tap way in", home?.forWho.includes("workers in India") && home.cards.join(",") === "#/compare,#/log,#/log?tab=incident" && home.promises === 4, JSON.stringify(home));
+  // Waits until the query shown matches `pattern` or the rate-limit notice appears, instead of a fixed pause.
+  const answered = async (pattern, tries = 40) => {
+    for (let i = 0; i < tries; i++) {
+      const state = await js(`({ limited: /rate-limited|query budget/i.test(document.querySelector("main")?.innerText ?? ""), query: [...document.querySelectorAll("details.query pre")].map((p) => p.textContent).join(" | ") })`);
+      if (state?.limited || pattern.test(state?.query ?? "")) return state;
+      await sleep(500);
+    }
+    return { limited: false, query: "" };
+  };
   await js(`[...document.querySelectorAll(".city-pick .chip")].find((b) => b.textContent === "Bengaluru")?.click()`);
-  await sleep(3000);
-  if (await js(`/rate-limited|query budget/i.test(document.querySelector("main")?.innerText ?? "")`)) skipped.push("city chip (Arkiv RPC rate-limited this IP)");
-  else check("one tap on a city chip filters the query to that city", /city = str\('bengaluru'\)/.test((await js(`[...document.querySelectorAll("details.query pre")].map((p) => p.textContent).join(" | ")`)) ?? ""));
+  const chip = await answered(/city = str\('bengaluru'\)/);
+  if (chip.limited) skipped.push("city chip (Arkiv RPC rate-limited this IP)");
+  else check("one tap on a city chip filters the query to that city", /city = str\('bengaluru'\)/.test(chip.query));
   await js(`[...document.querySelectorAll(".city-pick .chip")].find((b) => b.textContent === "All")?.click()`);
   await sleep(300);
   // Day length is a range over the published hours band, in the query and in the equivalent CLI command.
   await js(`(() => { const s = [...document.querySelectorAll(".filters label.field")].find((l) => l.textContent.includes("Day length"))?.querySelector("select"); s.value = "8plus"; s.dispatchEvent(new Event("change", { bubbles: true })); })()`);
-  await sleep(3000);
-  if (await js(`/rate-limited|query budget/i.test(document.querySelector("main")?.innerText ?? "")`)) skipped.push("day-length filter (Arkiv RPC rate-limited this IP)");
+  const dayState = await answered(/hours_band >= i32\(2\)/);
+  if (dayState.limited) skipped.push("day-length filter (Arkiv RPC rate-limited this IP)");
   else {
-    const query = await js(`[...document.querySelectorAll("details.query pre")].map((p) => p.textContent).join(" | ")`);
+    const query = dayState.query;
     check("day-length filter queries the hours band, and shows the same filter as a CLI flag", /hours_band >= i32\(2\)/.test(query ?? "") && (query ?? "").includes("--day 8plus"), (query ?? "").slice(0, 120));
   }
 

@@ -1,8 +1,14 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { store } from "./storage.ts";
 import { STRINGS, type StringKey } from "./strings.ts";
+import { REGIONAL, REGIONAL_VOCAB, type RegionalLang } from "./strings-regional.ts";
 
+/** The language of whole documents (letters, reports, dates, voice): English or Hindi. */
 export type Lang = "en" | "hi";
+/** The language of the screen: also Kannada and Tamil, machine-translated, English where not. */
+export type UiLang = Lang | RegionalLang;
+export const UI_LANGS: [UiLang, string][] = [["en", "EN"], ["hi", "हिंदी"], ["kn", "ಕನ್ನಡ"], ["ta", "தமிழ்"]];
+const isUiLang = (value: unknown): value is UiLang => UI_LANGS.some(([code]) => code === value);
 
 export type { StringKey };
 
@@ -33,7 +39,7 @@ const VOCAB: Record<string, [string, string]> = {
 };
 
 type Vars = Record<string, string | number>;
-type I18n = { lang: Lang; setLang: (lang: Lang) => void; t: (key: StringKey, vars?: Vars) => string; v: (code: string) => string };
+type I18n = { lang: Lang; ui: UiLang; setLang: (lang: UiLang) => void; t: (key: StringKey, vars?: Vars) => string; v: (code: string) => string };
 
 const Context = createContext<I18n | null>(null);
 
@@ -43,23 +49,27 @@ function fill(template: string, vars?: Vars): string {
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => {
+  const [ui, setUi] = useState<UiLang>(() => {
     // A shared link can carry the sender's language (?ui=hi), so a Hindi WhatsApp share opens in Hindi.
     const fromLink = new URLSearchParams(location.hash.split("?")[1] ?? "").get("ui");
-    if (fromLink === "hi" || fromLink === "en") return fromLink;
-    return store.get("lang") === "hi" ? "hi" : "en";
+    if (isUiLang(fromLink)) return fromLink;
+    const saved = store.get("lang");
+    return isUiLang(saved) ? saved : "en";
   });
+  const lang: Lang = ui === "hi" ? "hi" : "en";
   const index = lang === "hi" ? 1 : 0;
-  if (typeof document !== "undefined") document.documentElement.lang = lang;
+  const regional = ui === "kn" || ui === "ta" ? ui : null;
+  if (typeof document !== "undefined") document.documentElement.lang = ui;
   const value: I18n = {
     lang,
+    ui,
     setLang: (next) => {
-      setLangState(next);
+      setUi(next);
       store.set("lang", next);
       document.documentElement.lang = next;
     },
-    t: (key, vars) => fill(STRINGS[key][index], vars),
-    v: (code) => VOCAB[code]?.[index] ?? code.replace(/_/g, " "),
+    t: (key, vars) => fill((regional && REGIONAL[key]?.[regional]) || STRINGS[key][index], vars),
+    v: (code) => (regional && REGIONAL_VOCAB[code]?.[regional]) || VOCAB[code]?.[index] || code.replace(/_/g, " "),
   };
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }

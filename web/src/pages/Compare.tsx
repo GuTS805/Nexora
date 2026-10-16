@@ -17,7 +17,7 @@ function useInitialParams() {
 
 export function Compare() {
   const { reader, wallet, revision } = useArkiv();
-  const { t, v, lang: uiLang } = useI18n();
+  const { t, v, ui: uiLang } = useI18n();
   const params = useInitialParams();
   const [city, setCity] = useState<City | "">(isOneOf(CITIES, params.get("city")) ? (params.get("city") as City) : "bengaluru");
   const [work, setWork] = useState<WorkType | "">(isOneOf(WORK_TYPES, params.get("work")) ? (params.get("work") as WorkType) : "food_delivery");
