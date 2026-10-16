@@ -20,6 +20,7 @@ import {
   NET_MAX, NET_MIN, NET_STEP, PERIOD_MAX, PERIOD_MIN, PLATFORMS, REPLY_STATUSES, SCHEMA_VERSION, VEHICLES, WORK_TYPES, isPeriod,
 } from "./schema.ts";
 import { SEAL_ALG, SEAL_KDF } from "./seal.ts";
+import { GUIDE_SCOPES, GUIDE_TOPICS, decodeGuide } from "./guide.ts";
 
 export const SCHEMA_BASE_URL = "https://raw.githubusercontent.com/GuTS805/Nexora/main/arkiv/schema/";
 
@@ -53,6 +54,14 @@ const SEALED_BOX: JsonSchema = {
     iv: { type: "string", description: "12 random bytes, base64.", pattern: "^[A-Za-z0-9+/]{16}$" },
     ct: { type: "string", description: "Ciphertext and GCM tag, base64.", pattern: "^[A-Za-z0-9+/]+={0,2}$", maxLength: 7_999 },
   },
+};
+
+const GUIDE_TEXT = (maxLength: number): JsonSchema => ({ type: "string", minLength: 1, maxLength });
+const GUIDE_LINK: JsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["label", "url"],
+  properties: { label: GUIDE_TEXT(140), url: { type: "string", maxLength: 300, pattern: "^https://[^\\s\"<>]+$" } },
 };
 
 const COMMON_ATTRIBUTES = {
@@ -198,6 +207,59 @@ export const JSON_SCHEMAS = {
       },
     },
   ),
+  guide: entity(
+    "guide",
+    "Nexora guide (v1)",
+    "What the law gives gig workers, or an independent rating of platforms, with its sources. Editable by its curator; earlier wordings stay readable at past blocks.",
+    {
+      flags: {
+        type: "object",
+        additionalProperties: false,
+        required: ["readonly", "permissionlessExtension"],
+        properties: { readonly: { const: false }, permissionlessExtension: { const: false } },
+      },
+      required: ["app", "v", "kind", "scope", "topic"],
+      attributes: {
+        app: COMMON_ATTRIBUTES.app,
+        v: COMMON_ATTRIBUTES.v,
+        kind: attr("str", { const: KIND.guide }),
+        scope: attr("str", { enum: [...GUIDE_SCOPES] }, "All of India, or a state with its own gig-worker law."),
+        topic: attr("str", { enum: [...GUIDE_TOPICS] }, "A law, or an independent rating of platforms."),
+      },
+      payload: {
+        type: "object",
+        additionalProperties: false,
+        required: ["v", "title", "status", "points", "sources", "checked"],
+        properties: {
+          v: { const: SCHEMA_VERSION },
+          title: GUIDE_TEXT(160),
+          status: GUIDE_TEXT(480),
+          points: { type: "array", items: GUIDE_TEXT(480), minItems: 1, maxItems: 6 },
+          sources: { type: "array", items: GUIDE_LINK, minItems: 1, maxItems: 4 },
+          actions: { type: "array", items: GUIDE_LINK, maxItems: 3 },
+          scores: {
+            type: "object",
+            description: "For a rating: score out of 10 per platform.",
+            propertyNames: { enum: [...PLATFORMS] },
+            additionalProperties: { type: "integer", minimum: 0, maximum: 10 },
+          },
+          checked: { type: "string", description: "The day the facts were checked against the sources.", pattern: "^20\\d\\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$" },
+          hi: {
+            type: "object",
+            description: "The same guide in Hindi, one line for each English line.",
+            additionalProperties: false,
+            required: ["title", "status", "points"],
+            properties: {
+              title: GUIDE_TEXT(160),
+              status: GUIDE_TEXT(480),
+              points: { type: "array", items: GUIDE_TEXT(480), minItems: 1, maxItems: 6 },
+              actions: { type: "array", items: GUIDE_TEXT(140), maxItems: 3 },
+            },
+          },
+        },
+      },
+    },
+  ),
 } as const;
 
 export type ContractKind = keyof typeof JSON_SCHEMAS;
@@ -257,6 +319,7 @@ function compiled(): Record<ContractKind, ValidateFunction> {
       incident: ajv.compile(JSON_SCHEMAS.incident),
       reply: ajv.compile(JSON_SCHEMAS.reply),
       trust_list: ajv.compile(JSON_SCHEMAS.trust_list),
+      guide: ajv.compile(JSON_SCHEMAS.guide),
     };
   }
   return validators;
@@ -296,7 +359,8 @@ const PII_PATTERNS: [string, RegExp][] = [
 
 function clearStrings(value: unknown, out: string[] = []): string[] {
   if (typeof value === "string") {
-    if (!/^0x[0-9a-fA-F]+$/.test(value)) out.push(value);
+    // Hex values and https links are not personal text; a link's digits (an article id) are not an ID number.
+    if (!/^0x[0-9a-fA-F]+$/.test(value) && !/^https:\/\/\S+$/.test(value)) out.push(value);
   } else if (Array.isArray(value)) {
     for (const item of value) clearStrings(item, out);
   } else if (value && typeof value === "object") {
@@ -339,7 +403,7 @@ export type AuditReport = {
  * personal data in clear text.
  */
 export function auditEntities(entities: readonly RawEntity[]): AuditReport {
-  const shown: AuditReport["shown"] = { shift: 0, incident: 0, reply: 0, trust_list: 0 };
+  const shown: AuditReport["shown"] = { shift: 0, incident: 0, reply: 0, trust_list: 0, guide: 0 };
   const rejected: AuditReport["rejected"] = [];
   const violations: AuditFinding[] = [];
   const wallets = {
@@ -350,8 +414,8 @@ export function auditEntities(entities: readonly RawEntity[]): AuditReport {
   for (const raw of entities) {
     const kindValue = raw.attributes?.kind?.value;
     const kind: ContractKind | null =
-      kindValue === KIND.shift ? "shift" : kindValue === KIND.incident ? "incident" : kindValue === KIND.reply ? "reply" : kindValue === KIND.trustList ? "trust_list" : null;
-    const decoded = kind === "trust_list" ? decodeTrustList(raw) : kind === "reply" ? decodeReply(raw) : kind ? decodeEntry(raw) : null;
+      kindValue === KIND.shift ? "shift" : kindValue === KIND.incident ? "incident" : kindValue === KIND.reply ? "reply" : kindValue === KIND.trustList ? "trust_list" : kindValue === KIND.guide ? "guide" : null;
+    const decoded = kind === "trust_list" ? decodeTrustList(raw) : kind === "reply" ? decodeReply(raw) : kind === "guide" ? decodeGuide(raw) : kind ? decodeEntry(raw) : null;
     if (!kind || !decoded || !decoded.ok) {
       rejected.push({ key: raw.key ?? "unknown", reason: decoded && !decoded.ok ? decoded.reason : "not a Nexora kind" });
       continue;

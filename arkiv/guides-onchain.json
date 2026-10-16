@@ -1,0 +1,47 @@
+{
+  "curator": "0xf00b81c90dF57B2924A3d165a670FcF656d0e492",
+  "guides": [
+    {
+      "scope": "bihar",
+      "topic": "law",
+      "key": "0xcbdec1933860b578b3b7df7666efbca044794104076c01cbf84bd61fd47851d1",
+      "tx": "0x231027e889dc34c9d2f5552ba7858ca4bb4122430e21f1c12d76611b68e9c076"
+    },
+    {
+      "scope": "india",
+      "topic": "law",
+      "key": "0x306789b19e7d4afeda4992756ca7a6dcad7d4eb277b8b073f67d1042d19389c5",
+      "tx": "0x231027e889dc34c9d2f5552ba7858ca4bb4122430e21f1c12d76611b68e9c076"
+    },
+    {
+      "scope": "india",
+      "topic": "rating",
+      "key": "0x6b79abcb01928ce797ae967bcc2937c1dc78aca1a35c61ad8866b8efc3ed63fc",
+      "tx": "0x231027e889dc34c9d2f5552ba7858ca4bb4122430e21f1c12d76611b68e9c076"
+    },
+    {
+      "scope": "jharkhand",
+      "topic": "law",
+      "key": "0x40dd40ba6578afa47ceefeb2e7cd33297299cf99619f385c440391cf992c538e",
+      "tx": "0x231027e889dc34c9d2f5552ba7858ca4bb4122430e21f1c12d76611b68e9c076"
+    },
+    {
+      "scope": "karnataka",
+      "topic": "law",
+      "key": "0x016c875ea41d4e976cc295410e87ebc434f46fb027eaad619baa4323dc048a08",
+      "tx": "0x231027e889dc34c9d2f5552ba7858ca4bb4122430e21f1c12d76611b68e9c076"
+    },
+    {
+      "scope": "rajasthan",
+      "topic": "law",
+      "key": "0x89165abf59176b72107c7f4b81d8e86df9f0900697afdddf8d8bd8228626ffcf",
+      "tx": "0x231027e889dc34c9d2f5552ba7858ca4bb4122430e21f1c12d76611b68e9c076"
+    },
+    {
+      "scope": "telangana",
+      "topic": "law",
+      "key": "0x3c2f878d03aa789563baa21aa97bef83dff71b44da7d9d40f3c50d92e01bf14f",
+      "tx": "0x231027e889dc34c9d2f5552ba7858ca4bb4122430e21f1c12d76611b68e9c076"
+    }
+  ]
+}

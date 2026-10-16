@@ -1,0 +1,186 @@
+{
+  "about": "Workers' rights and independent ratings, each point with its sources. Published on Arkiv by the curator of the recommended trust list (scripts/seed-guides.ts) and read by the app's Rights page. Facts were checked against the linked sources on the date in `checked`; laws change, so a reader should open the sources before relying on a point.",
+  "guides": [
+    {
+      "scope": "india",
+      "topic": "law",
+      "title": "Code on Social Security, 2020 (all of India)",
+      "status": "In force since 21 November 2025, with the other three labour codes. Many rules and schemes under it are still to be notified by the Centre and the states.",
+      "points": [
+        "The Code names gig workers and platform workers as groups the Centre and states can make welfare schemes for: life and disability cover, accident insurance, health and maternity benefits, and old-age protection.",
+        "Platforms (aggregators) are to pay 1–2% of their annual turnover into a social security fund for these workers, capped at 5% of what they pay workers (section 114 and the Seventh Schedule).",
+        "Register on e-Shram, the Labour Ministry's portal for unorganised and gig workers, so that you can be reached by these schemes."
+      ],
+      "actions": [{ "label": "Register on e-Shram", "url": "https://register.eshram.gov.in/" }],
+      "sources": [
+        { "label": "EY alert: the four labour codes in force from 21 November 2025", "url": "https://www.ey.com/content/dam/ey-unified-site/ey-com/en-in/alerts-hub/2025/11/new-labour-codes-implemented-across-the-country-effective-21-november-2025.pdf" },
+        { "label": "Taxmann: aggregator obligations, section 114 and the Seventh Schedule", "url": "https://www.taxmann.com/post/blog/analysis-aggregator-obligations-code-on-social-security/" }
+      ],
+      "checked": "2026-10-16",
+      "hi": {
+        "title": "सामाजिक सुरक्षा संहिता, 2020 (पूरे भारत में)",
+        "status": "21 नवंबर 2025 से लागू, बाकी तीन श्रम संहिताओं के साथ। इसके कई नियम और योजनाएँ केंद्र और राज्यों द्वारा अभी अधिसूचित होनी बाकी हैं।",
+        "points": [
+          "संहिता गिग वर्कर्स और प्लेटफ़ॉर्म वर्कर्स को ऐसे समूह मानती है जिनके लिए केंद्र और राज्य कल्याण योजनाएँ बना सकते हैं: जीवन और विकलांगता कवर, दुर्घटना बीमा, स्वास्थ्य और मातृत्व लाभ, और बुढ़ापे की सुरक्षा।",
+          "प्लेटफ़ॉर्म (एग्रीगेटर) अपने सालाना टर्नओवर का 1–2% इन वर्कर्स के सामाजिक सुरक्षा कोष में देंगे, जो वर्कर्स को दी गई रकम के 5% से ज़्यादा नहीं होगा (धारा 114 और सातवीं अनुसूची)।",
+          "ई-श्रम पर रजिस्टर करें, यह असंगठित और गिग वर्कर्स के लिए श्रम मंत्रालय का पोर्टल है, ताकि ये योजनाएँ आप तक पहुँच सकें।"
+        ],
+        "actions": ["ई-श्रम पर रजिस्टर करें"]
+      }
+    },
+    {
+      "scope": "karnataka",
+      "topic": "law",
+      "title": "Karnataka Platform Based Gig Workers (Social Security and Welfare) Act, 2025",
+      "status": "In force. It replaced an ordinance of May 2025. Swiggy, Zomato, Zepto and the industry body IAMAI challenged it in the Karnataka High Court, which in July 2026 declined to put the law on hold and directed platforms to deposit the welfare fee; the case continues.",
+      "points": [
+        "You have a right to be registered with the state and get one ID that works on every platform.",
+        "Your contract must give the reasons for which you can be terminated, and you must get 14 days' notice before termination.",
+        "The platform must tell you how its automated systems (the app's algorithms) affect your work.",
+        "A complaint about pay, deductions or termination goes first to the platform's own committee; if you get no action report within 14 days, it goes to the state Gig Workers Welfare Board. An appeal can be filed within 90 days.",
+        "Platforms pay a welfare fee on each payout to workers (the law allows 1–5%; the state notified 1%), which funds welfare schemes for registered workers."
+      ],
+      "sources": [
+        { "label": "PRS Legislative Research: the Karnataka Bill, 2025", "url": "https://prsindia.org/bills/states/the-karnataka-platform-based-gig-workers-social-security-and-welfare-bill-2025" },
+        { "label": "Business Standard (July 2026): what the Act says and the High Court challenge", "url": "https://www.business-standard.com/india-news/karnataka-gig-workers-act-explained-benefits-high-court-platforms-126070800776_1.html" },
+        { "label": "Fairwork India 2024 report, sections 12 and 15 of the draft (page 14)", "url": "https://citapp.iiitb.ac.in/wp-content/uploads/2024/10/Fairwork-India-2024-Report.pdf" }
+      ],
+      "checked": "2026-10-16",
+      "hi": {
+        "title": "कर्नाटक प्लेटफ़ॉर्म आधारित गिग वर्कर्स (सामाजिक सुरक्षा और कल्याण) अधिनियम, 2025",
+        "status": "लागू है। इसने मई 2025 के अध्यादेश की जगह ली। स्विगी, ज़ोमैटो, ज़ेप्टो और उद्योग संस्था IAMAI ने इसे कर्नाटक हाई कोर्ट में चुनौती दी; जुलाई 2026 में कोर्ट ने कानून पर रोक लगाने से मना किया और प्लेटफ़ॉर्म्स को कल्याण शुल्क जमा करने को कहा। मामला चल रहा है।",
+        "points": [
+          "आपको राज्य में रजिस्टर होने और हर प्लेटफ़ॉर्म पर चलने वाली एक ID पाने का हक़ है।",
+          "आपके कॉन्ट्रैक्ट में लिखा होना चाहिए कि किन कारणों से आपको हटाया जा सकता है, और हटाने से पहले 14 दिन का नोटिस मिलना चाहिए।",
+          "प्लेटफ़ॉर्म को बताना होगा कि उसके ऑटोमेटेड सिस्टम (ऐप के एल्गोरिद्म) आपके काम पर कैसे असर डालते हैं।",
+          "पैसे, कटौती या हटाए जाने की शिकायत पहले प्लेटफ़ॉर्म की अपनी कमेटी के पास जाती है; 14 दिन में कार्रवाई की रिपोर्ट न मिले तो यह राज्य के गिग वर्कर्स कल्याण बोर्ड के पास जाती है। 90 दिन के भीतर अपील की जा सकती है।",
+          "प्लेटफ़ॉर्म वर्कर्स को हर भुगतान पर कल्याण शुल्क देते हैं (कानून 1–5% की इजाज़त देता है; राज्य ने 1% अधिसूचित किया है), जिससे रजिस्टर्ड वर्कर्स की योजनाएँ चलती हैं।"
+        ]
+      }
+    },
+    {
+      "scope": "rajasthan",
+      "topic": "law",
+      "title": "Rajasthan Platform Based Gig Workers (Registration and Welfare) Act, 2023",
+      "status": "Passed on 24 July 2023, the first state law of its kind. Reports in 2026 say its implementation stalled after a change of government.",
+      "points": [
+        "Every platform-based gig worker is to be registered with the state and get a unique ID.",
+        "A welfare board with representatives of workers, platforms, civil society and the state runs a welfare fund, paid for by a fee on platforms.",
+        "Complaints can be taken to a Grievance Redressal Officer notified by the state government."
+      ],
+      "sources": [
+        { "label": "Drishti IAS (25 July 2023): Rajasthan passes the first gig workers' bill", "url": "https://www.drishtiias.com/state-pcs-current-affairs/rajasthan-becomes-1st-state-to-pass-bill-for-welfare-of-online-platfor-based-gig-workers/print_manually" },
+        { "label": "Cyril Amarchand Mangaldas (August 2023): the Act explained", "url": "https://corporate.cyrilamarchandblogs.com/2023/08/rajasthan-passes-rajasthan-platform-based-gig-workers-registration-and-welfare-act-2023/" },
+        { "label": "Indian Express via Vision IAS (1 April 2026): how state laws have fared", "url": "https://visionias.in/current-affairs/upsc-daily-news-summary/article/2026-04-01/the-indian-express/polity-and-governance/telangana-assembly-passes-gig-workers-bill-what-is-the-bill-about-and-how-other-states-with-such-laws-have-fared" }
+      ],
+      "checked": "2026-10-16",
+      "hi": {
+        "title": "राजस्थान प्लेटफ़ॉर्म आधारित गिग वर्कर्स (रजिस्ट्रेशन और कल्याण) अधिनियम, 2023",
+        "status": "24 जुलाई 2023 को पास हुआ, इस तरह का पहला राज्य कानून। 2026 की रिपोर्टों के अनुसार सरकार बदलने के बाद इसका लागू होना रुक गया।",
+        "points": [
+          "हर प्लेटफ़ॉर्म आधारित गिग वर्कर को राज्य में रजिस्टर होना है और एक यूनिक ID मिलनी है।",
+          "वर्कर्स, प्लेटफ़ॉर्म, नागरिक समाज और राज्य के प्रतिनिधियों वाला एक कल्याण बोर्ड कल्याण कोष चलाता है, जो प्लेटफ़ॉर्म्स पर शुल्क से भरा जाता है।",
+          "शिकायतें राज्य सरकार द्वारा अधिसूचित शिकायत निवारण अधिकारी के पास ले जाई जा सकती हैं।"
+        ]
+      }
+    },
+    {
+      "scope": "telangana",
+      "topic": "law",
+      "title": "Telangana Platform-Based Gig Workers (Registration, Social Security and Welfare) Bill, 2026",
+      "status": "Passed by the State Assembly (reported 1 April 2026). Check whether it has since been notified as an Act before relying on it.",
+      "points": [
+        "Every gig worker gets a unique ID, and platforms must register workers and file transaction returns every three months.",
+        "A 1–2% levy on platform transactions goes to a welfare fund; a board uses it for insurance, pension and maternity benefits.",
+        "Platform-level committees with special officers are to resolve complaints, and platforms must be transparent about pay and deductions."
+      ],
+      "sources": [
+        { "label": "Indian Express via Vision IAS (1 April 2026): Telangana Assembly passes the Bill", "url": "https://visionias.in/current-affairs/upsc-daily-news-summary/article/2026-04-01/the-indian-express/polity-and-governance/telangana-assembly-passes-gig-workers-bill-what-is-the-bill-about-and-how-other-states-with-such-laws-have-fared" }
+      ],
+      "checked": "2026-10-16",
+      "hi": {
+        "title": "तेलंगाना प्लेटफ़ॉर्म आधारित गिग वर्कर्स (रजिस्ट्रेशन, सामाजिक सुरक्षा और कल्याण) विधेयक, 2026",
+        "status": "राज्य विधानसभा ने पास किया (1 अप्रैल 2026 की रिपोर्ट)। भरोसा करने से पहले देख लें कि यह अधिनियम के रूप में अधिसूचित हुआ या नहीं।",
+        "points": [
+          "हर गिग वर्कर को यूनिक ID मिलेगी, और प्लेटफ़ॉर्म्स को वर्कर्स को रजिस्टर करना और हर तीन महीने में लेन-देन का रिटर्न देना होगा।",
+          "प्लेटफ़ॉर्म के लेन-देन पर 1–2% शुल्क कल्याण कोष में जाएगा; एक बोर्ड इससे बीमा, पेंशन और मातृत्व लाभ देगा।",
+          "शिकायतें सुलझाने के लिए प्लेटफ़ॉर्म स्तर पर विशेष अधिकारियों वाली कमेटियाँ होंगी, और प्लेटफ़ॉर्म्स को पैसे और कटौती के बारे में पारदर्शी रहना होगा।"
+        ]
+      }
+    },
+    {
+      "scope": "bihar",
+      "topic": "law",
+      "title": "Bihar Platform Based Gig Workers (Registration, Social Security and Welfare) Act, 2025",
+      "status": "Passed by the State Assembly on 23 July 2025. Reports in 2026 say its implementation stalled.",
+      "points": [
+        "Gig workers are to be registered and get unique IDs; platforms must register within 60 days.",
+        "Benefits named in the law include ₹4 lakh compensation for accidental death and support for hospitalisation.",
+        "A welfare board chaired by the state's Labour Resources Minister runs the scheme."
+      ],
+      "sources": [
+        { "label": "The Week (23 July 2025): Bihar Assembly passes the Bill", "url": "https://www.theweek.in/wire-updates/national/2025/07/23/ces34-bh-assembly-bills.html" },
+        { "label": "Patna Press: what the Bihar law provides", "url": "https://patnapress.com/bihar-gig-workers-welfare-bill-2025/" },
+        { "label": "The Leaflet: the Bihar law and its critics", "url": "https://theleaflet.in/labour-law/the-bihar-gig-workers-law-a-bold-step-forward-but-a-step-back-for-trade-unions" }
+      ],
+      "checked": "2026-10-16",
+      "hi": {
+        "title": "बिहार प्लेटफ़ॉर्म आधारित गिग वर्कर्स (रजिस्ट्रेशन, सामाजिक सुरक्षा और कल्याण) अधिनियम, 2025",
+        "status": "राज्य विधानसभा ने 23 जुलाई 2025 को पास किया। 2026 की रिपोर्टों के अनुसार इसका लागू होना रुक गया।",
+        "points": [
+          "गिग वर्कर्स को रजिस्टर होना है और यूनिक ID मिलनी है; प्लेटफ़ॉर्म्स को 60 दिन के भीतर रजिस्टर होना है।",
+          "कानून में बताए लाभों में दुर्घटना में मृत्यु पर ₹4 लाख मुआवज़ा और अस्पताल में भर्ती होने पर मदद शामिल है।",
+          "राज्य के श्रम संसाधन मंत्री की अध्यक्षता वाला कल्याण बोर्ड योजना चलाता है।"
+        ]
+      }
+    },
+    {
+      "scope": "jharkhand",
+      "topic": "law",
+      "title": "Jharkhand Platform-Based Gig Workers (Registration and Welfare) Act, 2025",
+      "status": "Passed by the State Assembly in 2025 and issued as an Act on 6 January 2026.",
+      "points": [
+        "Gig workers are to be registered with an ID, under a welfare board and fund.",
+        "The law covers social security, safety at work, transparency of automated systems, and resolving disputes."
+      ],
+      "sources": [
+        { "label": "TeamLease RegTech: the Act as issued", "url": "https://www.teamleaseregtech.com/updates/article/54306/jharkhand-platform-based-gig-workers-registration-and-welfare-act-2025/" },
+        { "label": "Business Standard (July 2026): the state gig-worker laws", "url": "https://www.business-standard.com/india-news/karnataka-gig-workers-act-explained-benefits-high-court-platforms-126070800776_1.html" }
+      ],
+      "checked": "2026-10-16",
+      "hi": {
+        "title": "झारखंड प्लेटफ़ॉर्म आधारित गिग वर्कर्स (रजिस्ट्रेशन और कल्याण) अधिनियम, 2025",
+        "status": "राज्य विधानसभा ने 2025 में पास किया और 6 जनवरी 2026 को अधिनियम के रूप में जारी हुआ।",
+        "points": [
+          "गिग वर्कर्स को एक कल्याण बोर्ड और कोष के तहत ID के साथ रजिस्टर होना है।",
+          "कानून सामाजिक सुरक्षा, काम पर सुरक्षा, ऑटोमेटेड सिस्टम की पारदर्शिता और विवाद सुलझाने को कवर करता है।"
+        ]
+      }
+    },
+    {
+      "scope": "india",
+      "topic": "rating",
+      "title": "Fairwork India Ratings 2024: how platforms treat workers",
+      "status": "Independent study by CITAPP at IIIT Bangalore with the University of Oxford, published in October 2024; the latest India edition we could find on 16 October 2026.",
+      "points": [
+        "Each platform is scored out of 10 on five principles: fair pay, fair conditions, fair contracts, fair management and fair representation.",
+        "No platform scored more than 6. None earned a point for paying a living wage after costs, or for recognising a workers' collective body.",
+        "Based on desk research, evidence from the platforms, and interviews with workers in Bengaluru, Chennai, Delhi, Kochi and Thiruvananthapuram. Amazon was rated as Amazon Flex."
+      ],
+      "scores": { "swiggy": 6, "zomato": 6, "bigbasket": 6, "urban_company": 6, "zepto": 4, "amazon": 2, "flipkart": 1, "ola": 0, "uber": 0, "porter": 0 },
+      "sources": [
+        { "label": "Fairwork India Ratings 2024 report (scores on page 16)", "url": "https://citapp.iiitb.ac.in/wp-content/uploads/2024/10/Fairwork-India-2024-Report.pdf" }
+      ],
+      "checked": "2026-10-16",
+      "hi": {
+        "title": "फ़ेयरवर्क इंडिया रेटिंग्स 2024: प्लेटफ़ॉर्म वर्कर्स के साथ कैसा बर्ताव करते हैं",
+        "status": "IIIT बैंगलोर के CITAPP और ऑक्सफ़ोर्ड विश्वविद्यालय का स्वतंत्र अध्ययन, अक्टूबर 2024 में प्रकाशित; 16 अक्टूबर 2026 तक हमें मिला सबसे नया भारत संस्करण।",
+        "points": [
+          "हर प्लेटफ़ॉर्म को पाँच सिद्धांतों पर 10 में से अंक मिलते हैं: उचित वेतन, उचित परिस्थितियाँ, उचित कॉन्ट्रैक्ट, उचित प्रबंधन और उचित प्रतिनिधित्व।",
+          "किसी प्लेटफ़ॉर्म को 6 से ज़्यादा अंक नहीं मिले। किसी को भी खर्च के बाद जीवन-निर्वाह वेतन देने या वर्कर्स के संगठन को मान्यता देने का अंक नहीं मिला।",
+          "डेस्क रिसर्च, प्लेटफ़ॉर्म्स के सबूत और बेंगलुरु, चेन्नई, दिल्ली, कोच्चि और तिरुवनंतपुरम के वर्कर्स के इंटरव्यू पर आधारित। Amazon को Amazon Flex के रूप में रेट किया गया।"
+        ]
+      }
+    }
+  ]
+}

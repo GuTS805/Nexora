@@ -13,6 +13,7 @@ import { AsOf } from "../history.tsx";
 import { ComplaintLetter } from "../letter.tsx";
 import { PlatformLogo } from "../logos.tsx";
 import { Authorship } from "../proof.tsx";
+import { RightsNote } from "../guides.tsx";
 import { appUrl } from "../share.ts";
 import { SpeakButton } from "../voice.tsx";
 import { useRecommendedList } from "./Explore.tsx";
@@ -196,6 +197,8 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
       )}
 
       <Authorship entityKey={e.key} creator={e.creator} />
+
+      {e.kind === "incident" && <RightsNote city={e.city} />}
 
       {e.kind === "incident" && <Replies report={e} replies={data.data.replies} query={data.data.repliesQuery} />}
 

@@ -43,7 +43,7 @@ try {
       "fetchShifts", "fetchIncidents", "fetchReplies", "fetchTrustLists", "comparePlatforms", "seal", "unseal", "readClient", "arkivHttp",
       "withReadFallback", "explainError", "isRateLimited", "createLocked", "isLocked", "trustRenewal", "blockAtDate", "entityAtBlock", "memberChanges"];
     out.missing = fns.filter((name) => typeof lib[name] !== "function");
-    out.schemas = [shift, incident, reply, trustList].every((s) => typeof s.$id === "string") && Object.keys(JSON_SCHEMAS).length === 4;
+    out.schemas = [shift, incident, reply, trustList].every((s) => typeof s.$id === "string") && Object.keys(JSON_SCHEMAS).length >= 4;
     const params = lib.shiftCreate({ platform: "swiggy", work: "food_delivery", city: "pune", vehicle: "ev_scooter", period: 202610, grossInr: 1180, costsInr: 240, hours: 9, incentive: "met", expiresInDays: 30 });
     out.valid = validateEntity("shift", params);
     out.noRupees = !JSON.stringify(params, (_, v) => (typeof v === "bigint" ? String(v) : v)).includes("1180");
@@ -80,7 +80,7 @@ try {
   `);
   const used = JSON.parse(run("node use.mjs").trim().split("\n").pop());
   check("every documented function is exported", used.missing.length === 0, used.missing.join(", "));
-  check("the four JSON Schemas import as JSON modules", used.schemas);
+  check("the JSON Schemas import as JSON modules", used.schemas);
   check("a written entity passes the strict schema and carries no exact rupees", used.valid.length === 0 && used.noRupees, used.valid.join("; "));
   check("sealing round-trips, and the audit runs", used.seal && used.audit);
   check("createLocked names the predicted key in the same batch", used.lock);

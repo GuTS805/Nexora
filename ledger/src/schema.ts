@@ -16,6 +16,7 @@ export const KIND = {
   incident: "incident",
   trustList: "trust_list",
   reply: "reply",
+  guide: "guide",
 } as const;
 
 export const PLATFORMS = [

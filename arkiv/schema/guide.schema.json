@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/GuTS805/Nexora/main/arkiv/schema/guide.schema.json",
+  "title": "Nexora guide (v1)",
+  "description": "What the law gives gig workers, or an independent rating of platforms, with its sources. Editable by its curator; earlier wordings stay readable at past blocks.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contentType",
+    "flags",
+    "attributes",
+    "payload"
+  ],
+  "properties": {
+    "contentType": {
+      "const": "application/json"
+    },
+    "flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "readonly",
+        "permissionlessExtension"
+      ],
+      "properties": {
+        "readonly": {
+          "const": false
+        },
+        "permissionlessExtension": {
+          "const": false
+        }
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "app",
+        "v",
+        "kind",
+        "scope",
+        "topic"
+      ],
+      "properties": {
+        "app": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "str"
+            },
+            "value": {
+              "const": "nexora"
+            }
+          }
+        },
+        "v": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "i32"
+            },
+            "value": {
+              "const": 1
+            }
+          }
+        },
+        "kind": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "str"
+            },
+            "value": {
+              "const": "guide"
+            }
+          }
+        },
+        "scope": {
+          "type": "object",
+          "description": "All of India, or a state with its own gig-worker law.",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "str"
+            },
+            "value": {
+              "enum": [
+                "india",
+                "rajasthan",
+                "karnataka",
+                "bihar",
+                "jharkhand",
+                "telangana"
+              ]
+            }
+          }
+        },
+        "topic": {
+          "type": "object",
+          "description": "A law, or an independent rating of platforms.",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "str"
+            },
+            "value": {
+              "enum": [
+                "law",
+                "rating"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "title",
+        "status",
+        "points",
+        "sources",
+        "checked"
+      ],
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 480
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 480
+          },
+          "minItems": 1,
+          "maxItems": 6
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "url"
+            ],
+            "properties": {
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 140
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 300,
+                "pattern": "^https://[^\\s\"<>]+$"
+              }
+            }
+          },
+          "minItems": 1,
+          "maxItems": 4
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "url"
+            ],
+            "properties": {
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 140
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 300,
+                "pattern": "^https://[^\\s\"<>]+$"
+              }
+            }
+          },
+          "maxItems": 3
+        },
+        "scores": {
+          "type": "object",
+          "description": "For a rating: score out of 10 per platform.",
+          "propertyNames": {
+            "enum": [
+              "swiggy",
+              "zomato",
+              "blinkit",
+              "zepto",
+              "bigbasket",
+              "amazon",
+              "flipkart",
+              "uber",
+              "ola",
+              "rapido",
+              "porter",
+              "urban_company",
+              "other"
+            ]
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          }
+        },
+        "checked": {
+          "type": "string",
+          "description": "The day the facts were checked against the sources.",
+          "pattern": "^20\\d\\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$"
+        },
+        "hi": {
+          "type": "object",
+          "description": "The same guide in Hindi, one line for each English line.",
+          "additionalProperties": false,
+          "required": [
+            "title",
+            "status",
+            "points"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "status": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 480
+            },
+            "points": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 480
+              },
+              "minItems": 1,
+              "maxItems": 6
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 140
+              },
+              "maxItems": 3
+            }
+          }
+        }
+      }
+    }
+  }
+}

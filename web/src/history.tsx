@@ -1,4 +1,4 @@
-import { blockAtDate, decodeEntry, decodeReply, decodeTrustList, entityAtBlock, entityKeyPredicate, explainError, memberChanges, queryText, type RawEntity, type TrustList } from "nexora-ledger";
+import { blockAtDate, decodeEntry, decodeGuide, decodeReply, decodeTrustList, entityAtBlock, entityKeyPredicate, explainError, memberChanges, queryText, type RawEntity, type TrustList } from "nexora-ledger";
 import { useState, type ReactNode } from "react";
 import type { Hex } from "viem";
 import { useArkiv } from "./arkiv.tsx";
@@ -32,12 +32,14 @@ export function AsOf({ entityKey, current, gone }: { entityKey: Hex; current?: T
     const entry = decodeEntry(then);
     const list = decodeTrustList(then);
     const reply = decodeReply(then);
+    const guide = decodeGuide(then);
     let what: ReactNode = t("asOfOnRecord");
     if (entry.ok) {
       const e = entry.value;
       what = `${t("asOfOnRecord")} ${e.kind === "shift" ? `${v(e.platform)} · ${v(e.work)} · ${v(e.city)} · ${t("perHour", { n: e.netHourly })}` : `${v(e.type)} · ${v(e.platform)} · ${v(e.city)}`}${e.demo ? ` · ${t("syntheticDemo")}` : ""}`;
     } else if (reply.ok) what = `${t("asOfOnRecord")} ${v(reply.value.status)}`;
     else if (list.ok) what = `${t("asOfOnRecord")} ${list.value.name}`;
+    else if (guide.ok) what = `${t("asOfOnRecord")} ${lang === "hi" && guide.value.hi ? guide.value.hi.status : guide.value.status}`;
     const changes = list.ok && current ? memberChanges(list.value.members, current.members) : null;
     return (
       <>

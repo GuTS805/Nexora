@@ -5,6 +5,7 @@ import { and, eq, gte, lte, or, type Expression } from "@arkiv-network/sdk/query
 import { custom, http, webSocket, type Address, type Hex } from "viem";
 import { decodeEntry, decodeIncident, decodeReply, decodeShift, decodeTrustList, type Decoded, type Entry, type Incident, type RawEntity, type Reply, type Shift, type TrustList } from "./codec.ts";
 import { APP, DAY_LENGTHS, KIND, SCHEMA_VERSION, type City, type DayLength, type IncidentType, type Platform, type Vehicle, type WorkType } from "./schema.ts";
+import { decodeGuide, type Guide } from "./guide.ts";
 
 export const TIRAMISU_RPC = tiramisu.rpcUrls.default.http[0];
 export const TIRAMISU_WS = tiramisu.rpcUrls.default.webSocket[0];
@@ -246,6 +247,13 @@ export function trustListPredicate(curator?: Address): Expression {
   return and(clauses);
 }
 
+/** Guides (laws and ratings), from one curator when given: readers trust curators, not authors' claims. */
+export function guidePredicate(curator?: Address): Expression {
+  const clauses = base(KIND.guide);
+  if (curator) clauses.push(eq("$creator", addr(curator)));
+  return and(clauses);
+}
+
 /** The exact query text a judge or another developer can paste into any Arkiv client. */
 export function queryText(expression: Expression): string {
   return expression.toString();
@@ -348,6 +356,19 @@ export async function fetchTrustLists(client: PublicArkivClient, curator?: Addre
   const rejected: { key: string; reason: string }[] = [];
   for (const entity of raw) {
     const decoded = decodeTrustList(entity);
+    if (decoded.ok) items.push(decoded.value);
+    else rejected.push({ key: decoded.key, reason: decoded.reason });
+  }
+  return { items, rejected, query: queryText(expression), blockNumber, truncated };
+}
+
+export async function fetchGuides(client: PublicArkivClient, curator?: Address): Promise<QueryOutcome<Guide>> {
+  const expression = guidePredicate(curator);
+  const { raw, blockNumber, truncated } = await collect(client, expression, 200);
+  const items: Guide[] = [];
+  const rejected: { key: string; reason: string }[] = [];
+  for (const entity of raw) {
+    const decoded = decodeGuide(entity);
     if (decoded.ok) items.push(decoded.value);
     else rejected.push({ key: decoded.key, reason: decoded.reason });
   }

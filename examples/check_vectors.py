@@ -21,7 +21,7 @@ VECTORS = ROOT / "arkiv" / "vectors" / "vectors.json"
 
 def main() -> int:
     validators = {}
-    for kind in ("shift", "incident", "reply", "trust_list"):
+    for kind in ("shift", "incident", "reply", "trust_list", "guide"):
         schema = json.loads((SCHEMAS / f"{kind.replace('_', '-')}.schema.json").read_text(encoding="utf-8"))
         Draft202012Validator.check_schema(schema)
         validators[kind] = Draft202012Validator(schema)

@@ -210,6 +210,18 @@ try {
   if (await limitedHere()) skipped.push("trust list lease (Arkiv RPC rate-limited this IP)");
   else check("a trust list says when its vouching lapses unless the curator renews it", await js(`document.querySelector("main")?.innerText.includes("Vouching lapses on about")`));
 
+  // Rights: the worker's state law and the all-India code, read from Arkiv, every point with sources.
+  await go("#/rights?ui=en&city=bengaluru", 1000);
+  await settle("details.guide");
+  if (await limitedHere()) skipped.push("rights (Arkiv RPC rate-limited this IP)");
+  else {
+    const rights = await js(`({ text: document.querySelector("main")?.innerText ?? "", sources: [...document.querySelectorAll(".guide-sources a")].every((a) => a.href.startsWith("https://")), scores: document.querySelectorAll(".guide-scores tr").length })`);
+    check("the rights page shows Bengaluru's state law and the all-India code, each point with https sources and the date checked",
+      rights?.text.includes("Karnataka Platform Based Gig Workers") && rights.text.includes("Code on Social Security, 2020") && rights.text.includes("Sources (checked 2026-10-16)") && rights.sources,
+      rights?.text.slice(0, 120));
+    check("independent platform ratings are listed with their scores", rights?.scores >= 10 && rights.text.includes("6/10"), String(rights?.scores));
+  }
+
   // The day worker 2 deleted: gone from the current state, still readable as of a block before the
   // delete. The moment is fixed in UTC and typed in this browser's local time, so any timezone works.
   await go(`#/e/${evidence.features.owner_delete?.key}?ui=en`, 1000);

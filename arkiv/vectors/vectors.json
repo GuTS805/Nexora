@@ -368,6 +368,117 @@
       }
     },
     {
+      "id": "guide-law",
+      "kind": "guide",
+      "valid": true,
+      "description": "A state law for gig workers, with its source and a Hindi translation.",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": false,
+          "permissionlessExtension": false
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "guide"
+          },
+          "scope": {
+            "type": "str",
+            "value": "karnataka"
+          },
+          "topic": {
+            "type": "str",
+            "value": "law"
+          }
+        },
+        "payload": {
+          "v": 1,
+          "title": "A state gig-worker law",
+          "status": "In force.",
+          "points": [
+            "Fourteen days' notice before termination."
+          ],
+          "sources": [
+            {
+              "label": "The Act",
+              "url": "https://example.org/act"
+            }
+          ],
+          "checked": "2026-10-16",
+          "hi": {
+            "title": "एक राज्य कानून",
+            "status": "लागू है।",
+            "points": [
+              "हटाने से पहले 14 दिन का नोटिस।"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "guide-rating",
+      "kind": "guide",
+      "valid": true,
+      "description": "An independent rating of platforms, scored out of 10.",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": false,
+          "permissionlessExtension": false
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "guide"
+          },
+          "scope": {
+            "type": "str",
+            "value": "india"
+          },
+          "topic": {
+            "type": "str",
+            "value": "rating"
+          }
+        },
+        "payload": {
+          "v": 1,
+          "title": "An independent rating",
+          "status": "Published in 2024.",
+          "points": [
+            "Scored out of 10."
+          ],
+          "sources": [
+            {
+              "label": "The report",
+              "url": "https://example.org/report.pdf"
+            }
+          ],
+          "scores": {
+            "swiggy": 6,
+            "uber": 0
+          },
+          "checked": "2026-10-16"
+        }
+      }
+    },
+    {
       "id": "shift-exact-hours-attribute",
       "kind": "shift",
       "valid": false,
@@ -1412,6 +1523,177 @@
             "0x1111111111111111111111111111111111111111",
             "0x2222222222222222222222222222222222222222"
           ]
+        }
+      }
+    },
+    {
+      "id": "guide-insecure-source",
+      "kind": "guide",
+      "valid": false,
+      "description": "A source that is not an https link.",
+      "at": "/payload/sources/0/url",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": false,
+          "permissionlessExtension": false
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "guide"
+          },
+          "scope": {
+            "type": "str",
+            "value": "karnataka"
+          },
+          "topic": {
+            "type": "str",
+            "value": "law"
+          }
+        },
+        "payload": {
+          "v": 1,
+          "title": "A state gig-worker law",
+          "status": "In force.",
+          "points": [
+            "Fourteen days' notice before termination."
+          ],
+          "sources": [
+            {
+              "label": "The Act",
+              "url": "http://example.org/act"
+            }
+          ],
+          "checked": "2026-10-16",
+          "hi": {
+            "title": "एक राज्य कानून",
+            "status": "लागू है।",
+            "points": [
+              "हटाने से पहले 14 दिन का नोटिस।"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "guide-score-out-of-range",
+      "kind": "guide",
+      "valid": false,
+      "description": "A rating above 10.",
+      "at": "/payload/scores/swiggy",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": false,
+          "permissionlessExtension": false
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "guide"
+          },
+          "scope": {
+            "type": "str",
+            "value": "india"
+          },
+          "topic": {
+            "type": "str",
+            "value": "rating"
+          }
+        },
+        "payload": {
+          "v": 1,
+          "title": "An independent rating",
+          "status": "Published in 2024.",
+          "points": [
+            "Scored out of 10."
+          ],
+          "sources": [
+            {
+              "label": "The report",
+              "url": "https://example.org/report.pdf"
+            }
+          ],
+          "scores": {
+            "swiggy": 11,
+            "uber": 0
+          },
+          "checked": "2026-10-16"
+        }
+      }
+    },
+    {
+      "id": "guide-unknown-scope",
+      "kind": "guide",
+      "valid": false,
+      "description": "A place outside the closed list of scopes.",
+      "at": "/attributes/scope",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": false,
+          "permissionlessExtension": false
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "guide"
+          },
+          "scope": {
+            "type": "str",
+            "value": "atlantis"
+          },
+          "topic": {
+            "type": "str",
+            "value": "law"
+          }
+        },
+        "payload": {
+          "v": 1,
+          "title": "A state gig-worker law",
+          "status": "In force.",
+          "points": [
+            "Fourteen days' notice before termination."
+          ],
+          "sources": [
+            {
+              "label": "The Act",
+              "url": "https://example.org/act"
+            }
+          ],
+          "checked": "2026-10-16",
+          "hi": {
+            "title": "एक राज्य कानून",
+            "status": "लागू है।",
+            "points": [
+              "हटाने से पहले 14 दिन का नोटिस।"
+            ]
+          }
         }
       }
     }

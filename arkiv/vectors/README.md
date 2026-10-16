@@ -7,7 +7,7 @@ Each vector has:
 | Field | Meaning |
 | --- | --- |
 | `id` | A stable name, such as `shift-name-attribute`. |
-| `kind` | `shift`, `incident`, `reply` or `trust_list`; the schema is `../schema/<kind with - for _>.schema.json`. |
+| `kind` | `shift`, `incident`, `reply`, `trust_list` or `guide`; the schema is `../schema/<kind with - for _>.schema.json`. |
 | `valid` | `true` if the entity follows the contract, `false` if it must be rejected. |
 | `description` | What the entity is, or what is wrong with it. |
 | `at` | For an invalid vector: the JSON Pointer under which a validator must report a problem, so it is rejected for the stated reason and not by accident. |
@@ -21,7 +21,7 @@ Python, with only the schema files and the `jsonschema` package:
 
 ```bash
 pip install "jsonschema>=4.18"
-python examples/check_vectors.py      # 22 of 22 vectors give the verdict the contract states
+python examples/check_vectors.py      # 27 of 27 vectors give the verdict the contract states
 ```
 
 JavaScript, from the npm package:

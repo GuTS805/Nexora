@@ -665,3 +665,23 @@ html[lang="hi"] h1, html[lang="hi"] h2, html[lang="hi"] h3, html[lang="hi"] .edi
 :root[data-theme="dark"] .card.notice { background: var(--warn-bg); border-color: #6b5530; color: var(--warn-ink); }
 :root[data-theme="dark"] .steps li svg { background: #3a2c2a; border-color: #5a4440; }
 :root[data-theme="dark"] .card.explore { border-color: #6d5a50; }
+/* Your rights: guides with their sources, and the platform rating. */
+.lead-small { font-size: 1.05rem; max-width: 70ch; }
+.guide-heading { margin: 26px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.card.guide { margin: 0 0 14px; }
+.card.guide > summary { cursor: pointer; list-style: none; }
+.card.guide > summary::-webkit-details-marker { display: none; }
+.card.guide > summary h3 { display: inline; margin: 0; }
+.card.guide > summary::after { content: "＋"; float: right; color: var(--accent); }
+.card.guide[open] > summary::after { content: "－"; }
+.guide-status { margin: 10px 0; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--code); font-size: 15px; }
+.guide-points { margin: 0 0 12px; padding-left: 20px; }
+.guide-points li { margin: 0 0 8px; line-height: 1.5; }
+.guide-sources { margin: 4px 0 10px; padding-left: 18px; }
+.guide-scores { width: 100%; max-width: 560px; border-collapse: collapse; margin: 6px 0 14px; table-layout: fixed; }
+.guide-scores th { text-align: left; font-weight: 600; padding: 4px 10px 4px 0; width: 38%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.guide-scores td { padding: 4px 6px; }
+.guide-scores td:last-child { width: 4.5em; white-space: nowrap; text-align: right; }
+.score-bar { display: block; height: 10px; min-width: 2px; background: var(--accent); border-radius: 2px; }
+.rights-note { border-left: 3px solid var(--accent); }
+.tags a.badge { text-decoration: none; }

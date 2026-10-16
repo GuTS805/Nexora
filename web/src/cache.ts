@@ -1,9 +1,9 @@
 import type { PublicArkivClient } from "@arkiv-network/sdk";
 import {
-  fetchEntries, fetchIncidents, fetchReplies, fetchShifts, fetchTrustList, fetchTrustLists,
+  fetchEntries, fetchGuides, fetchIncidents, fetchReplies, fetchShifts, fetchTrustList, fetchTrustLists,
   type EntryFilters, type IncidentFilters, type ReplyFilters, type ShiftFilters,
 } from "nexora-ledger";
-import type { Hex } from "viem";
+import type { Address, Hex } from "viem";
 
 /**
  * A 30-second in-memory cache for reads. The public RPC gives each visitor IP a small query budget
@@ -43,3 +43,5 @@ export const readReplies = (client: PublicArkivClient, filters: ReplyFilters, ma
 export const readTrustLists = (client: PublicArkivClient) => cached(`lists|${id(client)}`, () => fetchTrustLists(client));
 
 export const readTrustList = (client: PublicArkivClient, key: Hex) => cached(`list|${id(client)}|${key}`, () => fetchTrustList(client, key));
+
+export const readGuides = (client: PublicArkivClient, curator: Address) => cached(`guides|${id(client)}|${curator}`, () => fetchGuides(client, curator));

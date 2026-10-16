@@ -11,7 +11,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { toWire, type ContractKind, type WireEntity } from "./src/contract.ts";
-import { incidentCreate, replyCreate, shiftCreate, trustListCreate, MAX_DAYS_LOST, MAX_NAME_LENGTH, type SealedBox } from "./src/index.ts";
+import { guideCreate, incidentCreate, replyCreate, shiftCreate, trustListCreate, MAX_DAYS_LOST, MAX_NAME_LENGTH, type SealedBox } from "./src/index.ts";
 
 /** `at`, for an invalid vector, is the JSON Pointer under which a validator must report the problem. */
 export type Vector = { id: string; kind: ContractKind; valid: boolean; description: string; at?: string; entity: WireEntity };
@@ -43,6 +43,15 @@ const update = () => toWire(incidentCreate({
 }));
 const reply = () => toWire(replyCreate({ parent: REPORT, status: "escalated", period: 202610, expiresInDays: 365 }));
 const list = () => toWire(trustListCreate({ name: "Bengaluru riders union", scope: "food_delivery", description: "Members we have met in person.", members: [...MEMBERS] }));
+const law = () => toWire(guideCreate({
+  scope: "karnataka", topic: "law", title: "A state gig-worker law", status: "In force.",
+  points: ["Fourteen days' notice before termination."], sources: [{ label: "The Act", url: "https://example.org/act" }], checked: "2026-10-16",
+  hi: { title: "एक राज्य कानून", status: "लागू है।", points: ["हटाने से पहले 14 दिन का नोटिस।"] },
+}));
+const rating = () => toWire(guideCreate({
+  scope: "india", topic: "rating", title: "An independent rating", status: "Published in 2024.",
+  points: ["Scored out of 10."], sources: [{ label: "The report", url: "https://example.org/report.pdf" }], scores: { swiggy: 6, uber: 0 }, checked: "2026-10-16",
+}));
 
 /** A copy with attributes, payload or flags changed by hand. */
 function edit(entity: WireEntity, change: (e: WireEntity) => void): WireEntity {
@@ -61,6 +70,8 @@ export function buildVectors(): Vector[] {
     ok("incident-update", "incident", "The worker's own update to a report, linked by parent, with a sealed note.", update()),
     ok("reply-basic", "reply", "A union says it escalated a report.", reply()),
     ok("trust-list-basic", "trust_list", "A list of wallets a union vouches for, for food delivery.", list()),
+    ok("guide-law", "guide", "A state law for gig workers, with its source and a Hindi translation.", law()),
+    ok("guide-rating", "guide", "An independent rating of platforms, scored out of 10.", rating()),
 
     bad("shift-exact-hours-attribute", "shift", "Exact hours as an extra attribute. Only hours_band may be published.", "/attributes", edit(shift(), (e) => { e.attributes.hours = { type: "i32", value: 9 }; })),
     bad("shift-name-attribute", "shift", "A rider's name as an extra attribute: the leak the closed attribute list exists to stop.", "/attributes", edit(shift(), (e) => { e.attributes.rider_name = { type: "str", value: "Ravi" }; })),
@@ -78,6 +89,9 @@ export function buildVectors(): Vector[] {
     bad("incident-too-many-days", "incident", `More than ${MAX_DAYS_LOST} days lost.`, "/attributes/days_lost", edit(incident(), (e) => { e.attributes.days_lost = { type: "i32", value: MAX_DAYS_LOST + 1 }; })),
     bad("reply-unknown-status", "reply", "A reply status outside the closed vocabulary, which could carry a message.", "/attributes/status", edit(reply(), (e) => { e.attributes.status = { type: "str", value: "call me on this number" }; })),
     bad("trust-list-name-too-long", "trust_list", `A list name longer than ${MAX_NAME_LENGTH} characters.`, "/attributes/name", edit(list(), (e) => { e.attributes.name = { type: "str", value: "x".repeat(MAX_NAME_LENGTH + 1) }; })),
+    bad("guide-insecure-source", "guide", "A source that is not an https link.", "/payload/sources/0/url", edit(law(), (e) => { ((e.payload as { sources: { url: string }[] }).sources[0]!).url = "http://example.org/act"; })),
+    bad("guide-score-out-of-range", "guide", "A rating above 10.", "/payload/scores/swiggy", edit(rating(), (e) => { (e.payload as { scores: Record<string, number> }).scores.swiggy = 11; })),
+    bad("guide-unknown-scope", "guide", "A place outside the closed list of scopes.", "/attributes/scope", edit(law(), (e) => { e.attributes.scope = { type: "str", value: "atlantis" }; })),
   ];
 }
 

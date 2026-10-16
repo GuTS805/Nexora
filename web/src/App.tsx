@@ -18,6 +18,7 @@ import { Log } from "./pages/Log.tsx";
 import { Mine } from "./pages/Mine.tsx";
 import { Proof } from "./pages/Proof.tsx";
 import { Trust } from "./pages/Trust.tsx";
+import { Rights } from "./pages/Rights.tsx";
 
 /** Hash routing, so the static build works from any host, an IPFS gateway, or the portable single file. */
 function useRoute() {
@@ -46,16 +47,16 @@ export function App() {
   }, [lightTheme]);
   const nav: [string, string][] = [
     ["/", t("navExplore")], ["/compare", t("navCompare")], ["/log", t("navLog")], ["/incidents", t("navIncidents")],
-    ["/mine", t("navMine")], ["/trust", t("navTrust")], ["/proof", t("navProof")], ["/about", t("navAbout")],
+    ["/rights", t("navRights")], ["/mine", t("navMine")], ["/trust", t("navTrust")], ["/proof", t("navProof")], ["/about", t("navAbout")],
   ];
   const entity = /^\/e\/(0x[0-9a-fA-F]{64})$/.exec(route)?.[1] as Hex | undefined;
-  const sectionArt = route === "/incidents" ? incidentArt :
+  const sectionArt = route === "/incidents" || route === "/rights" ? incidentArt :
     route === "/log" || route === "/mine" ? notebookArt :
     route === "/trust" ? sharedArt :
     route === "/compare" || entity ? evidenceArt : cityArt;
   // Proof and How it works open with their own illustrated hero, so they get no banner.
   const sectionLabel = route === "/compare" ? t("navCompare") : route === "/log" ? t("navLog") :
-    route === "/incidents" ? t("navIncidents") : route === "/mine" ? t("navMine") :
+    route === "/incidents" ? t("navIncidents") : route === "/rights" ? t("navRights") : route === "/mine" ? t("navMine") :
     route === "/trust" ? t("navTrust") : entity ? t("navExplore") : "";
   // On phones the nav scrolls sideways; keep the current page's tab in view.
   useEffect(() => {
@@ -91,6 +92,7 @@ export function App() {
           route === "/incidents" ? <Incidents key={query} /> :
           route === "/mine" ? <Mine /> :
           route === "/trust" ? <Trust /> :
+          route === "/rights" ? <Rights key={query} /> :
           route === "/about" ? <About /> :
           route === "/proof" ? <Proof /> :
           <Explore />}

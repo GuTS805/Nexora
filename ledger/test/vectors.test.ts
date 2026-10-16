@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { validateWire } from "../src/contract.ts";
-import { decodeEntry, decodeReply, decodeTrustList, type RawEntity } from "../src/index.ts";
+import { decodeEntry, decodeGuide, decodeReply, decodeTrustList, type RawEntity } from "../src/index.ts";
 import { buildVectors, vectorsFileText, type Vector } from "../vectors.ts";
 
 const vectors = buildVectors();
@@ -15,7 +15,7 @@ function asRead(vector: Vector): RawEntity {
   };
 }
 
-const decoders = { shift: decodeEntry, incident: decodeEntry, reply: decodeReply, trust_list: decodeTrustList } as const;
+const decoders = { shift: decodeEntry, incident: decodeEntry, reply: decodeReply, trust_list: decodeTrustList, guide: decodeGuide } as const;
 
 describe("conformance vectors", () => {
   it("committed copy in arkiv/vectors matches the code (run `npm run vectors -w nexora-ledger` after changing the contract)", () => {
@@ -25,7 +25,7 @@ describe("conformance vectors", () => {
 
   it("cover every kind, both ways, with unique ids", () => {
     expect(new Set(vectors.map((v) => v.id)).size).toBe(vectors.length);
-    for (const kind of ["shift", "incident", "reply", "trust_list"] as const) {
+    for (const kind of ["shift", "incident", "reply", "trust_list", "guide"] as const) {
       expect(vectors.some((v) => v.kind === kind && v.valid)).toBe(true);
       expect(vectors.some((v) => v.kind === kind && !v.valid)).toBe(true);
     }

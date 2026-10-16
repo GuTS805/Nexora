@@ -8,3 +8,4 @@ export * from "./lock.ts";
 export * from "./lease.ts";
 export * from "./history.ts";
 export * from "./proof.ts";
+export * from "./guide.ts";

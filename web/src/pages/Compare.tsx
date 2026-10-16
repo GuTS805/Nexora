@@ -1,4 +1,5 @@
 import { readIncidents, readShifts } from "../cache.ts";
+import { RatingTag, useGuides } from "../guides.tsx";
 import { CITIES, VEHICLES, WORK_TYPES, comparePlatforms, isOneOf, type City, type DayLength, type PlatformComparison, type ShiftFilters, type Vehicle, type WorkType } from "nexora-ledger";
 import { useMemo, useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
@@ -27,6 +28,7 @@ export function Compare() {
 
   const creators = creatorsFor(source, wallet, list?.members);
   const recommended = useRecommendedList();
+  const guides = useGuides();
   const trusted = trustedSetFor(source, recommended);
   const filters: ShiftFilters = { city: city || undefined, work: work || undefined, vehicle: vehicle || undefined, day: day || undefined, includeDemo, creators };
   const result = useAsync(async () => {
@@ -99,6 +101,7 @@ export function Compare() {
                 <p className="tags">
                   {r.incentiveHitRate !== null && <span>{t("incentiveHit", { p: Math.round(r.incentiveHitRate * 100) })}</span>}
                   {r.incidents > 0 && <a href={`#/incidents?platform=${r.platform}&city=${city}`}>{t("incidentsHere", { n: r.incidents })}</a>}
+                  <RatingTag guides={guides.data?.items} platform={r.platform} />
                 </p>
                 <p className="small muted">
                   {t("evidence")} {r.evidence.slice(0, 6).map((key) => <span key={key}><EntityLink entityKey={key} /> </span>)}

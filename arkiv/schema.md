@@ -147,6 +147,22 @@ Payload: `{ "v": 1, "description": "<at most 280 chars>", "members": ["0x…", �
 Flags: `readonly = false`, `permissionlessExtension = false`. The curator edits membership in place with `patchEntity`, and only the owner can patch it.
 Expiry: a 180-day **lease**. Only the curator can renew it, back to 180 days from that day ([`trustRenewal`](../ledger/src/lease.ts), *Trust lists → Renew*). A list nobody renews expires, so a group that stops curating, or no longer exists, stops vouching for anyone.
 
+## Entity 5: `guide` (workers' rights and platform ratings, with sources)
+
+What the law gives gig workers in India or in a state, or an independent rating of platforms. Every point carries its sources and the day it was checked. Readers take guides only from curators they trust, by `$creator`: the app reads the recommended trust list's curator, recorded in [`guides-onchain.json`](guides-onchain.json). The published wording is in [`guides.json`](guides.json).
+
+| Name | Type | Values |
+| --- | --- | --- |
+| `app` | str | `nexora` |
+| `kind` | str | `guide` |
+| `v` | i32 | `1` |
+| `scope` | str | `india`, `rajasthan`, `karnataka`, `bihar`, `jharkhand`, `telangana` |
+| `topic` | str | `law` or `rating` |
+
+Payload: `{ "v": 1, "title", "status", "points": [1–6 lines], "sources": [1–4 { "label", "url" }], "actions"?: [0–3 links], "scores"?: { "<platform>": 0–10 }, "checked": "YYYY-MM-DD", "hi"?: { "title", "status", "points", "actions"? } }`, at most 8 KB. Links must be `https`. `scores` is allowed only on a rating, keyed by the platform vocabulary. A Hindi translation has exactly one line per English line.
+
+Flags: `readonly = false`, `permissionlessExtension = false`, like a trust list: when a law changes, the curator patches the guide in place, and what it said on any earlier date stays readable at past blocks (*What was on record at a past time* on each guide). Expiry: 365 days.
+
 ## Queries the app runs
 
 These strings are produced by the SDK's `Expression.toString()`. The UI shows the exact one under every list, next to the equivalent CLI command.

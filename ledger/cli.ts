@@ -14,6 +14,7 @@
  *                    for a trust list, who joined and left since
  *   nexora proof     <file | ->  [--challenge <text>]
  *                    check an authorship proof a worker gave you against the entry's $creator on chain
+ *   nexora guides    [--curator <address>]  workers' rights by state and independent platform ratings, with sources
  *   nexora lists
  *   nexora verify    re-check every feature recorded in arkiv/evidence.json against the chain
  *   nexora audit     check every Nexora entity on chain against the JSON Schemas and for personal data [--json]
@@ -27,7 +28,7 @@ import {
   DAY_LENGTHS, HOURS_BAND_LABELS, comparePlatforms, entryPredicate, explainError, fetchEntries, fetchEntry, fetchIncidents,
   fetchShifts, fetchTrustList, fetchTrustLists, getEntityOrNull, incidentStats, liveClient, queryText, readClient,
   fetchRawEntities, fetchReplies, decodeReply, decodeTrustList, isLocked, repliesTo, type EntryFilters, type IncidentFilters, type ShiftFilters,
-  blockAtDate, decodeEntry, entityAtBlock, memberChanges, parseProof, verifyAuthorship, type RawEntity,
+  blockAtDate, decodeEntry, entityAtBlock, memberChanges, parseProof, verifyAuthorship, fetchGuides, type RawEntity,
 } from "./src/index.ts";
 import { auditEntities } from "./src/contract.ts";
 
@@ -287,6 +288,18 @@ switch (command) {
     if (!report.passed) process.exitCode = 1;
     break;
   }
+  case "guides": {
+    const curator = flag("curator");
+    const result = await fetchGuides(client, curator ? getAddress(curator) : undefined);
+    for (const g of result.items) {
+      console.log(`${g.scope.padEnd(10)} ${g.topic.padEnd(7)} ${g.title}\n           ${g.status}\n           checked ${g.checked}; by ${g.creator}; ${g.key}`);
+      for (const point of g.points) console.log(`           - ${point}`);
+      if (g.scores) console.log(`           scores: ${Object.entries(g.scores).map(([p, s]) => `${p} ${s}/10`).join(", ")}`);
+      for (const source of g.sources) console.log(`           source: ${source.label} <${source.url}>`);
+    }
+    console.log(`\n${result.items.length} guides, ${result.rejected.length} rejected by the contract\nquery: ${result.query}${curator ? "" : "\nAnyone can publish a guide; pass --curator <address> to read only one you trust."}`);
+    break;
+  }
   case "lists": {
     const result = await fetchTrustLists(client);
     for (const list of result.items) console.log(`${list.key}  "${list.name}" (${list.scope}) by ${list.creator}: ${list.members.length} members`);
@@ -320,7 +333,7 @@ switch (command) {
     break;
   }
   default:
-    console.log("commands: earnings | compare --city <c> | incidents | show <key> | at <key> --date <d> | proof <file> | lists | watch | verify | audit   (see header of ledger/cli.ts)");
+    console.log("commands: earnings | compare --city <c> | incidents | show <key> | at <key> --date <d> | proof <file> | guides | lists | watch | verify | audit   (see header of ledger/cli.ts)");
 }
 } catch (error) {
   console.error(`error: ${explainError(error)}`);

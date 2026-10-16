@@ -2,6 +2,17 @@
 
 All notable changes to `nexora-ledger`. Versions follow [semantic versioning](https://semver.org); while the major version is 0, a minor version may add to the API but never changes the meaning of data already on Arkiv. The data contract has its own version (`v = 1` on every entity, see [`arkiv/schema.md`](../arkiv/schema.md)), which no release so far has changed.
 
+## 0.7.0 (2026-10-16)
+
+### Added
+- **Guides** (`guide.ts`): `guideCreate`, `guidePatch`, `decodeGuide`, `validateGuide`, `guidesFor`, `CITY_STATE`, `GUIDE_SCOPES`, `GUIDE_TOPICS`. A guide is what the law gives gig workers in India or a state, or an independent rating of platforms, every point with https sources and the date it was checked, published by a curator and readable as of any past block.
+- `fetchGuides(client, curator?)` and `guidePredicate`, the JSON Schema `nexora-ledger/schema/guide.schema.json`, and guide entries in the privacy audit.
+- `nexora guides [--curator <address>]`.
+- Five more conformance vectors (27 in all), for guides.
+
+### Changed
+- The personal-data scan in the audit skips `https` links, so an article id inside a source link is not read as a 12-digit ID number.
+
 ## 0.6.0 (2026-10-16)
 
 ### Added
