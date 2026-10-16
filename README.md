@@ -50,7 +50,7 @@ Platforms hold detailed pay and account records, while workers see only fragment
 7. **Turn it into a complaint.** The report's page drafts a letter to the platform's grievance officer, a union, or the state labour department or welfare board. The letter carries the facts and links anyone can use to check the record, and the worker fills in their name and ID only after copying. **Incidents** prints, or saves as PDF, a report for a union: the summary, every entry with its explorer link, and the exact query. Workers who have not yet registered are pointed to [e-Shram](https://register.eshram.gov.in), the Labour Ministry's portal for platform workers' social security schemes.
 8. **Get an answer.** A union, a worker group, or the platform replies with where the report stands: received, taken up, escalated to the labour department or board, resolved, or cannot help. A reply is its own read-only entity linked by `parent`; it never changes the report. The app marks replies from the wallet that runs the recommended trust list, ignores replies from the reporter's own wallet, and shows on **Incidents** how many reports have been answered.
 
-The web UI supports English and Hindi in full, and Kannada and Tamil (machine-translated, labelled as such) on the main worker path, and can read comparisons, reports, and complaint letters aloud. Reading needs no account or wallet.
+The web UI supports English and Hindi in full, and Kannada, Tamil, Telugu, Bengali and Marathi (machine-translated, labelled as such) on the main worker path, and can read comparisons, reports, and complaint letters aloud. Reading needs no account or wallet.
 
 ## Architecture
 

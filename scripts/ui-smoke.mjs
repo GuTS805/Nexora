@@ -105,6 +105,13 @@ try {
   await pickLang("ta");
   await sleep(400);
   check("Tamil shows the home page in Tamil", await js(`/[\u0B80-\u0BFF]/.test(document.querySelector(".lead")?.textContent ?? "") && (document.querySelector(".top nav")?.innerText ?? "").includes("ஒப்பீடு")`));
+  const more = [];
+  for (const [code, script, word] of [["te", "[\u0C00-\u0C7F]", "పోలిక"], ["bn", "[\u0980-\u09FF]", "তুলনা"], ["mr", "[\u0900-\u097F]", "तुलना"]]) {
+    await pickLang(code);
+    await sleep(400);
+    more.push(await js(`new RegExp("${script}").test(document.querySelector(".lead")?.textContent ?? "") && (document.querySelector(".top nav")?.innerText ?? "").includes("${word}") && !!document.querySelector(".regional-note") && document.documentElement.scrollWidth <= document.documentElement.clientWidth`) ? code : `${code}: missing or overflows`);
+  }
+  check("Telugu, Bengali and Marathi show the home page and nav in their scripts, with the machine-translation note and no sideways overflow at 390px", more.join(",") === "te,bn,mr", more.join(","));
   await pickLang("en");
   await sleep(300);
   // The home page says who it is for, and each step card is a link; a city is one tap.
@@ -243,7 +250,13 @@ try {
       rights?.text.includes("Karnataka Platform Based Gig Workers") && rights.text.includes("Code on Social Security, 2020") && rights.text.includes("Sources (checked 2026-10-16)") && rights.sources,
       rights?.text.slice(0, 120));
     check("independent platform ratings are listed with their scores", rights?.scores >= 10 && rights.text.includes("6/10"), String(rights?.scores));
+    check("the rights page shows what workers told an independent survey, with its sources", rights?.text.includes("What workers told researchers") && rights.text.includes("Prisoners on Wheels?") && rights.text.includes("blacklisted"), "");
   }
+  // Compare puts a real survey figure for the same kind of work beside the (synthetic) ranking.
+  await go("#/compare?ui=en&city=delhi_ncr&work=cab", 1000);
+  await settle(".survey-note");
+  if (await limitedHere()) skipped.push("survey figure on compare (Arkiv RPC rate-limited this IP)");
+  else check("compare shows a real survey figure for cab drivers beside the ranking", await js(`(document.querySelector(".survey-note")?.textContent ?? "").includes("43%")`));
 
   // The day worker 2 deleted: gone from the current state, still readable as of a block before the
   // delete. The moment is fixed in UTC and typed in this browser's local time, so any timezone works.

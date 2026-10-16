@@ -479,6 +479,56 @@
       }
     },
     {
+      "id": "guide-survey",
+      "kind": "guide",
+      "valid": true,
+      "description": "What an independent survey of workers found, with its source.",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": false,
+          "permissionlessExtension": false
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "guide"
+          },
+          "scope": {
+            "type": "str",
+            "value": "india"
+          },
+          "topic": {
+            "type": "str",
+            "value": "survey"
+          }
+        },
+        "payload": {
+          "v": 1,
+          "title": "A survey of workers",
+          "status": "Self-reported, published in 2024.",
+          "points": [
+            "43% took home under ₹500 a day after costs."
+          ],
+          "sources": [
+            {
+              "label": "The report",
+              "url": "https://example.org/survey.pdf"
+            }
+          ],
+          "checked": "2026-10-16"
+        }
+      }
+    },
+    {
       "id": "shift-exact-hours-attribute",
       "kind": "shift",
       "valid": false,
@@ -1635,6 +1685,57 @@
             "swiggy": 11,
             "uber": 0
           },
+          "checked": "2026-10-16"
+        }
+      }
+    },
+    {
+      "id": "guide-unknown-topic",
+      "kind": "guide",
+      "valid": false,
+      "description": "A topic outside the closed list (law, rating, survey).",
+      "at": "/attributes/topic",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": false,
+          "permissionlessExtension": false
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "guide"
+          },
+          "scope": {
+            "type": "str",
+            "value": "india"
+          },
+          "topic": {
+            "type": "str",
+            "value": "opinion"
+          }
+        },
+        "payload": {
+          "v": 1,
+          "title": "A survey of workers",
+          "status": "Self-reported, published in 2024.",
+          "points": [
+            "43% took home under ₹500 a day after costs."
+          ],
+          "sources": [
+            {
+              "label": "The report",
+              "url": "https://example.org/survey.pdf"
+            }
+          ],
           "checked": "2026-10-16"
         }
       }

@@ -21,7 +21,7 @@ Python, with only the schema files and the `jsonschema` package:
 
 ```bash
 pip install "jsonschema>=4.18"
-python examples/check_vectors.py      # 27 of 27 vectors give the verdict the contract states
+python examples/check_vectors.py      # 29 of 29 vectors give the verdict the contract states
 ```
 
 JavaScript, from the npm package:

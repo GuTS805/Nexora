@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/GuTS805/Nexora/main/arkiv/schema/guide.schema.json",
   "title": "Nexora guide (v1)",
-  "description": "What the law gives gig workers, or an independent rating of platforms, with its sources. Editable by its curator; earlier wordings stay readable at past blocks.",
+  "description": "What the law gives gig workers, an independent rating of platforms, or what an independent survey of workers found, with its sources. Editable by its curator; earlier wordings stay readable at past blocks.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -116,7 +116,7 @@
         },
         "topic": {
           "type": "object",
-          "description": "A law, or an independent rating of platforms.",
+          "description": "A law, an independent rating of platforms, or an independent survey of workers.",
           "additionalProperties": false,
           "required": [
             "type",
@@ -129,7 +129,8 @@
             "value": {
               "enum": [
                 "law",
-                "rating"
+                "rating",
+                "survey"
               ]
             }
           }

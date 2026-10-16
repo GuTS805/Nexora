@@ -49,6 +49,7 @@ describe("guides", () => {
     expect(() => validateGuide({ ...law, sources: [{ label: "x", url: "javascript:alert(1)" }] })).toThrow(/https/);
     expect(() => validateGuide({ ...law, topic: "rating", scores: { swiggy: 11 } })).toThrow(/0–10/);
     expect(() => validateGuide({ ...law, scores: { swiggy: 5 } })).toThrow(/Only a rating/);
+    expect(() => validateGuide({ ...law, topic: "survey", scores: { swiggy: 5 } })).toThrow(/Only a rating/);
     expect(() => validateGuide({ ...law, hi: { title: "क", status: "ख", points: ["एक", "दो"] } })).toThrow(/Hindi point/);
     expect(() => validateGuide({ ...law, scope: "atlantis" as GuideInput["scope"] })).toThrow(/scope/);
     expect(() => validateGuide({ ...law, checked: "16/10/2026" })).toThrow(/YYYY-MM-DD/);

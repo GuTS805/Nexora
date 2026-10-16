@@ -210,7 +210,7 @@ export const JSON_SCHEMAS = {
   guide: entity(
     "guide",
     "Nexora guide (v1)",
-    "What the law gives gig workers, or an independent rating of platforms, with its sources. Editable by its curator; earlier wordings stay readable at past blocks.",
+    "What the law gives gig workers, an independent rating of platforms, or what an independent survey of workers found, with its sources. Editable by its curator; earlier wordings stay readable at past blocks.",
     {
       flags: {
         type: "object",
@@ -224,7 +224,7 @@ export const JSON_SCHEMAS = {
         v: COMMON_ATTRIBUTES.v,
         kind: attr("str", { const: KIND.guide }),
         scope: attr("str", { enum: [...GUIDE_SCOPES] }, "All of India, or a state with its own gig-worker law."),
-        topic: attr("str", { enum: [...GUIDE_TOPICS] }, "A law, or an independent rating of platforms."),
+        topic: attr("str", { enum: [...GUIDE_TOPICS] }, "A law, an independent rating of platforms, or an independent survey of workers."),
       },
       payload: {
         type: "object",

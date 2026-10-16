@@ -1,5 +1,5 @@
 import { readGuides } from "./cache.ts";
-import { CITY_STATE, type City, type Guide, type Platform } from "nexora-ledger";
+import { CITY_STATE, type City, type Guide, type Platform, type WorkType } from "nexora-ledger";
 import { useArkiv } from "./arkiv.tsx";
 import { Addr, ExplorerEntity, useAsync } from "./components.tsx";
 import { GUIDE_CURATOR } from "./config.ts";
@@ -65,6 +65,33 @@ export function RatingTag({ guides, platform }: { guides: readonly Guide[] | und
   const rating = guides?.find((g) => g.topic === "rating" && g.scores?.[platform] !== undefined);
   if (!rating) return null;
   return <a className="badge" href="#/rights" title={rating.title}>{t("ratingTag", { n: rating.scores![platform]! })}</a>;
+}
+
+/**
+ * Which finding of the survey guide speaks to a kind of work: its first point is about cab drivers,
+ * its third about delivery workers, its fifth about ID blocking (the published order in guides.json).
+ */
+function surveyPoint(work: WorkType | ""): number {
+  if (work === "cab" || work === "bike_taxi" || work === "auto") return 0;
+  if (work === "food_delivery" || work === "grocery_delivery" || work === "parcel_delivery") return 2;
+  return 4;
+}
+
+/** Beside the comparison: what real workers in the same kind of work reported to an independent survey. */
+export function SurveyNote({ guides, work }: { guides: readonly Guide[] | undefined; work: WorkType | "" }) {
+  const survey = guides?.find((g) => g.topic === "survey");
+  return survey ? <SurveyLine guide={survey} index={surveyPoint(work)} /> : null;
+}
+
+function SurveyLine({ guide, index }: { guide: Guide; index: number }) {
+  const { t } = useI18n();
+  const point = useGuideText(guide).points[index];
+  if (!point) return null;
+  return (
+    <p className="card rights-note survey-note">
+      <b>{t("surveyNoteTitle")}</b> {point} <a href="#/rights">{t("surveyNoteLink")} →</a>
+    </p>
+  );
 }
 
 /** On a report: the law where it happened, in one line, with a way to read it all. */

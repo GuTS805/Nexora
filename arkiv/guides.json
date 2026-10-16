@@ -1,5 +1,5 @@
 {
-  "about": "Workers' rights and independent ratings, each point with its sources. Published on Arkiv by the curator of the recommended trust list (scripts/seed-guides.ts) and read by the app's Rights page. Facts were checked against the linked sources on the date in `checked`; laws change, so a reader should open the sources before relying on a point.",
+  "about": "Workers' rights, independent ratings and worker surveys, each point with its sources. Published on Arkiv by the curator of the recommended trust list (scripts/seed-guides.ts) and read by the app's Rights page. Facts were checked against the linked sources on the date in `checked`; laws change, so a reader should open the sources before relying on a point.",
   "guides": [
     {
       "scope": "india",
@@ -179,6 +179,43 @@
           "हर प्लेटफ़ॉर्म को पाँच सिद्धांतों पर 10 में से अंक मिलते हैं: उचित वेतन, उचित परिस्थितियाँ, उचित कॉन्ट्रैक्ट, उचित प्रबंधन और उचित प्रतिनिधित्व।",
           "किसी प्लेटफ़ॉर्म को 6 से ज़्यादा अंक नहीं मिले। किसी को भी खर्च के बाद जीवन-निर्वाह वेतन देने या वर्कर्स के संगठन को मान्यता देने का अंक नहीं मिला।",
           "डेस्क रिसर्च, प्लेटफ़ॉर्म्स के सबूत और बेंगलुरु, चेन्नई, दिल्ली, कोच्चि और तिरुवनंतपुरम के वर्कर्स के इंटरव्यू पर आधारित। Amazon को Amazon Flex के रूप में रेट किया गया।"
+        ]
+      }
+    },
+    {
+      "scope": "india",
+      "topic": "survey",
+      "title": "Prisoners on Wheels? (2024): what 10,384 app-based workers in eight cities reported",
+      "status": "A survey of 5,302 app-based cab drivers and 5,082 delivery workers in Delhi, Lucknow, Jaipur, Indore, Mumbai, Kolkata, Hyderabad and Bengaluru, April 2022 to April 2023, by PAIGAM with IFAT and the University of Pennsylvania, published in 2024. The figures are what workers reported; the report notes that income may be under- or over-reported.",
+      "points": [
+        "Cab drivers: 43% took home under ₹500 a day after all costs such as fuel and food. 83% drove more than 10 hours a day, close to 60% more than 12, and 31% more than 14.",
+        "Cab drivers: 68% faced unexplained or arbitrary deductions from their earnings, and 80% were not satisfied with the fares the companies offered. About 35% believed the commission was 31–40% of a ride.",
+        "Delivery workers: 34% took home under ₹10,000 a month after work expenses such as maintenance, EMIs and challans. About 32% took home ₹201–400 a day after daily expenses, and about as many ₹401–600.",
+        "Delivery workers: 48% could not take a single day off in a week, 43% sat idle for about an hour a day waiting for orders, and 86% called 10-minute deliveries unacceptable.",
+        "ID blocking: 87% of delivery workers and 83% of cab drivers said ID blocking or deactivation affected them.",
+        "Why reports must be anonymous: at Delhi airport's Terminal 2, the researchers write, Ola representatives stopped the survey and told drivers that anyone who took part would be blacklisted and have their ID blocked."
+      ],
+      "sources": [
+        {
+          "label": "Prisoners on Wheels? report, PAIGAM and the University of Pennsylvania (key findings on pages 19–28, the airport incident on pages 16–17)",
+          "url": "https://tgpwu.org/wp-content/uploads/2024/03/Report-Final-Print-1.pdf"
+        },
+        {
+          "label": "Launch of the report, Telangana Gig and Platform Workers Union",
+          "url": "https://tgpwu.org/2024/03/13/prisoners-on-wheels-report/"
+        }
+      ],
+      "checked": "2026-10-16",
+      "hi": {
+        "title": "Prisoners on Wheels? (2024): आठ शहरों के 10,384 ऐप-आधारित वर्कर्स ने क्या बताया",
+        "status": "दिल्ली, लखनऊ, जयपुर, इंदौर, मुंबई, कोलकाता, हैदराबाद और बेंगलुरु के 5,302 ऐप कैब ड्राइवरों और 5,082 डिलीवरी वर्कर्स का सर्वे, अप्रैल 2022 से अप्रैल 2023, PAIGAM ने IFAT और यूनिवर्सिटी ऑफ़ पेंसिल्वेनिया के साथ किया, 2024 में प्रकाशित। आँकड़े वही हैं जो वर्कर्स ने बताए; रिपोर्ट कहती है कि कमाई कम या ज़्यादा बताई गई हो सकती है।",
+        "points": [
+          "कैब ड्राइवर: 43% के हाथ ईंधन और खाने जैसे सारे खर्च के बाद रोज़ ₹500 से कम आते थे। 83% रोज़ 10 घंटे से ज़्यादा गाड़ी चलाते थे, लगभग 60% 12 घंटे से ज़्यादा, और 31% 14 घंटे से ज़्यादा।",
+          "कैब ड्राइवर: 68% की कमाई से बिना वजह या मनमानी कटौती हुई, और 80% कंपनियों के दिए किराए से संतुष्ट नहीं थे। लगभग 35% के मुताबिक कमीशन हर राइड का 31–40% था।",
+          "डिलीवरी वर्कर: 34% के हाथ मेंटेनेंस, EMI और चालान जैसे काम के खर्च के बाद महीने में ₹10,000 से कम आते थे। लगभग 32% के हाथ रोज़ के खर्च के बाद ₹201–400 आते थे, और लगभग इतनों के ₹401–600।",
+          "डिलीवरी वर्कर: 48% हफ़्ते में एक दिन की भी छुट्टी नहीं ले पाते थे, 43% रोज़ लगभग एक घंटा ऑर्डर के इंतज़ार में खाली बैठते थे, और 86% ने 10 मिनट डिलीवरी को नामंज़ूर बताया।",
+          "ID ब्लॉक: 87% डिलीवरी वर्कर्स और 83% कैब ड्राइवरों ने कहा कि ID ब्लॉक या डीएक्टिवेशन का उन पर असर पड़ता है।",
+          "रिपोर्ट गुमनाम क्यों होनी चाहिए: शोधकर्ता लिखते हैं कि दिल्ली एयरपोर्ट के टर्मिनल 2 पर Ola के प्रतिनिधियों ने सर्वे रोक दिया और ड्राइवरों से कहा कि जो इसमें हिस्सा लेगा उसे ब्लैकलिस्ट किया जाएगा और उसकी ID ब्लॉक कर दी जाएगी।"
         ]
       }
     }

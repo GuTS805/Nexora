@@ -1,13 +1,13 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { store } from "./storage.ts";
 import { STRINGS, type StringKey } from "./strings.ts";
-import { REGIONAL, REGIONAL_VOCAB, type RegionalLang } from "./strings-regional.ts";
+import { isRegional, regionalText, regionalVocab, type RegionalLang } from "./strings-regional.ts";
 
 /** The language of whole documents (letters, reports, dates, voice): English or Hindi. */
 export type Lang = "en" | "hi";
-/** The language of the screen: also Kannada and Tamil, machine-translated, English where not. */
+/** The language of the screen: also Kannada, Tamil, Telugu, Bengali and Marathi, machine-translated, English where not. */
 export type UiLang = Lang | RegionalLang;
-export const UI_LANGS: [UiLang, string][] = [["en", "EN"], ["hi", "हिंदी"], ["kn", "ಕನ್ನಡ"], ["ta", "தமிழ்"]];
+export const UI_LANGS: [UiLang, string][] = [["en", "EN"], ["hi", "हिंदी"], ["kn", "ಕನ್ನಡ"], ["ta", "தமிழ்"], ["te", "తెలుగు"], ["bn", "বাংলা"], ["mr", "मराठी"]];
 const isUiLang = (value: unknown): value is UiLang => UI_LANGS.some(([code]) => code === value);
 
 export type { StringKey };
@@ -58,7 +58,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   });
   const lang: Lang = ui === "hi" ? "hi" : "en";
   const index = lang === "hi" ? 1 : 0;
-  const regional = ui === "kn" || ui === "ta" ? ui : null;
+  const regional = isRegional(ui) ? ui : null;
   if (typeof document !== "undefined") document.documentElement.lang = ui;
   const value: I18n = {
     lang,
@@ -68,8 +68,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       store.set("lang", next);
       document.documentElement.lang = next;
     },
-    t: (key, vars) => fill((regional && REGIONAL[key]?.[regional]) || STRINGS[key][index], vars),
-    v: (code) => (regional && REGIONAL_VOCAB[code]?.[regional]) || VOCAB[code]?.[index] || code.replace(/_/g, " "),
+    t: (key, vars) => fill((regional && regionalText(regional, key)) || STRINGS[key][index], vars),
+    v: (code) => (regional && regionalVocab(regional, code)) || VOCAB[code]?.[index] || code.replace(/_/g, " "),
   };
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }

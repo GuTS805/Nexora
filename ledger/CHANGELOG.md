@@ -2,6 +2,12 @@
 
 All notable changes to `nexora-ledger`. Versions follow [semantic versioning](https://semver.org); while the major version is 0, a minor version may add to the API but never changes the meaning of data already on Arkiv. The data contract has its own version (`v = 1` on every entity, see [`arkiv/schema.md`](../arkiv/schema.md)), which no release so far has changed.
 
+## 0.8.0 (2026-10-17)
+
+### Added
+- A third guide topic, `survey`: what an independent survey of workers found, with its sources. Like a law, a survey carries no platform scores; only a rating does.
+- Two more conformance vectors (29 in all): a valid survey, and a guide whose topic is outside the closed list.
+
 ## 0.7.0 (2026-10-16)
 
 ### Added

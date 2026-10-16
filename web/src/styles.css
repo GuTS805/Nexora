@@ -685,10 +685,9 @@ html[lang="hi"] h1, html[lang="hi"] h2, html[lang="hi"] h3, html[lang="hi"] .edi
 .score-bar { display: block; height: 10px; min-width: 2px; background: var(--accent); border-radius: 2px; }
 .rights-note { border-left: 3px solid var(--accent); }
 .tags a.badge { text-decoration: none; }
-/* Kannada and Tamil: taller lines and no letter-spacing, as for Hindi; the language menu. */
-html[lang="kn"] .lead, html[lang="ta"] .lead { line-height: 1.3; font-size: clamp(30px, 3.2vw, 46px); }
-html[lang="kn"] h1, html[lang="kn"] h2, html[lang="kn"] h3, html[lang="kn"] .editorial-banner strong, html[lang="kn"] .hero .eyebrow, html[lang="kn"] .editorial-banner span, html[lang="kn"] .editorial-features span,
-html[lang="ta"] h1, html[lang="ta"] h2, html[lang="ta"] h3, html[lang="ta"] .editorial-banner strong, html[lang="ta"] .hero .eyebrow, html[lang="ta"] .editorial-banner span, html[lang="ta"] .editorial-features span { letter-spacing: 0; }
+/* Kannada, Tamil, Telugu, Bengali and Marathi: taller lines and no letter-spacing, as for Hindi; the language menu. */
+html:is([lang="kn"], [lang="ta"], [lang="te"], [lang="bn"], [lang="mr"]) .lead { line-height: 1.3; font-size: clamp(30px, 3.2vw, 46px); }
+html:is([lang="kn"], [lang="ta"], [lang="te"], [lang="bn"], [lang="mr"]) :is(h1, h2, h3, .editorial-banner strong, .hero .eyebrow, .editorial-banner span, .editorial-features span) { letter-spacing: 0; }
 select.icon-control.lang { min-height: 34px; width: auto; padding: 4px 4px; font-weight: 700; color: var(--accent); background: var(--surface); border: 1px solid var(--line); cursor: pointer; }
 @media (max-width: 480px) { select.icon-control.lang { font-size: 13px; padding: 2px; min-height: 32px; } }
 .regional-note { margin: 12px 0 0; }

@@ -14,7 +14,7 @@
  *                    for a trust list, who joined and left since
  *   nexora proof     <file | ->  [--challenge <text>]
  *                    check an authorship proof a worker gave you against the entry's $creator on chain
- *   nexora guides    [--curator <address>]  workers' rights by state and independent platform ratings, with sources
+ *   nexora guides    [--curator <address>]  workers' rights by state, platform ratings and worker surveys, with sources
  *   nexora lists
  *   nexora verify    re-check every feature recorded in arkiv/evidence.json against the chain
  *   nexora audit     check every Nexora entity on chain against the JSON Schemas and for personal data [--json]

@@ -1,4 +1,5 @@
 import type { StringKey } from "./strings.ts";
+import { MORE, MORE_NOTE, MORE_VOCAB, type MoreLang } from "./strings-regional-more.ts";
 
 /**
  * Kannada and Tamil for the worker's main path: home, Compare, Log my day, Incidents and Your rights,
@@ -7,9 +8,13 @@ import type { StringKey } from "./strings.ts";
  * largest gig-work hubs, and many riders there read Kannada or Tamil more easily than Hindi.
  * Placeholders such as {city} must match the English string exactly (a test checks this).
  */
-export type RegionalLang = "kn" | "ta";
+type FirstLang = "kn" | "ta";
+/** Every machine-translated screen language: Kannada and Tamil here, Telugu, Bengali and Marathi in strings-regional-more.ts. */
+export type RegionalLang = FirstLang | MoreLang;
+export const REGIONAL_LANGS: readonly RegionalLang[] = ["kn", "ta", "te", "bn", "mr"];
+export const isRegional = (lang: string): lang is RegionalLang => (REGIONAL_LANGS as readonly string[]).includes(lang);
 
-export const REGIONAL: Partial<Record<StringKey, Record<RegionalLang, string>>> = {
+export const REGIONAL: Partial<Record<StringKey, Record<FirstLang, string>>> = {
   // navigation and home
   navExplore: { kn: "ಗಳಿಕೆ", ta: "வருமானம்" },
   navCompare: { kn: "ಹೋಲಿಕೆ", ta: "ஒப்பீடு" },
@@ -205,16 +210,20 @@ export const REGIONAL: Partial<Record<StringKey, Record<RegionalLang, string>>> 
   ratingTag: { kn: "ಫೇರ್‌ವರ್ಕ್ 2024: {n}/10", ta: "ஃபேர்வொர்க் 2024: {n}/10" },
   rightsNoteTitle: { kn: "{city} ನಲ್ಲಿ ನಿಮ್ಮ ಹಕ್ಕುಗಳು:", ta: "{city} இல் உங்கள் உரிமைகள்:" },
   rightsNoteLink: { kn: "ಇದು ನಿಮಗೆ ಏನು ನೀಡುತ್ತದೆ, ಮತ್ತು ಎಲ್ಲಿ ದೂರು ಕೊಡಬೇಕು", ta: "இது உங்களுக்கு என்ன தருகிறது, எங்கே புகார் செய்வது" },
+  rightsSurveys: { kn: "ಕಾರ್ಮಿಕರು ಸಂಶೋಧಕರಿಗೆ ಏನು ಹೇಳಿದರು", ta: "தொழிலாளர்கள் ஆய்வாளர்களிடம் என்ன சொன்னார்கள்" },
+  surveyNoteTitle: { kn: "ಡೆಮೊ ಅಲ್ಲ, ನಿಜವಾದ ಅಂಕಿಅಂಶಗಳು, ಎಂಟು ನಗರಗಳ ಆಪ್ ಕಾರ್ಮಿಕರ ಸಮೀಕ್ಷೆಯಿಂದ:", ta: "டெமோ அல்ல, உண்மையான எண்கள், எட்டு நகரங்களின் ஆப் தொழிலாளர்கள் கணக்கெடுப்பிலிருந்து:" },
+  surveyNoteLink: { kn: "ಸಮೀಕ್ಷೆ ಮತ್ತು ಅದರ ಮೂಲಗಳನ್ನು ಓದಿ", ta: "கணக்கெடுப்பையும் அதன் ஆதாரங்களையும் படியுங்கள்" },
 };
 
 /** Shown at the top in Kannada or Tamil, in that language. */
 export const REGIONAL_NOTE: Record<RegionalLang, string> = {
+  ...MORE_NOTE,
   kn: "ಕನ್ನಡ ಅನುವಾದ ಯಂತ್ರದಿಂದ ಮಾಡಲಾಗಿದೆ ಮತ್ತು ತಪ್ಪುಗಳಿರಬಹುದು. ಆಪ್‌ನ ಕೆಲವು ಭಾಗಗಳು ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿವೆ.",
   ta: "தமிழ் மொழிபெயர்ப்பு இயந்திரத்தால் செய்யப்பட்டது, பிழைகள் இருக்கலாம். ஆப்பின் சில பகுதிகள் ஆங்கிலத்தில் உள்ளன.",
 };
 
 /** Names of cities, apps and kinds of work. Brand names stay as brands, in the script. */
-export const REGIONAL_VOCAB: Record<string, Record<RegionalLang, string>> = {
+export const REGIONAL_VOCAB: Record<string, Record<FirstLang, string>> = {
   swiggy: { kn: "ಸ್ವಿಗ್ಗಿ", ta: "ஸ்விக்கி" }, zomato: { kn: "ಜೊಮ್ಯಾಟೊ", ta: "சொமாட்டோ" }, blinkit: { kn: "ಬ್ಲಿಂಕಿಟ್", ta: "பிளிங்கிட்" },
   zepto: { kn: "ಜೆಪ್ಟೊ", ta: "செப்டோ" }, bigbasket: { kn: "ಬಿಗ್‌ಬಾಸ್ಕೆಟ್", ta: "பிக்பாஸ்கெட்" }, amazon: { kn: "ಅಮೆಜಾನ್", ta: "அமேசான்" },
   flipkart: { kn: "ಫ್ಲಿಪ್‌ಕಾರ್ಟ್", ta: "ஃப்ளிப்கார்ட்" }, uber: { kn: "ಉಬರ್", ta: "ஊபர்" }, ola: { kn: "ಓಲಾ", ta: "ஓலா" },
@@ -239,3 +248,13 @@ export const REGIONAL_VOCAB: Record<string, Record<RegionalLang, string>> = {
   unsafe_pressure: { kn: "ಅಪಾಯಕಾರಿ ಡೆಲಿವರಿ-ಸಮಯದ ಒತ್ತಡ", ta: "ஆபத்தான டெலிவரி நேர அழுத்தம்" },
   harassment: { kn: "ಕೆಲಸದಲ್ಲಿ ನಿಂದನೆ ಅಥವಾ ಹಿಂಸೆ", ta: "வேலையில் திட்டுதல் அல்லது வன்முறை" },
 };
+
+/** A screen string in a regional language, or undefined where it is not translated. */
+export function regionalText(lang: RegionalLang, key: StringKey): string | undefined {
+  return lang === "kn" || lang === "ta" ? REGIONAL[key]?.[lang] : MORE[lang][key];
+}
+
+/** A vocabulary label in a regional language, or undefined where it is not translated. */
+export function regionalVocab(lang: RegionalLang, code: string): string | undefined {
+  return lang === "kn" || lang === "ta" ? REGIONAL_VOCAB[code]?.[lang] : MORE_VOCAB[code]?.[lang];
+}

@@ -7,7 +7,7 @@ import evidenceArt from "./assets/editorial/ledger-evidence.jpg";
 import notebookArt from "./assets/editorial/work-notebook.jpg";
 import sharedArt from "./assets/editorial/shared-records.jpg";
 import { UI_LANGS, useI18n, type UiLang } from "./i18n.tsx";
-import { REGIONAL_NOTE } from "./strings-regional.ts";
+import { REGIONAL_NOTE, isRegional } from "./strings-regional.ts";
 import { PendingQueue } from "./pending.tsx";
 import { store } from "./storage.ts";
 import { About } from "./pages/About.tsx";
@@ -86,7 +86,7 @@ export function App() {
       </header>
       <main>
         <PendingQueue />
-        {(ui === "kn" || ui === "ta") && <p className="card notice small regional-note" role="note">{REGIONAL_NOTE[ui]}</p>}
+        {isRegional(ui) && <p className="card notice small regional-note" role="note">{REGIONAL_NOTE[ui]}</p>}
         {sectionLabel && <div className="editorial-banner" aria-hidden="true">
           <div><span>NEXORA / {sectionLabel}</span><strong>{sectionLabel}</strong></div>
           <img src={sectionArt} alt="" />

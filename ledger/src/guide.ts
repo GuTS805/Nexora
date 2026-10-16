@@ -5,8 +5,8 @@ import type { Decoded, RawEntity } from "./codec.ts";
 import { APP, KIND, PLATFORMS, SCHEMA_VERSION, isOneOf, type City, type Platform } from "./schema.ts";
 
 /**
- * Guides: what the law gives gig workers, and independent ratings of platforms, each point tied to
- * its sources. A guide is published by a curator (Nexora's is the curator of the recommended trust
+ * Guides: what the law gives gig workers, independent ratings of platforms, and what independent
+ * surveys of workers found, each point tied to its sources. A guide is published by a curator (Nexora's is the curator of the recommended trust
  * list), so readers take only the curators they trust, by `$creator`, exactly as with trust lists.
  *
  * Laws change, so a guide is editable by its curator, like a trust list, and every earlier wording
@@ -16,8 +16,8 @@ import { APP, KIND, PLATFORMS, SCHEMA_VERSION, isOneOf, type City, type Platform
 
 /** Where a guide applies: all of India, or a state with its own gig-worker law. */
 export const GUIDE_SCOPES = ["india", "rajasthan", "karnataka", "bihar", "jharkhand", "telangana"] as const;
-/** What a guide is: a law, or an independent rating of platforms. */
-export const GUIDE_TOPICS = ["law", "rating"] as const;
+/** What a guide is: a law, an independent rating of platforms, or an independent survey of workers. */
+export const GUIDE_TOPICS = ["law", "rating", "survey"] as const;
 export type GuideScope = (typeof GUIDE_SCOPES)[number];
 export type GuideTopic = (typeof GUIDE_TOPICS)[number];
 

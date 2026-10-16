@@ -1,5 +1,5 @@
 import { readIncidents, readShifts } from "../cache.ts";
-import { RatingTag, useGuides } from "../guides.tsx";
+import { RatingTag, SurveyNote, useGuides } from "../guides.tsx";
 import { CITIES, VEHICLES, WORK_TYPES, comparePlatforms, isOneOf, type City, type DayLength, type PlatformComparison, type ShiftFilters, type Vehicle, type WorkType } from "nexora-ledger";
 import { useMemo, useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
@@ -71,6 +71,7 @@ export function Compare() {
       )}
       <label className="check"><input type="checkbox" checked={includeDemo} onChange={(e) => setIncludeDemo(e.target.checked)} /> {t("showDemo")}</label>
       {includeDemo && <p className="small muted">{t("demoDisclaimer")}</p>}
+      <SurveyNote guides={guides.data?.items} work={work} />
       <ErrorNote error={result.error} />
       {result.loading && <p className="muted">{t("loading")}</p>}
       {result.data && (

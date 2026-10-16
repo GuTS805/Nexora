@@ -20,6 +20,12 @@
       "tx": "0x231027e889dc34c9d2f5552ba7858ca4bb4122430e21f1c12d76611b68e9c076"
     },
     {
+      "scope": "india",
+      "topic": "survey",
+      "key": "0x2e986e59559d8b8205370251b23e9a1d6e40475d28f785833284c3fffcc6c4c5",
+      "tx": "0xc5acb442eaa7a9799873b89c3eb9118d91f4d27d01dd67ece0377d6111b227d7"
+    },
+    {
       "scope": "jharkhand",
       "topic": "law",
       "key": "0x40dd40ba6578afa47ceefeb2e7cd33297299cf99619f385c440391cf992c538e",
