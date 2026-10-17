@@ -657,7 +657,7 @@ main > section:not(.explore-page) > h2:first-child { padding-bottom: 14px; borde
 :root[data-theme="dark"] .editorial-features a:hover { background: #382c29; }
 @media (max-width: 760px) { .editorial-features { grid-template-columns: 1fr; }.editorial-features a { display: grid; grid-template-columns: 100px 1fr; column-gap: 16px; }.editorial-features img { grid-row: 1 / 4; height: 100%; min-height: 90px; margin: 0; }.editorial-features strong { margin: 2px 0; } }
 /* Between tablet and wide desktop the editorial nav needs its own row, or the language button wraps alone. */
-@media (max-width: 1140px) and (min-width: 761px) { .top { flex-wrap: wrap; } .top nav { order: 10; flex-basis: 100%; margin-left: 0; } }
+@media (max-width: 1440px) and (min-width: 761px) { .top { flex-wrap: wrap; } .top nav { order: 10; flex-basis: 100%; margin-left: 0; } }
 /* Hindi and the regional languages have longer nav labels: up to 1440px the nav gets its own row, so the language menu stays on the first. */
 @media (max-width: 1440px) and (min-width: 761px) { html:not([lang="en"]) .top { flex-wrap: wrap; } html:not([lang="en"]) .top nav { order: 10; flex-basis: 100%; margin-left: 0; } }
 /* Devanagari needs taller lines, and letter-spacing breaks its joined letters. */
@@ -735,3 +735,12 @@ select.icon-control.lang { min-height: 34px; width: auto; padding: 4px 4px; font
 .acct-title { margin: 22px 0 4px; }
 .verdict { margin: 12px 0; padding: 12px 14px; border: 1px solid var(--accent); border-radius: 4px; }
 .verdict p { margin: 0 0 8px; }
+/* Some languages have long tab labels: on tablets and desktops the nav wraps onto another line instead of cutting tabs off, and in Kannada, Tamil, Telugu, Bengali and Marathi it keeps its own row at every desktop width, so the language menu stays beside the logo. */
+@media (max-width: 1440px) and (min-width: 761px) { .top nav { flex-wrap: wrap; row-gap: 0; overflow: visible; } }
+@media (min-width: 1441px) { html:is([lang="kn"], [lang="ta"], [lang="te"], [lang="bn"], [lang="mr"]) .top { flex-wrap: wrap; } html:is([lang="kn"], [lang="ta"], [lang="te"], [lang="bn"], [lang="mr"]) .top nav { order: 10; flex-basis: 100%; margin-left: 0; flex-wrap: wrap; row-gap: 0; overflow: visible; } }
+/* The three ways in stay inside the text column: when it is too narrow for three cards side by side, they wrap rather than run under the picture. */
+.hero-copy { min-width: 0; }
+.steps ol { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
+.steps li, .steps li span { min-width: 0; }
+.steps li a { white-space: normal; }
+@media (max-width: 760px) { .steps ol { grid-template-columns: 1fr; } }
