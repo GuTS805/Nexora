@@ -52,10 +52,18 @@ export type Pending = {
 export const DELAY_MIN_MS = 60 * 60 * 1000;
 export const DELAY_MAX_MS = 6 * 60 * 60 * 1000;
 
-/** A moment picked uniformly at random from the delay window, with the browser's secure randomness. */
+/**
+ * A moment picked uniformly at random from the delay window, with the browser's secure randomness.
+ * Each draw is masked to the smallest power of two that covers the window and redrawn when it falls
+ * outside, so every millisecond is equally likely (scaling or `%` would favour some).
+ */
 export function randomSendTime(now = Date.now()): number {
-  const [word] = crypto.getRandomValues(new Uint32Array(1));
-  return now + DELAY_MIN_MS + Math.floor((word! / 2 ** 32) * (DELAY_MAX_MS - DELAY_MIN_MS));
+  const span = DELAY_MAX_MS - DELAY_MIN_MS;
+  const mask = 2 ** Math.ceil(Math.log2(span)) - 1;
+  for (;;) {
+    const offset = crypto.getRandomValues(new Uint32Array(1))[0]! & mask;
+    if (offset < span) return now + DELAY_MIN_MS + offset;
+  }
 }
 
 /** True when an entry may be sent now. */

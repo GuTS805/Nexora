@@ -7,26 +7,34 @@
 // Tests the version in ledger/package.json if it is on npm, else the registry's `latest` (a version
 // bump lands in git before it is published). The offline checks must pass. The one live read is
 // skipped, not failed, when the public RPC has rate-limited this machine (friction F6).
-import { execSync } from "node:child_process";
-import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const local = JSON.parse(readFileSync(join(root, "ledger", "package.json"), "utf8")).version;
 const meta = await (await fetch("https://registry.npmjs.org/nexora-ledger")).json();
 const target = meta.versions?.[local] ? local : meta["dist-tags"]?.latest;
 if (!target) throw new Error("nexora-ledger is not on npm");
+// The version comes from the network, so it is checked to be a plain version before it is used at all.
+if (!/^\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$/.test(target)) throw new Error(`unexpected version from npm: ${JSON.stringify(target)}`);
 if (target !== local) console.log(`note: ${local} is not on npm yet; testing latest (${target})`);
 
 const dir = mkdtempSync(join(tmpdir(), "nexora-registry-"));
-const run = (command) => execSync(command, { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, NODE_PATH: "" } });
+// No shell anywhere: every command is a program and a list of arguments, so nothing in them is parsed.
+// npm runs as Node plus its own CLI script, which works the same on Windows and Linux.
+const npmCli = [process.env.npm_execpath, join(dirname(process.execPath), "node_modules/npm/bin/npm-cli.js"), join(dirname(process.execPath), "../lib/node_modules/npm/bin/npm-cli.js")]
+  .find((path) => path && /npm-cli\.js$/.test(path) && existsSync(path));
+if (!npmCli) throw new Error("npm-cli.js not found next to this Node");
+const run = (args) => execFileSync(process.execPath, args, { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, NODE_PATH: "" } });
+const npm = (...args) => run([npmCli, ...args]);
 const results = [];
 const check = (name, ok, detail = "") => results.push({ name, ok: Boolean(ok), detail });
 try {
   writeFileSync(join(dir, "package.json"), '{ "type": "module", "private": true }\n');
   writeFileSync(join(dir, ".npmrc-empty"), "");
-  run(`npm install --no-audit --no-fund --ignore-scripts --userconfig .npmrc-empty --cache "${join(dir, ".cache")}" nexora-ledger@${target}`);
+  npm("install", "--no-audit", "--no-fund", "--ignore-scripts", "--userconfig", ".npmrc-empty", "--cache", join(dir, ".cache"), `nexora-ledger@${target}`);
   const installed = JSON.parse(readFileSync(join(dir, "node_modules", "nexora-ledger", "package.json"), "utf8")).version;
   check(`installs nexora-ledger@${target} from the public registry`, installed === target, installed);
 
@@ -78,7 +86,7 @@ try {
     }
     console.log(JSON.stringify(out, (_, v) => (typeof v === "bigint" ? String(v) : v)));
   `);
-  const used = JSON.parse(run("node use.mjs").trim().split("\n").pop());
+  const used = JSON.parse(run(["use.mjs"]).trim().split("\n").pop());
   check("every documented function is exported", used.missing.length === 0, used.missing.join(", "));
   check("the JSON Schemas import as JSON modules", used.schemas);
   check("a written entity passes the strict schema and carries no exact rupees", used.valid.length === 0 && used.noRupees, used.valid.join("; "));
@@ -90,14 +98,14 @@ try {
   if (used.vectors === null) console.log(`SKIP conformance vectors (not in ${target})`);
   else check("the conformance vectors ship, and every verdict holds", used.vectors);
 
-  const cli = run("npx --no-install nexora");
+  const cli = npm("exec", "--no", "--", "nexora");
   check("the nexora CLI runs from the package", cli.includes("audit") && cli.includes("at <key>"), cli.trim());
 
   // One live read, on data another team published: the general helpers are not tied to Nexora.
   copyFileSync(join(root, "examples", "any-arkiv-app.mjs"), join(dir, "any-arkiv-app.mjs"));
   let live = "";
   try {
-    live = run("node any-arkiv-app.mjs");
+    live = run(["any-arkiv-app.mjs"]);
   } catch (error) {
     live = `${error.stdout ?? ""}${error.stderr ?? ""}`;
   }

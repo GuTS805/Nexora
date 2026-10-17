@@ -7,7 +7,7 @@
 // depend on Arkiv returning data, except the share link, which is skipped (not failed) when the
 // public RPC has rate-limited the machine, so a rate-limited RPC cannot make CI flaky.
 import { spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -16,7 +16,7 @@ const PORT = 4791;
 const DEBUG = 9444;
 const BASE = `http://localhost:${PORT}`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const evidence = JSON.parse(readFileSync(join(root, "arkiv", "evidence.json"), "utf8"));
+const { default: evidence } = await import("../arkiv/evidence.json", { with: { type: "json" } });
 
 const chromeCandidates = [
   process.env.CHROME_PATH,
