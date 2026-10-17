@@ -32,7 +32,7 @@ const EXPECT: [feature: string, mustContain: RegExp][] = [
 
 /** Links elsewhere in the document, by the file and line they name. */
 const ELSEWHERE: [link: string, mustContain: RegExp][] = [
-  ["web/src/pages/Log.tsx#L301", /defaultOneOff/],
+  ["web/src/pages/Log.tsx#L308", /defaultOneOff/],
   ["ledger/src/queries.ts#L204-L207", /\$creator/],
   ["ledger/src/insights.ts#L15", /MIN_WORKERS_FOR_CONFIRMED = 2/],
   ["ledger/src/insights.ts#L135", /b\.confirmed\) - Number\(a\.confirmed/],

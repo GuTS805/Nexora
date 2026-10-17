@@ -354,6 +354,18 @@ export const STRINGS = {
   eshramLink: ["Register on e-Shram", "e-Shram पर रजिस्टर करें"],
 
   // voice
+  easyStart: ["🔊 Step by step, with voice: no typing", "🔊 एक-एक करके, आवाज़ के साथ: कुछ टाइप नहीं करना"],
+  easyStep: ["Question {n} of {m}", "सवाल {n} / {m}"],
+  easyApp: ["Which app did you work on today?", "आज आपने किस ऐप पर काम किया?"],
+  easyWork: ["What kind of work?", "कौन-सा काम?"],
+  easyCity: ["Which city?", "कौन-सा शहर?"],
+  easyGross: ["How much did the app pay you today, with incentives and tips?", "आज ऐप ने इंसेंटिव और टिप मिलाकर कितना दिया?"],
+  easyCosts: ["How much did you spend today on fuel or charging, repairs and data?", "आज ईंधन या चार्जिंग, मरम्मत और डेटा पर कितना खर्च हुआ?"],
+  easyHours: ["How many hours were you logged in, waiting included?", "इंतज़ार मिलाकर कितने घंटे लॉग-इन रहे?"],
+  easyBack: ["← Back", "← पीछे"],
+  easyNext: ["Next →", "आगे →"],
+  easyDone: ["Done: check below, then publish", "हो गया: नीचे देखें, फिर प्रकाशित करें"],
+  easyClose: ["Close", "बंद करें"],
   micStart: ["🎤 Say your day", "🎤 बोलकर भरें"],
   micStop: ["■ Stop listening", "■ सुनना बंद करें"],
   micListening: ["Listening… say, for example: “earned 1200, petrol 300, 9 hours”", "सुन रहे हैं… जैसे बोलें: “1200 कमाए, 300 का पेट्रोल, 9 घंटे”"],

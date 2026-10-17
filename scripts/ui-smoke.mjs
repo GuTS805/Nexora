@@ -240,6 +240,20 @@ try {
   const kit = await js(`({ qr: document.querySelectorAll(".poster svg.qr rect").length, caption: document.querySelector(".poster-qr figcaption")?.textContent ?? "", hindi: /[ऀ-ॿ]/.test(document.querySelector(".poster-title")?.textContent ?? ""), wa: document.querySelector(".kit-page a.whatsapp")?.href ?? "" })`);
   check("the union kit has a Hindi and English poster with a QR code for this host, and a WhatsApp message", kit?.qr > 100 && kit.caption.includes(new URL(BASE).host) && kit.hindi && kit.wa.startsWith("https://wa.me/?text="), JSON.stringify({ ...kit, wa: kit?.wa.slice(0, 30) }));
 
+  // Log a day without typing: one spoken question at a time, big buttons, quick amounts; it fills the form.
+  await go("#/log?ui=hi", 1500);
+  const easy = await js(`(async () => {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    document.querySelector("button.easy-start")?.click(); await wait(200);
+    const first = document.querySelector(".easy-q")?.textContent ?? "";
+    for (let i = 0; i < 3; i++) { document.querySelector(".easy-choices button")?.click(); await wait(150); }
+    [...document.querySelectorAll(".easy-choices.amounts button")].find((b) => b.textContent === "₹1200")?.click(); await wait(100);
+    for (let i = 0; i < 3; i++) { [...document.querySelectorAll(".easy .row button")].pop()?.click(); await wait(150); }
+    const inputs = [...document.querySelectorAll(".form-grid input")].map((x) => x.value);
+    return { first, inputs, closed: !document.querySelector(".easy") };
+  })()`);
+  check("log a day without typing: spoken questions in Hindi, big buttons and quick amounts fill the form", easy?.first.includes("किस ऐप") && easy.inputs.slice(0, 3).join(",") === "1200,200,8" && easy.closed, JSON.stringify(easy));
+
   // Rights: the worker's state law and the all-India code, read from Arkiv, every point with sources.
   await go("#/rights?ui=en&city=bengaluru", 1000);
   await settle("details.guide");

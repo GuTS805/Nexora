@@ -11,6 +11,7 @@ import { useI18n } from "../i18n.tsx";
 import { enqueue, formParams, isOffline, randomSendTime, type FormEntry } from "../queue.ts";
 import { store } from "../storage.ts";
 import { MicButton } from "../voice.tsx";
+import { EasyDay } from "../easy.tsx";
 import { recentPeriods } from "./Explore.tsx";
 
 type Receipt = { txHash: Hex; keys: Hex[] };
@@ -198,6 +199,12 @@ function ShiftForm({ profile, setProfile }: { profile: Profile; setProfile: (p: 
 
   return (
     <>
+      <EasyDay start={profile} onDone={(day) => {
+        setProfile({ ...profile, platform: day.platform, work: day.work, city: day.city });
+        setGross(String(day.gross));
+        setCosts(String(day.costs));
+        setHours(String(day.hours));
+      }} />
       <MicButton onDay={(day) => {
         if (day.grossInr !== undefined) setGross(String(day.grossInr));
         if (day.costsInr !== undefined) setCosts(String(day.costsInr));
