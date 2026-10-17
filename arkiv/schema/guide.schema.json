@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/GuTS805/Nexora/main/arkiv/schema/guide.schema.json",
   "title": "Nexora guide (v1)",
-  "description": "What the law gives gig workers, an independent rating of platforms, or what an independent survey of workers found, with its sources. Editable by its curator; earlier wordings stay readable at past blocks.",
+  "description": "What the law gives gig workers, an independent rating of platforms, what an independent survey of workers found, or what a platform says it pays, with its sources. Editable by its curator; earlier wordings stay readable at past blocks.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -116,7 +116,7 @@
         },
         "topic": {
           "type": "object",
-          "description": "A law, an independent rating of platforms, or an independent survey of workers.",
+          "description": "A law, an independent rating of platforms, an independent survey of workers, or a platform's own claim about pay.",
           "additionalProperties": false,
           "required": [
             "type",
@@ -130,7 +130,8 @@
               "enum": [
                 "law",
                 "rating",
-                "survey"
+                "survey",
+                "claim"
               ]
             }
           }
@@ -246,6 +247,25 @@
             "minimum": 0,
             "maximum": 10
           }
+        },
+        "platform": {
+          "type": "string",
+          "description": "For a claim: the platform that made it.",
+          "enum": [
+            "swiggy",
+            "zomato",
+            "blinkit",
+            "zepto",
+            "bigbasket",
+            "amazon",
+            "flipkart",
+            "uber",
+            "ola",
+            "rapido",
+            "porter",
+            "urban_company",
+            "other"
+          ]
         },
         "checked": {
           "type": "string",

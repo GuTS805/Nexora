@@ -1,5 +1,5 @@
 {
-  "about": "Workers' rights, independent ratings and worker surveys, each point with its sources. Published on Arkiv by the curator of the recommended trust list (scripts/seed-guides.ts) and read by the app's Rights page. Facts were checked against the linked sources on the date in `checked`; laws change, so a reader should open the sources before relying on a point.",
+  "about": "Workers' rights, independent ratings, worker surveys and platforms' own pay claims, each point with its sources. Published on Arkiv by the curator of the recommended trust list (scripts/seed-guides.ts) and read by the app's Rights page. Facts were checked against the linked sources on the date in `checked`; laws change, so a reader should open the sources before relying on a point.",
   "guides": [
     {
       "scope": "india",
@@ -216,6 +216,50 @@
           "डिलीवरी वर्कर: 48% हफ़्ते में एक दिन की भी छुट्टी नहीं ले पाते थे, 43% रोज़ लगभग एक घंटा ऑर्डर के इंतज़ार में खाली बैठते थे, और 86% ने 10 मिनट डिलीवरी को नामंज़ूर बताया।",
           "ID ब्लॉक: 87% डिलीवरी वर्कर्स और 83% कैब ड्राइवरों ने कहा कि ID ब्लॉक या डीएक्टिवेशन का उन पर असर पड़ता है।",
           "रिपोर्ट गुमनाम क्यों होनी चाहिए: शोधकर्ता लिखते हैं कि दिल्ली एयरपोर्ट के टर्मिनल 2 पर Ola के प्रतिनिधियों ने सर्वे रोक दिया और ड्राइवरों से कहा कि जो इसमें हिस्सा लेगा उसे ब्लैकलिस्ट किया जाएगा और उसकी ID ब्लॉक कर दी जाएगी।"
+        ]
+      }
+    },
+    {
+      "scope": "india",
+      "topic": "claim",
+      "platform": "zomato",
+      "title": "What Zomato says it pays: ₹102 an hour before costs, about ₹81 after",
+      "status": "Posted on X by Zomato's chief executive, Deepinder Goyal, on 2 January 2026. These are the company's own figures, not independently checked; they are quoted here so they can be read beside what workers report.",
+      "points": [
+        "Average earnings per hour for a Zomato delivery partner in 2025, excluding tips: ₹102 (₹92 in 2024). The hours are all hours logged in, including time spent waiting for an order, which is also how Nexora measures take-home.",
+        "His example: 10 hours a day for 26 days a month is about ₹26,500 gross, and about ₹21,000 after fuel and maintenance (about 20%). On those 260 hours that is about ₹81 an hour after costs.",
+        "Tips came to about ₹2.6 an hour in 2025, and about 5% of Zomato orders were tipped.",
+        "The same thread says the average delivery partner worked 38 days in 2025, 7 hours a working day, and that only 2.3% worked more than 250 days.",
+        "Read it beside workers' own reports: in the 2024 Prisoners on Wheels? survey, 34% of delivery workers took home under ₹10,000 a month after expenses, and Fairwork India 2024 gave no platform its point for a living wage after costs. The years, methods and workers differ, so neither figure disproves the other."
+      ],
+      "sources": [
+        {
+          "label": "Deepinder Goyal on X, 2 January 2026, part 1 of 5: earnings per hour, costs and tips",
+          "url": "https://x.com/deepigoyal/status/2007122061513126267"
+        },
+        {
+          "label": "Part 2 of 5: days and hours worked",
+          "url": "https://x.com/deepigoyal/status/2007122063484493853"
+        },
+        {
+          "label": "Prisoners on Wheels? report (delivery workers' monthly take-home on page 25)",
+          "url": "https://tgpwu.org/wp-content/uploads/2024/03/Report-Final-Print-1.pdf"
+        },
+        {
+          "label": "Fairwork India Ratings 2024 report",
+          "url": "https://citapp.iiitb.ac.in/wp-content/uploads/2024/10/Fairwork-India-2024-Report.pdf"
+        }
+      ],
+      "checked": "2026-10-17",
+      "hi": {
+        "title": "Zomato अपने भुगतान के बारे में क्या कहता है: खर्च से पहले ₹102 प्रति घंटा, खर्च के बाद लगभग ₹81",
+        "status": "Zomato के मुख्य कार्यकारी दीपिंदर गोयल ने 2 जनवरी 2026 को X पर लिखा। ये कंपनी के अपने आँकड़े हैं, किसी ने स्वतंत्र रूप से इनकी जाँच नहीं की; इन्हें यहाँ इसलिए दिया गया है ताकि वर्कर्स की रिपोर्ट के साथ पढ़ा जा सके।",
+        "points": [
+          "2025 में Zomato डिलीवरी पार्टनर की औसत कमाई प्रति घंटा, टिप के बिना: ₹102 (2024 में ₹92)। घंटे यानी लॉग-इन के सारे घंटे, ऑर्डर के इंतज़ार का समय मिलाकर, और Nexora भी हाथ में आने वाली कमाई ऐसे ही मापता है।",
+          "उनका उदाहरण: रोज़ 10 घंटे, महीने में 26 दिन, यानी लगभग ₹26,500 कुल, और ईंधन व रखरखाव (लगभग 20%) के बाद लगभग ₹21,000। उन 260 घंटों पर यह खर्च के बाद लगभग ₹81 प्रति घंटा है।",
+          "2025 में टिप लगभग ₹2.6 प्रति घंटा रही, और Zomato के लगभग 5% ऑर्डर पर टिप मिली।",
+          "उसी थ्रेड के मुताबिक 2025 में औसत डिलीवरी पार्टनर ने साल में 38 दिन, काम के दिन 7 घंटे काम किया, और सिर्फ़ 2.3% ने 250 से ज़्यादा दिन काम किया।",
+          "इसे वर्कर्स की अपनी रिपोर्ट के साथ पढ़ें: 2024 के Prisoners on Wheels? सर्वे में 34% डिलीवरी वर्कर्स के हाथ खर्च के बाद महीने में ₹10,000 से कम आते थे, और फ़ेयरवर्क इंडिया 2024 ने किसी प्लेटफ़ॉर्म को खर्च के बाद जीवन-निर्वाह वेतन का अंक नहीं दिया। साल, तरीके और वर्कर्स अलग हैं, इसलिए कोई आँकड़ा दूसरे को गलत साबित नहीं करता।"
         ]
       }
     }

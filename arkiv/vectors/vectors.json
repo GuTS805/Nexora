@@ -529,6 +529,57 @@
       }
     },
     {
+      "id": "guide-claim",
+      "kind": "guide",
+      "valid": true,
+      "description": "What a platform says it pays, quoted with its source and naming the platform.",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": false,
+          "permissionlessExtension": false
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "guide"
+          },
+          "scope": {
+            "type": "str",
+            "value": "india"
+          },
+          "topic": {
+            "type": "str",
+            "value": "claim"
+          }
+        },
+        "payload": {
+          "v": 1,
+          "title": "What a platform says it pays",
+          "status": "A public post by its chief executive.",
+          "points": [
+            "₹102 an hour before costs, waiting included."
+          ],
+          "sources": [
+            {
+              "label": "The post",
+              "url": "https://example.org/post"
+            }
+          ],
+          "platform": "zomato",
+          "checked": "2026-10-17"
+        }
+      }
+    },
+    {
       "id": "shift-exact-hours-attribute",
       "kind": "shift",
       "valid": false,
@@ -1737,6 +1788,58 @@
             }
           ],
           "checked": "2026-10-16"
+        }
+      }
+    },
+    {
+      "id": "guide-claim-unknown-platform",
+      "kind": "guide",
+      "valid": false,
+      "description": "A claim naming a platform outside the closed vocabulary.",
+      "at": "/payload/platform",
+      "entity": {
+        "contentType": "application/json",
+        "flags": {
+          "readonly": false,
+          "permissionlessExtension": false
+        },
+        "attributes": {
+          "app": {
+            "type": "str",
+            "value": "nexora"
+          },
+          "v": {
+            "type": "i32",
+            "value": 1
+          },
+          "kind": {
+            "type": "str",
+            "value": "guide"
+          },
+          "scope": {
+            "type": "str",
+            "value": "india"
+          },
+          "topic": {
+            "type": "str",
+            "value": "claim"
+          }
+        },
+        "payload": {
+          "v": 1,
+          "title": "What a platform says it pays",
+          "status": "A public post by its chief executive.",
+          "points": [
+            "₹102 an hour before costs, waiting included."
+          ],
+          "sources": [
+            {
+              "label": "The post",
+              "url": "https://example.org/post"
+            }
+          ],
+          "platform": "acme_rides",
+          "checked": "2026-10-17"
         }
       }
     },

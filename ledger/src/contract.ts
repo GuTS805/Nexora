@@ -210,7 +210,7 @@ export const JSON_SCHEMAS = {
   guide: entity(
     "guide",
     "Nexora guide (v1)",
-    "What the law gives gig workers, an independent rating of platforms, or what an independent survey of workers found, with its sources. Editable by its curator; earlier wordings stay readable at past blocks.",
+    "What the law gives gig workers, an independent rating of platforms, what an independent survey of workers found, or what a platform says it pays, with its sources. Editable by its curator; earlier wordings stay readable at past blocks.",
     {
       flags: {
         type: "object",
@@ -224,7 +224,7 @@ export const JSON_SCHEMAS = {
         v: COMMON_ATTRIBUTES.v,
         kind: attr("str", { const: KIND.guide }),
         scope: attr("str", { enum: [...GUIDE_SCOPES] }, "All of India, or a state with its own gig-worker law."),
-        topic: attr("str", { enum: [...GUIDE_TOPICS] }, "A law, an independent rating of platforms, or an independent survey of workers."),
+        topic: attr("str", { enum: [...GUIDE_TOPICS] }, "A law, an independent rating of platforms, an independent survey of workers, or a platform's own claim about pay."),
       },
       payload: {
         type: "object",
@@ -243,6 +243,7 @@ export const JSON_SCHEMAS = {
             propertyNames: { enum: [...PLATFORMS] },
             additionalProperties: { type: "integer", minimum: 0, maximum: 10 },
           },
+          platform: { type: "string", description: "For a claim: the platform that made it.", enum: [...PLATFORMS] },
           checked: { type: "string", description: "The day the facts were checked against the sources.", pattern: "^20\\d\\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$" },
           hi: {
             type: "object",

@@ -58,6 +58,11 @@ const survey = () => toWire(guideCreate({
   points: ["43% took home under ₹500 a day after costs."], sources: [{ label: "The report", url: "https://example.org/survey.pdf" }], checked: "2026-10-16",
 }));
 
+const claim = () => toWire(guideCreate({
+  scope: "india", topic: "claim", platform: "zomato", title: "What a platform says it pays", status: "A public post by its chief executive.",
+  points: ["₹102 an hour before costs, waiting included."], sources: [{ label: "The post", url: "https://example.org/post" }], checked: "2026-10-17",
+}));
+
 /** A copy with attributes, payload or flags changed by hand. */
 function edit(entity: WireEntity, change: (e: WireEntity) => void): WireEntity {
   const copy = structuredClone(entity);
@@ -78,6 +83,7 @@ export function buildVectors(): Vector[] {
     ok("guide-law", "guide", "A state law for gig workers, with its source and a Hindi translation.", law()),
     ok("guide-rating", "guide", "An independent rating of platforms, scored out of 10.", rating()),
     ok("guide-survey", "guide", "What an independent survey of workers found, with its source.", survey()),
+    ok("guide-claim", "guide", "What a platform says it pays, quoted with its source and naming the platform.", claim()),
 
     bad("shift-exact-hours-attribute", "shift", "Exact hours as an extra attribute. Only hours_band may be published.", "/attributes", edit(shift(), (e) => { e.attributes.hours = { type: "i32", value: 9 }; })),
     bad("shift-name-attribute", "shift", "A rider's name as an extra attribute: the leak the closed attribute list exists to stop.", "/attributes", edit(shift(), (e) => { e.attributes.rider_name = { type: "str", value: "Ravi" }; })),
@@ -98,6 +104,7 @@ export function buildVectors(): Vector[] {
     bad("guide-insecure-source", "guide", "A source that is not an https link.", "/payload/sources/0/url", edit(law(), (e) => { ((e.payload as { sources: { url: string }[] }).sources[0]!).url = "http://example.org/act"; })),
     bad("guide-score-out-of-range", "guide", "A rating above 10.", "/payload/scores/swiggy", edit(rating(), (e) => { (e.payload as { scores: Record<string, number> }).scores.swiggy = 11; })),
     bad("guide-unknown-topic", "guide", "A topic outside the closed list (law, rating, survey).", "/attributes/topic", edit(survey(), (e) => { e.attributes.topic = { type: "str", value: "opinion" }; })),
+    bad("guide-claim-unknown-platform", "guide", "A claim naming a platform outside the closed vocabulary.", "/payload/platform", edit(claim(), (e) => { (e.payload as Record<string, unknown>).platform = "acme_rides"; })),
     bad("guide-unknown-scope", "guide", "A place outside the closed list of scopes.", "/attributes/scope", edit(law(), (e) => { e.attributes.scope = { type: "str", value: "atlantis" }; })),
   ];
 }

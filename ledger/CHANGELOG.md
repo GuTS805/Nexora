@@ -2,6 +2,12 @@
 
 All notable changes to `nexora-ledger`. Versions follow [semantic versioning](https://semver.org); while the major version is 0, a minor version may add to the API but never changes the meaning of data already on Arkiv. The data contract has its own version (`v = 1` on every entity, see [`arkiv/schema.md`](../arkiv/schema.md)), which no release so far has changed.
 
+## 0.9.0 (2026-10-17)
+
+### Added
+- A fourth guide topic, `claim`: what a platform itself says its workers earn, quoted with its source. A claim names its platform (`platform`, from the platform vocabulary); no other guide may.
+- Two more conformance vectors (31 in all): a valid claim, and a claim naming an unknown platform.
+
 ## 0.8.0 (2026-10-17)
 
 ### Added

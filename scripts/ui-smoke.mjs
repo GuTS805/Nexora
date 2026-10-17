@@ -250,6 +250,7 @@ try {
       rights?.text.includes("Karnataka Platform Based Gig Workers") && rights.text.includes("Code on Social Security, 2020") && rights.text.includes("Sources (checked 2026-10-16)") && rights.sources,
       rights?.text.slice(0, 120));
     check("independent platform ratings are listed with their scores", rights?.scores >= 10 && rights.text.includes("6/10"), String(rights?.scores));
+    check("the rights page quotes what a platform says it pays, beside the survey", rights?.text.includes("What platforms say they pay") && rights.text.includes("₹102"), "");
     check("the rights page shows what workers told an independent survey, with its sources", rights?.text.includes("What workers told researchers") && rights.text.includes("Prisoners on Wheels?") && rights.text.includes("blacklisted"), "");
   }
   // Compare puts a real survey figure for the same kind of work beside the (synthetic) ranking.
@@ -257,6 +258,11 @@ try {
   await settle(".survey-note");
   if (await limitedHere()) skipped.push("survey figure on compare (Arkiv RPC rate-limited this IP)");
   else check("compare shows a real survey figure for cab drivers beside the ranking", await js(`(document.querySelector(".survey-note")?.textContent ?? "").includes("43%")`));
+  // For food delivery, what Zomato itself says it pays sits beside the survey, never on a (possibly synthetic) row.
+  await go("#/compare?ui=en&city=bengaluru&work=food_delivery", 1000);
+  await settle(".claim-note");
+  if (await limitedHere()) skipped.push("platform claim on compare (Arkiv RPC rate-limited this IP)");
+  else check("compare shows what Zomato says it pays, with its source, beside the survey and outside the ranking", await js(`(() => { const n = document.querySelector(".claim-note"); return !!n && n.textContent.includes("₹102") && !n.closest("ol.suggestions"); })()`));
 
   // The day worker 2 deleted: gone from the current state, still readable as of a block before the
   // delete. The moment is fixed in UTC and typed in this browser's local time, so any timezone works.

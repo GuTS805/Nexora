@@ -9,6 +9,13 @@
     },
     {
       "scope": "india",
+      "topic": "claim",
+      "platform": "zomato",
+      "key": "0xda912a58c1fa2a5213df7c910417e3f633f777c086f8741a9556e54f36c0396c",
+      "tx": "0x4ebd0a405a77a7876f907604b6d954b474615619620aaea223f7572a225ff8e5"
+    },
+    {
+      "scope": "india",
       "topic": "law",
       "key": "0x306789b19e7d4afeda4992756ca7a6dcad7d4eb277b8b073f67d1042d19389c5",
       "tx": "0x231027e889dc34c9d2f5552ba7858ca4bb4122430e21f1c12d76611b68e9c076"

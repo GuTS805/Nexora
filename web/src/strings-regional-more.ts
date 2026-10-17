@@ -152,6 +152,9 @@ export const MORE: Record<MoreLang, Partial<Record<StringKey, string>>> = {
     rightsSurveys: "కార్మికులు పరిశోధకులకు ఏమి చెప్పారు",
     surveyNoteTitle: "డెమో కాదు, నిజమైన అంకెలు, ఎనిమిది నగరాల యాప్ కార్మికుల సర్వే నుండి:",
     surveyNoteLink: "సర్వే, దాని మూలాలు చదవండి",
+    claimNoteLink: "వాదన, దాని మూలాలు చదవండి",
+    rightsClaims: "ప్లాట్‌ఫారమ్‌లు తాము ఎంత ఇస్తామని చెబుతున్నాయి",
+    rightsClaimsNote: "ప్లాట్‌ఫారమ్ స్వంత పబ్లిక్ అంకెలు, మూలంతో సహా, కార్మికుల నివేదికలతో పాటు చదవడానికి. 17 అక్టోబర్ 2026 నాటికి Swiggy, Blinkit, Zepto, Uber, Ola లేదా Rapido ప్రచురించిన ఇలాంటి సగటు గంట అంకె మాకు దొరకలేదు.",
   },
   bn: {
     navExplore: "আয়",
@@ -296,6 +299,9 @@ export const MORE: Record<MoreLang, Partial<Record<StringKey, string>>> = {
     rightsSurveys: "কর্মীরা গবেষকদের কী জানিয়েছেন",
     surveyNoteTitle: "ডেমো নয়, আসল সংখ্যা, আটটি শহরের অ্যাপ-কর্মীদের সমীক্ষা থেকে:",
     surveyNoteLink: "সমীক্ষা আর তার উৎস পড়ুন",
+    claimNoteLink: "দাবি আর তার উৎস পড়ুন",
+    rightsClaims: "প্ল্যাটফর্মগুলো নিজেরা কত দেয় বলে দাবি করে",
+    rightsClaimsNote: "প্ল্যাটফর্মের নিজের প্রকাশ্য সংখ্যা, উৎস সহ, যাতে কর্মীদের রিপোর্টের পাশে পড়া যায়। 17 অক্টোবর 2026 পর্যন্ত Swiggy, Blinkit, Zepto, Uber, Ola বা Rapido-র প্রকাশিত এমন কোনো গড় ঘণ্টাপ্রতি সংখ্যা আমরা পাইনি।",
   },
   mr: {
     navExplore: "कमाई",
@@ -440,6 +446,9 @@ export const MORE: Record<MoreLang, Partial<Record<StringKey, string>>> = {
     rightsSurveys: "कामगारांनी संशोधकांना काय सांगितले",
     surveyNoteTitle: "डेमो नाही, खरे आकडे, आठ शहरांतील अ‍ॅप-आधारित कामगारांच्या सर्वेक्षणातून:",
     surveyNoteLink: "सर्वेक्षण आणि त्याचे स्रोत वाचा",
+    claimNoteLink: "दावा आणि त्याचे स्रोत वाचा",
+    rightsClaims: "प्लॅटफॉर्म स्वतः किती देतो असा दावा करतात",
+    rightsClaimsNote: "प्लॅटफॉर्मचे स्वतःचे सार्वजनिक आकडे, स्रोतासह, कामगारांच्या नोंदींसोबत वाचता यावेत म्हणून. 17 ऑक्टोबर 2026 पर्यंत Swiggy, Blinkit, Zepto, Uber, Ola किंवा Rapido यांनी प्रकाशित केलेला असा सरासरी तासाचा आकडा आम्हाला मिळाला नाही.",
   },
 };
 

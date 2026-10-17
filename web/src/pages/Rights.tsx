@@ -34,6 +34,7 @@ export function Rights() {
   const india = items.filter((g) => g.topic === "law" && g.scope === "india");
   const ratings = items.filter((g) => g.topic === "rating");
   const surveys = items.filter((g) => g.topic === "survey");
+  const claims = items.filter((g) => g.topic === "claim");
   const others = items.filter((g) => g.topic === "law" && g.scope !== "india" && g.scope !== state);
 
   return (
@@ -57,6 +58,13 @@ export function Rights() {
             <>
               <h3 className="guide-heading">{t("rightsSurveys")}</h3>
               {surveys.map((g) => <GuideCard key={g.key} guide={g} />)}
+            </>
+          )}
+          {claims.length > 0 && (
+            <>
+              <h3 className="guide-heading">{t("rightsClaims")}</h3>
+              <p className="small muted">{t("rightsClaimsNote")}</p>
+              {claims.map((g) => <GuideCard key={g.key} guide={g} />)}
             </>
           )}
           {others.length > 0 && (

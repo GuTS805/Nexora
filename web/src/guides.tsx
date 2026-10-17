@@ -1,5 +1,5 @@
 import { readGuides } from "./cache.ts";
-import { CITY_STATE, type City, type Guide, type Platform, type WorkType } from "nexora-ledger";
+import { CITY_STATE, workFor, type City, type Guide, type Platform, type WorkType } from "nexora-ledger";
 import { useArkiv } from "./arkiv.tsx";
 import { Addr, ExplorerEntity, useAsync } from "./components.tsx";
 import { GUIDE_CURATOR } from "./config.ts";
@@ -96,7 +96,26 @@ function surveyPoint(work: WorkType | ""): number {
 /** Beside the comparison: what real workers in the same kind of work reported to an independent survey. */
 export function SurveyNote({ guides, work }: { guides: readonly Guide[] | undefined; work: WorkType | "" }) {
   const survey = guides?.find((g) => g.topic === "survey");
-  return survey ? <SurveyLine guide={survey} index={surveyPoint(work)} /> : null;
+  // What a platform says it pays, for platforms that offer this kind of work. Kept beside the survey,
+  // not on a platform's row, because the rows may be synthetic demo data and a real claim must not
+  // be read against made-up figures.
+  const claims = guides?.filter((g) => g.topic === "claim" && g.platform && (!work || workFor(g.platform).includes(work))) ?? [];
+  return (
+    <>
+      {survey && <SurveyLine guide={survey} index={surveyPoint(work)} />}
+      {claims.map((g) => <ClaimLine key={g.key} guide={g} />)}
+    </>
+  );
+}
+
+function ClaimLine({ guide }: { guide: Guide }) {
+  const { t } = useI18n();
+  const text = useGuideText(guide);
+  return (
+    <p className="card rights-note claim-note">
+      <b>{text.title}.</b> {text.status} <a href="#/rights">{t("claimNoteLink")} →</a>
+    </p>
+  );
 }
 
 function SurveyLine({ guide, index }: { guide: Guide; index: number }) {

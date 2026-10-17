@@ -247,7 +247,7 @@ export function trustListPredicate(curator?: Address): Expression {
   return and(clauses);
 }
 
-/** Guides (laws, ratings and surveys), from one curator when given: readers trust curators, not authors' claims. */
+/** Guides (laws, ratings, surveys and platform claims), from one curator when given: readers trust curators, not authors' claims. */
 export function guidePredicate(curator?: Address): Expression {
   const clauses = base(KIND.guide);
   if (curator) clauses.push(eq("$creator", addr(curator)));

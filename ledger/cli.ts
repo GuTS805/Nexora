@@ -14,7 +14,7 @@
  *                    for a trust list, who joined and left since
  *   nexora proof     <file | ->  [--challenge <text>]
  *                    check an authorship proof a worker gave you against the entry's $creator on chain
- *   nexora guides    [--curator <address>]  workers' rights by state, platform ratings and worker surveys, with sources
+ *   nexora guides    [--curator <address>]  workers' rights by state, platform ratings, worker surveys and platforms' own pay claims, with sources
  *   nexora lists
  *   nexora verify    re-check every feature recorded in arkiv/evidence.json against the chain
  *   nexora audit     check every Nexora entity on chain against the JSON Schemas and for personal data [--json]
@@ -294,6 +294,7 @@ switch (command) {
     for (const g of result.items) {
       console.log(`${g.scope.padEnd(10)} ${g.topic.padEnd(7)} ${g.title}\n           ${g.status}\n           checked ${g.checked}; by ${g.creator}; ${g.key}`);
       for (const point of g.points) console.log(`           - ${point}`);
+      if (g.platform) console.log(`           claim by: ${g.platform}`);
       if (g.scores) console.log(`           scores: ${Object.entries(g.scores).map(([p, s]) => `${p} ${s}/10`).join(", ")}`);
       for (const source of g.sources) console.log(`           source: ${source.label} <${source.url}>`);
     }

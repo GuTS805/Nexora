@@ -24,7 +24,7 @@ const reader = readClient();
 const wallet = createWalletClient({ chain: tiramisu, transport: arkivHttp(), account: curator });
 
 const existing = await fetchGuides(reader, curator.address);
-const id = (g: { scope: string; topic: string }) => `${g.scope}/${g.topic}`;
+const id = (g: { scope: string; topic: string; platform?: string | undefined }) => `${g.scope}/${g.topic}${g.platform ? `/${g.platform}` : ""}`;
 const onChain = new Map(existing.items.map((g) => [id(g), g]));
 const wording = (g: GuideInput) => JSON.stringify(validateGuide(g));
 
@@ -38,15 +38,15 @@ for (const guide of guides) {
 console.log(`curator ${curator.address}: ${guides.length} guides, ${existing.items.length} on chain; ${creates.length} to create, ${patches.length} to update`);
 if (dry || (creates.length === 0 && patches.length === 0)) process.exit(0);
 
-const record: { scope: string; topic: string; key: string; tx: string }[] = [];
+const record: { scope: string; topic: string; platform?: string; key: string; tx: string }[] = [];
 if (creates.length) {
   const result = await wallet.executeBatch({ creates: creates.map(guideCreate) });
-  creates.forEach((g, i) => record.push({ scope: g.scope, topic: g.topic, key: result.createdEntities[i]!, tx: result.txHash }));
+  creates.forEach((g, i) => record.push({ scope: g.scope, topic: g.topic, ...(g.platform && { platform: g.platform }), key: result.createdEntities[i]!, tx: result.txHash }));
   console.log(`created ${creates.length} in ${result.txHash}`);
 }
 for (const { key, guide } of patches) {
   const result = await wallet.patchEntity(guidePatch(key, guide));
-  record.push({ scope: guide.scope, topic: guide.topic, key, tx: result.txHash });
+  record.push({ scope: guide.scope, topic: guide.topic, ...(guide.platform && { platform: guide.platform }), key, tx: result.txHash });
   console.log(`updated ${id(guide)} in ${result.txHash}`);
 }
 

@@ -5,8 +5,8 @@ import type { Decoded, RawEntity } from "./codec.ts";
 import { APP, KIND, PLATFORMS, SCHEMA_VERSION, isOneOf, type City, type Platform } from "./schema.ts";
 
 /**
- * Guides: what the law gives gig workers, independent ratings of platforms, and what independent
- * surveys of workers found, each point tied to its sources. A guide is published by a curator (Nexora's is the curator of the recommended trust
+ * Guides: what the law gives gig workers, independent ratings of platforms, what independent
+ * surveys of workers found, and what a platform itself says it pays, each point tied to its sources. A guide is published by a curator (Nexora's is the curator of the recommended trust
  * list), so readers take only the curators they trust, by `$creator`, exactly as with trust lists.
  *
  * Laws change, so a guide is editable by its curator, like a trust list, and every earlier wording
@@ -16,8 +16,11 @@ import { APP, KIND, PLATFORMS, SCHEMA_VERSION, isOneOf, type City, type Platform
 
 /** Where a guide applies: all of India, or a state with its own gig-worker law. */
 export const GUIDE_SCOPES = ["india", "rajasthan", "karnataka", "bihar", "jharkhand", "telangana"] as const;
-/** What a guide is: a law, an independent rating of platforms, or an independent survey of workers. */
-export const GUIDE_TOPICS = ["law", "rating", "survey"] as const;
+/**
+ * What a guide is: a law, an independent rating of platforms, an independent survey of workers, or a
+ * platform's own public claim about what its workers earn (quoted with its source, never endorsed).
+ */
+export const GUIDE_TOPICS = ["law", "rating", "survey", "claim"] as const;
 export type GuideScope = (typeof GUIDE_SCOPES)[number];
 export type GuideTopic = (typeof GUIDE_TOPICS)[number];
 
@@ -42,6 +45,8 @@ export type GuideInput = {
   actions?: GuideLink[] | undefined;
   /** For a rating: score out of 10 per platform. */
   scores?: Partial<Record<Platform, number>> | undefined;
+  /** For a claim, and only a claim: the platform that made it. */
+  platform?: Platform | undefined;
   /** The day the facts were checked against the sources, YYYY-MM-DD. */
   checked: string;
   hi?: GuideTranslation | undefined;
@@ -86,6 +91,8 @@ export function validateGuide(input: GuideInput): GuideInput {
       scores[platform] = score;
     }
   }
+  if ((input.topic === "claim") !== (input.platform !== undefined)) throw new Error("A claim names its platform, and only a claim does.");
+  if (input.platform !== undefined && !isOneOf(PLATFORMS, input.platform)) throw new Error(`Unknown platform: ${String(input.platform)}`);
   let hi: GuideTranslation | undefined;
   if (input.hi !== undefined) {
     const h = input.hi;
@@ -97,7 +104,7 @@ export function validateGuide(input: GuideInput): GuideInput {
     scope: input.scope, topic: input.topic,
     title: text(input.title, LIMITS.title, "title"), status: text(input.status, LIMITS.status, "status"), points,
     sources: links(input.sources, 1, LIMITS.links, "source"),
-    ...(actions && { actions }), ...(scores && { scores }),
+    ...(actions && { actions }), ...(scores && { scores }), ...(input.platform && { platform: input.platform }),
     checked: input.checked, ...(hi && { hi }),
   };
 }

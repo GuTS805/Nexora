@@ -1,6 +1,6 @@
 {
   "name": "nexora-ledger",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Open data contract for Nexora gig-worker earnings and incident entities on Arkiv: JSON Schemas, codec, sealing, queries, insights and a public privacy audit.",
   "license": "MIT",
   "type": "module",
