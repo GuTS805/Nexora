@@ -4,6 +4,8 @@
 
 The headline is **Best Indian Use Case** with **Privacy**: the product only works if a delivery rider in Bengaluru can say "my take-home fell to ₹70 an hour" or "my ID was blocked for six days with no reason" without being identified and losing the ID that is their income. Censorship resistance, security and open source follow from building it on Arkiv, and each has its own section below.
 
+**Demo video (2:19):** https://youtu.be/BUJywypaqFo · **Live app:** https://nexora-pi-snowy.vercel.app
+
 Tracks entered: **Best Indian Use Case**, **Privacy**, **Censorship Resistance**, **Security**, **Open Source**.
 Each section answers the rubric's question for that track and points to the code that backs every claim.
 

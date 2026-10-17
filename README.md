@@ -9,7 +9,7 @@
 
 **A worker-written record of what gig work in India pays, and what happens when the work goes wrong.**
 
-[Live app](https://nexora-pi-snowy.vercel.app) · [Data contract](arkiv/schema.md) · [JSON Schemas](arkiv/schema) · [npm: `nexora-ledger`](https://www.npmjs.com/package/nexora-ledger) · [Independent reader](examples/read-without-nexora.mjs) · [On-chain evidence](arkiv/evidence.json) · [MIT license](LICENSE)
+[Live app](https://nexora-pi-snowy.vercel.app) · [Demo video (2:19)](https://youtu.be/BUJywypaqFo) · [Data contract](arkiv/schema.md) · [JSON Schemas](arkiv/schema) · [npm: `nexora-ledger`](https://www.npmjs.com/package/nexora-ledger) · [Independent reader](examples/read-without-nexora.mjs) · [On-chain evidence](arkiv/evidence.json) · [MIT license](LICENSE)
 
 [![CI](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml/badge.svg)](https://github.com/GuTS805/Nexora/actions/workflows/ci.yml) [![Privacy audit](https://github.com/GuTS805/Nexora/actions/workflows/audit.yml/badge.svg)](https://github.com/GuTS805/Nexora/actions/workflows/audit.yml) [![npm](https://img.shields.io/npm/v/nexora-ledger.svg)](https://www.npmjs.com/package/nexora-ledger) [![MIT](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
@@ -194,7 +194,7 @@ Parts of `nexora-ledger` are useful to **any Arkiv app**, whatever its data. [`e
 - Expiration and deletion remove an entry from Arkiv's current state, not from history: a query as of an earlier block still returns it ([friction F9](arkiv/friction.md)), and transaction history and prior copies persist too. That is why only bands and rounded figures are public. Workers should not publish identifying details.
 - This is on Tiramisu testnet. The public RPC can rate-limit readers, and the optional sponsor can run out of test GLM.
 
-Built for the **Arkiv Global Tour Stop, 9–18 October 2026**. [Submission notes](docs/SUBMISSION.md) map the product to the India and CROPS tracks; [friction](arkiv/friction.md), [schema](arkiv/schema.md), and [evidence](arkiv/evidence.json) are the technical record. The ≤3-minute demo video link is still pending.
+Built for the **Arkiv Global Tour Stop, 9–18 October 2026**. [Submission notes](docs/SUBMISSION.md) map the product to the India and CROPS tracks; [friction](arkiv/friction.md), [schema](arkiv/schema.md), and [evidence](arkiv/evidence.json) are the technical record. Demo video (2:19): https://youtu.be/BUJywypaqFo.
 
 ## License and credits
 
