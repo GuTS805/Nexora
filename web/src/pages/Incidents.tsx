@@ -1,6 +1,6 @@
 import { readIncidents, readReplies } from "../cache.ts";
 import {
-  CITIES, INCIDENT_TYPES, PLATFORMS, answeredReports, explorerEntity, incidentStats, isOneOf, repliesTo, resolvedReports,
+  CITIES, INCIDENT_TYPES, PLATFORMS, accountability, answeredReports, explorerEntity, incidentStats, isOneOf, repliesTo, resolvedReports,
   type City, type IncidentFilters, type IncidentType, type Platform,
 } from "nexora-ledger";
 import { useMemo, useState } from "react";
@@ -8,6 +8,7 @@ import { useArkiv } from "../arkiv.tsx";
 import { ErrorNote, Field, IncidentCard, QueryBox, VocabSelect, useAsync, useMonth, useSource } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
 import { ESHRAM_URL } from "../letter.tsx";
+import { PlatformLogo } from "../logos.tsx";
 import { SourcePicker, cliFor, creatorsFor, trustedSetFor, useRecommendedList } from "./Explore.tsx";
 
 export function Incidents() {
@@ -44,6 +45,7 @@ export function Incidents() {
   // Replies count as the group's when they come from the wallet that runs the recommended trust list.
   const curator = recommended ? new Set([recommended.creator]) : undefined;
   const answeredByCurator = curator ? answeredReports(originals, replies, curator).size : 0;
+  const answers = accountability(items, replies);
   const latestReply = (key: string, creator: `0x${string}`) => repliesTo({ key: key as `0x${string}`, creator }, replies)[0]?.status;
 
   return (
@@ -95,6 +97,28 @@ export function Incidents() {
                 </tbody>
               </table>
             </div>
+          )}
+          {answers.length > 0 && (
+            <>
+              <h3 className="acct-title">{t("acctTitle")}</h3>
+              <p className="small muted">{t("acctIntro")}</p>
+              <div className="table-wrap">
+                <table className="cards acct">
+                  <thead><tr><th>{t("platform")}</th><th>{t("colReports")}</th><th>{t("acctAnswered")}</th><th>{t("acctSorted")}</th><th>{t("acctDisputed")}</th></tr></thead>
+                  <tbody>
+                    {answers.map((a) => (
+                      <tr key={a.platform}>
+                        <td className="group"><b className="with-logo"><PlatformLogo platform={a.platform} />{v(a.platform)}</b></td>
+                        <td data-label={t("colReports")}>{a.reports}</td>
+                        <td data-label={t("acctAnswered")}>{a.answered} / {a.reports}</td>
+                        <td data-label={t("acctSorted")}>{a.sortedOut} / {a.reports}</td>
+                        <td data-label={t("acctDisputed")}>{a.disputed > 0 ? <span className="badge warn">{a.disputed}</span> : 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
           <QueryBox query={result.data.query} block={result.data.blockNumber} cli={cliFor("incidents", filters, source)} rejected={result.data.rejected} truncated={result.data.truncated} />
           {originals.length === 0 && <p className="muted">{t("empty")}</p>}

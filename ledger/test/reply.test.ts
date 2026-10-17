@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateEntity } from "../src/contract.ts";
-import { answeredReports, decodeReply, queryText, replyCreate, replyPredicate, repliesTo, type ReplyInput } from "../src/index.ts";
+import { accountability, answeredReports, decodeReply, disputedReplies, queryText, replyCreate, replyPredicate, repliesTo, type ReplyInput } from "../src/index.ts";
 import { ALICE, BOB, KEY, asStored, keyOf, storedIncident } from "./fixtures.ts";
 
 const UNION = "0x3333333333333333333333333333333333333333" as const;
@@ -57,5 +57,33 @@ describe("replies to reports", () => {
     expect(repliesTo(other, replies).map((r) => r.status)).toEqual(["taken_up"]);
     expect([...answeredReports([report, other], replies)].sort()).toEqual([report.key, other.key].sort());
     expect([...answeredReports([report, other], replies, new Set([UNION]))]).toEqual([report.key]);
+  });
+
+  it("a \"resolved\" reply the worker later contradicts is disputed, and only the worker's own latest word counts", () => {
+    const report = { ...storedIncident({ platform: "zomato" }, ALICE, 1), createdAt: 1n };
+    const resolvedByUnion = storedReply({ parent: report.key, status: "resolved" }, UNION, 20, 5n);
+    const notSorted = { ...storedIncident({ platform: "zomato", parent: report.key, resolved: false }, ALICE, 21), createdAt: 8n };
+    const someoneElse = { ...storedIncident({ platform: "zomato", parent: report.key, resolved: false }, BOB, 22), createdAt: 9n };
+    expect([...disputedReplies([report, notSorted], [resolvedByUnion])]).toEqual([resolvedByUnion.key]);
+    // Another wallet saying "not sorted" is not the reporter's word.
+    expect(disputedReplies([report, someoneElse], [resolvedByUnion]).size).toBe(0);
+    // An update from before the reply, or a later one saying it is sorted out, does not dispute it.
+    expect(disputedReplies([report, { ...notSorted, createdAt: 3n }], [resolvedByUnion]).size).toBe(0);
+    const sortedLater = { ...storedIncident({ platform: "zomato", parent: report.key, resolved: true }, ALICE, 23), createdAt: 12n };
+    expect(disputedReplies([report, notSorted, sortedLater], [resolvedByUnion]).size).toBe(0);
+    // A reporter's own "resolved" reply is not an answer, so it cannot be disputed either.
+    expect(disputedReplies([report, notSorted], [storedReply({ parent: report.key, status: "resolved" }, ALICE, 24, 5n)]).size).toBe(0);
+  });
+
+  it("counts, per platform, the reports answered, sorted out by the worker, and disputed", () => {
+    const a = { ...storedIncident({ platform: "zomato" }, ALICE, 1), createdAt: 1n };
+    const b = { ...storedIncident({ platform: "zomato", resolved: true }, BOB, 2), createdAt: 1n };
+    const c = { ...storedIncident({ platform: "uber", work: "cab" }, BOB, 3), createdAt: 1n };
+    const update = { ...storedIncident({ platform: "zomato", parent: a.key, resolved: false }, ALICE, 4), createdAt: 9n };
+    const replies = [storedReply({ parent: a.key, status: "resolved" }, UNION, 30, 5n), storedReply({ parent: c.key, status: "received" }, UNION, 31, 5n)];
+    expect(accountability([a, b, c, update], replies).map(({ evidence, ...rest }) => rest)).toEqual([
+      { platform: "zomato", reports: 2, answered: 1, sortedOut: 1, disputed: 1 },
+      { platform: "uber", reports: 1, answered: 1, sortedOut: 0, disputed: 0 },
+    ]);
   });
 });

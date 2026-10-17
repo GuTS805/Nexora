@@ -383,6 +383,17 @@
       "deletedVisibleAt": "580129",
       "deletedGoneAt": "580130",
       "at": "2026-10-15T20:50:40.461Z"
+    },
+    "worker_verdict": {
+      "why": "the worker's word checks a reply: the demo trust list's curator says a pay-cut report is resolved, and the worker who reported it answers from the same wallet that it is not sorted out; Incidents counts it as disputed",
+      "key": "0x56dfee0abf43d96e7b04b319286fbb9e1b2f3f79c57dca856548565382c9439b",
+      "tx": "0xd9798370ece1810a6c9df4d3a73549aa894958b5005a5ea67ae196d82204ab39",
+      "replyKey": "0x6d9f45e35785c83552ee8766a4e006e636c11fe1931dc8fa7b8c3953f21e42b1",
+      "replyTx": "0x533d34d7ec0bb81d78a409baf6918b5bb2b860a231ef549ae5a29b3db7db7c88",
+      "parent": "0x1466ef6a60b8de0de62f38f72ac82ce994032e581f18345f8b2f8db1e7b1a9ac",
+      "curator": "0xf00b81c90dF57B2924A3d165a670FcF656d0e492",
+      "worker": "0x74223d52e2a0a4ff6E46a569C77b2b11B0AD4d77",
+      "at": "2026-10-17T05:05:04.383Z"
     }
   }
 }

@@ -1,7 +1,7 @@
 import { readIncidents, readReplies } from "../cache.ts";
 import { ExpirationTime } from "@arkiv-network/sdk";
 import {
-  explainError, EXTEND_DAYS, HOURS_BAND_LABELS, REPLY_STATUSES, blockToDate, decodeEntry, decodeReply, decodeTrustList, getEntityOrNull,
+  explainError, EXTEND_DAYS, HOURS_BAND_LABELS, REPLY_STATUSES, blockToDate, decodeEntry, decodeReply, decodeTrustList, disputedReplies, getEntityOrNull, incidentCreate,
   isLocked, periodOf, replyCreate, repliesTo, resolvedReports, unseal, type Incident, type PrivateDetails, type Reply, type ReplyStatus,
 } from "nexora-ledger";
 import { useState } from "react";
@@ -200,7 +200,7 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
 
       {e.kind === "incident" && <RightsNote city={e.city} />}
 
-      {e.kind === "incident" && <Replies report={e} replies={data.data.replies} query={data.data.repliesQuery} />}
+      {e.kind === "incident" && <Replies report={e} updates={updates} replies={data.data.replies} query={data.data.repliesQuery} />}
 
       {e.kind === "incident" && <ComplaintLetter e={e} updates={updates} details={details} />}
 
@@ -221,7 +221,7 @@ export function Entity({ entityKey }: { entityKey: Hex }) {
  * Where a union, worker group or the platform says the report stands. Anyone can reply, so a reply
  * is only marked when its wallet runs the trust list this app recommends; the rest are claims.
  */
-function Replies({ report, replies, query }: { report: Incident; replies: Reply[]; query: string }) {
+function Replies({ report, updates, replies, query }: { report: Incident; updates: Incident[]; replies: Reply[]; query: string }) {
   const { wallet, ensureGas, bump, walletFor } = useArkiv();
   const { t, v } = useI18n();
   const month = useMonth();
@@ -231,8 +231,32 @@ function Replies({ report, replies, query }: { report: Incident; replies: Reply[
   const [tx, setTx] = useState<Hex | null>(null);
   const [error, setError] = useState<string | null>(null);
   const shown = repliesTo(report, replies);
+  // "Resolved" replies the worker later contradicted from the same wallet.
+  const disputed = disputedReplies([report, ...updates], replies);
   // The reporter's own wallet, or a one-time wallet of theirs kept in this browser.
-  const own = walletFor(report.creator) !== null;
+  const ownWallet = walletFor(report.creator);
+  const own = ownWallet !== null;
+
+  /** The worker's own word, as an update to the report from the same wallet: the only thing that marks it sorted out. */
+  async function verdict(sorted: boolean) {
+    if (!ownWallet) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await ensureGas(ownWallet.address);
+      const result = await ownWallet.client.createEntity(incidentCreate({
+        platform: report.platform, work: report.work, city: report.city, type: report.type, period: periodOf(new Date()),
+        daysLost: report.daysLost, reasonGiven: report.reasonGiven, appealed: report.appealed, resolved: sorted,
+        expiresInDays: 365, parent: report.key, demo: report.demo,
+      }));
+      setTx(result.txHash);
+      bump();
+    } catch (cause) {
+      setError(explainError(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function send() {
     if (!wallet) return;
@@ -267,6 +291,7 @@ function Replies({ report, replies, query }: { report: Incident; replies: Reply[
                 {curator
                   ? <span className="badge ok">{t("replyCurator", { name: recommended.name })}</span>
                   : <span className="badge warn" title={t("replyUnknownTitle")}>{t("unverified")}</span>}
+                {disputed.has(r.key) && <span className="badge warn disputed">{t("disputedBadge")}</span>}
                 <EntityLink entityKey={r.key} />
               </li>
             );
@@ -274,6 +299,15 @@ function Replies({ report, replies, query }: { report: Incident; replies: Reply[
         </ul>
       )}
       <p className="small muted mono">{query}</p>
+      {own && !report.parent && (
+        <div className="verdict">
+          <p className="small">{t("verdictAsk")}</p>
+          <p className="row">
+            <button disabled={busy} onClick={() => verdict(true)}>{t("verdictYes")}</button>
+            <button className="secondary" disabled={busy} onClick={() => verdict(false)}>{t("verdictNo")}</button>
+          </p>
+        </div>
+      )}
       <details className="reply-form">
         <summary>{t("replyAs")}</summary>
         <p className="small muted">{t("replyHelp")}</p>

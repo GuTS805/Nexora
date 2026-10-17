@@ -202,6 +202,61 @@ export function answeredReports(incidents: readonly Incident[], replies: readonl
 }
 
 /**
+ * Keys of replies that said a report was **resolved** while its reporter, in a later update from the
+ * same wallet, said it was not sorted out. Anyone can reply, so a "resolved" from a platform or a
+ * group is a claim; the worker's own word after it is the check on that claim. Order is by the
+ * block each entry was created in; entries without one are left out rather than guessed.
+ */
+export function disputedReplies(incidents: readonly Incident[], replies: readonly Reply[]): Set<string> {
+  const authorOf = new Map(incidents.filter((i) => !i.parent).map((i) => [i.key as string, lower(i.creator)]));
+  const disputed = new Set<string>();
+  for (const r of replies) {
+    const author = authorOf.get(r.parent);
+    if (r.status !== "resolved" || !author || lower(r.creator) === author || r.createdAt === undefined) continue;
+    const after = incidents
+      .filter((i) => i.parent === r.parent && lower(i.creator) === author && i.createdAt !== undefined && i.createdAt > r.createdAt!)
+      .sort((a, b) => Number(b.createdAt! - a.createdAt!));
+    if (after[0] && !after[0].resolved) disputed.add(r.key);
+  }
+  return disputed;
+}
+
+export type PlatformAccountability = {
+  platform: Platform;
+  /** Original reports about this platform (updates and replies are not counted as reports). */
+  reports: number;
+  /** Reports someone other than the reporter (from `trusted`, if given) replied to. */
+  answered: number;
+  /** Reports the worker marked sorted out, when publishing or in a later update. */
+  sortedOut: number;
+  /** Reports where a reply said "resolved" and the worker later said it was not. */
+  disputed: number;
+  evidence: Hex[];
+};
+
+/**
+ * Who answers, and does it get fixed, per platform: how many reports got an answer, how many the
+ * worker says are sorted out, and how many were called resolved by someone else while the worker
+ * says otherwise. Only the worker's own word marks a report sorted out.
+ */
+export function accountability(incidents: readonly Incident[], replies: readonly Reply[], options: InsightOptions = {}): PlatformAccountability[] {
+  const originals = incidents.filter((i) => !i.parent);
+  const answered = answeredReports(originals, replies, options.trusted);
+  const sorted = resolvedReports(incidents);
+  const disputedReports = new Set(replies.filter((r) => disputedReplies(incidents, replies).has(r.key)).map((r) => r.parent as string));
+  return groupBy(originals, (i) => i.platform)
+    .map((group) => ({
+      platform: group[0]!.platform,
+      reports: group.length,
+      answered: group.filter((i) => answered.has(i.key)).length,
+      sortedOut: group.filter((i) => sorted.has(i.key)).length,
+      disputed: group.filter((i) => disputedReports.has(i.key)).length,
+      evidence: group.map((i) => i.key),
+    }))
+    .sort((a, b) => b.reports - a.reports || a.platform.localeCompare(b.platform));
+}
+
+/**
  * What happens to workers, per incident type. Follow-ups (entries with a parent) are updates to a
  * report already counted, so they are left out of the counts and only change "resolved".
  */

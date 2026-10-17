@@ -731,3 +731,7 @@ select.icon-control.lang { min-height: 34px; width: auto; padding: 4px 4px; font
 .stepper { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 0 0 12px; }
 .stepper button { width: 64px; height: 64px; font-size: 30px; border-radius: 50%; padding: 0; }
 .stepper output { min-width: 140px; text-align: center; font-size: 34px; font-weight: 700; }
+/* Who answers, and does it get fixed: per platform on Incidents; the worker's own verdict on a report. */
+.acct-title { margin: 22px 0 4px; }
+.verdict { margin: 12px 0; padding: 12px 14px; border: 1px solid var(--accent); border-radius: 4px; }
+.verdict p { margin: 0 0 8px; }

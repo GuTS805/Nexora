@@ -205,7 +205,15 @@ try {
     check("incidents point workers to e-Shram registration", await js(`document.querySelector(".eshram a")?.href === "https://register.eshram.gov.in/"`));
     const report = await js(`({ button: [...document.querySelectorAll("button")].some(b => b.textContent.includes("Print or save as PDF")), rows: document.querySelectorAll(".report-keys li").length, links: [...document.querySelectorAll(".report-keys .mono")].every(s => s.textContent.startsWith("https://tiramisu.explorer.arkiv.network/entity/0x")), hidden: getComputedStyle(document.querySelector(".report-head")).display === "none" })`);
     check("printable union report lists every report with its explorer link, hidden on screen", report?.button && report.rows > 0 && report.links && report.hidden, JSON.stringify(report));
+    const answers = await js(`({ rows: document.querySelectorAll("table.acct tbody tr").length, disputed: document.querySelectorAll("table.acct .badge.warn").length })`);
+    check("incidents show, per platform, who answered, what the worker says is sorted out, and a resolved claim the worker disputes", answers?.rows > 0 && answers.disputed > 0, JSON.stringify(answers));
   }
+
+  // The seeded case: a reply said "resolved", and the worker later said it was not sorted out.
+  await go(`#/e/${evidence.features.worker_verdict?.parent}?ui=en`, 1000);
+  await settle(".reply-list");
+  if (await limitedHere()) skipped.push("disputed reply (Arkiv RPC rate-limited this IP)");
+  else check("a resolved reply the worker contradicted is marked on the report", await js(`(document.querySelector(".reply-list .disputed")?.textContent ?? "").includes("not sorted out")`));
 
   // The locked incident the seed recorded: its page shows the lock and offers a complaint letter.
   const locked = evidence.features.ownership_lock?.key;

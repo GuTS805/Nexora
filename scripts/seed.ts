@@ -7,8 +7,9 @@
  * Besides the dataset, the script exercises every Arkiv feature the app claims: batch creates,
  * key-typed lineage (incident follow-ups), a sealed payload, a trust list created then patched, a
  * permissionless extension by a non-owner, a refused patch on a readonly entity, an owner delete, a
- * report locked by handing it to 0x…dEaD, replies from the trust list's curator to three reports, the
- * curator renewing the trust list's lease, and reads as of past blocks.
+ * report locked by handing it to 0x…dEaD, replies from the trust list's curator to three reports, a
+ * worker answering a "resolved" reply with "not sorted out", the curator renewing the trust list's
+ * lease, and reads as of past blocks.
  * Each transaction is recorded in arkiv/evidence.json so the claims can be checked on the explorer.
  *
  * Every entry is synthetic and flagged `demo = true`. Nine wallets behave like honest workers, each
@@ -362,6 +363,25 @@ await step("union_reply", "replies linked by a key-typed parent: the demo trust 
     replies: answers.map(([parent, status], i) => ({ parent, status, key: result.createdEntities[i] })),
     query: check.query, foundByParentQuery: check.items.length,
   };
+});
+
+await step("worker_verdict", "the worker's word checks a reply: the demo trust list's curator says a pay-cut report is resolved, and the worker who reported it answers from the same wallet that it is not sorted out; Incidents counts it as disputed", async () => {
+  const curator = account(SPONSOR_KEY_NAME).address;
+  const answered = evidence.features.union_reply?.replies as { parent: Hex; status: ReplyStatus }[] | undefined;
+  const parent = answered?.find((r) => r.status === "received")?.parent;
+  if (!parent) throw new Error("run union_reply first");
+  const found = await fetchEntry(client, parent);
+  if (!found.ok || found.value.kind !== "incident") throw new Error("the answered report is not readable");
+  const report = found.value;
+  const name = honest.find((n) => account(n).address.toLowerCase() === report.creator.toLowerCase());
+  if (!name) throw new Error("the report is not from a seed worker");
+  const reply = await walletFor(SPONSOR_KEY_NAME).createEntity(replyCreate({ parent, status: "resolved", period: 202610, expiresInDays: 365, demo: true }));
+  // A later transaction, so a later block: the worker's word comes after the claim it answers.
+  const update = await walletFor(name).createEntity(incidentCreate({
+    platform: report.platform, work: report.work, city: report.city, type: report.type, period: 202610, daysLost: report.daysLost,
+    reasonGiven: report.reasonGiven, appealed: report.appealed, resolved: false, expiresInDays: 365, parent, demo: true,
+  }));
+  return { key: update.entityKey, tx: update.txHash, replyKey: reply.entityKey, replyTx: reply.txHash, parent, curator, worker: account(name).address };
 });
 
 await step("trust_list_renew", "extendEntity as a lease: only the curator can renew the trust list, to 180 days from today; a list nobody renews stops vouching", async () => {

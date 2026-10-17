@@ -40,6 +40,7 @@ const CHECKS: Record<string, Check> = {
   owner_delete: { key: (s) => s.key, expect: ["gone after delete", "डिलीट के बाद मौजूद नहीं"], verify: (e) => e === null },
   trust_list_renew: { key: (s) => s.key, expect: ["renewed by its curator, expiry at least the recorded one", "बनाने वाले ने रिन्यू की, मियाद कम से कम दर्ज की हुई जितनी"], verify: (e, s) => e !== null && e.creationFlags?.readonly === false && (e.expiresAt ?? 0n) >= BigInt(String(s.expiresAfter)) && String(e.owner).toLowerCase() === String(s.curator).toLowerCase() },
   union_reply: { key: (s) => s.keys?.[0], expect: ["exists, readonly, sent by the trust list's curator", "मौजूद है, readonly, भरोसा सूची चलाने वाले ने भेजा"], verify: (e, s) => !!e?.creationFlags?.readonly && String(e.creator).toLowerCase() === String(s.curator).toLowerCase() },
+  worker_verdict: { key: (s) => s.key, expect: ["the worker's update, readonly, from the reporter's wallet", "वर्कर का अपडेट, readonly, रिपोर्ट करने वाले के वॉलेट से"], verify: (e, s) => !!e?.creationFlags?.readonly && String(e?.creator).toLowerCase() === String(s.worker).toLowerCase() },
   ownership_lock: { key: (s) => s.key, expect: ["owned by 0x…dEaD, readonly: nobody can delete it", "मालिक 0x…dEaD, readonly: कोई डिलीट नहीं कर सकता"], verify: (e) => !!e?.creationFlags?.readonly && isLocked(String(e.owner)) },
   history_at_block: {
     key: (s) => s.key,
@@ -73,6 +74,7 @@ const WHY_HI: Record<string, string> = {
   trust_list_renew: "लीज़ की तरह extendEntity: भरोसा सूची को सिर्फ़ बनाने वाला आज से 180 दिन के लिए रिन्यू कर सकता है; जिसे कोई रिन्यू न करे, वह सूची भरोसा देना बंद कर देती है",
   union_reply: "key-टाइप parent से जुड़े जवाब: डेमो भरोसा सूची चलाने वाला, यूनियन की जगह, एक ही बैच में तीन रिपोर्ट का जवाब देता है; जवाब से रिपोर्ट नहीं बदलती",
   history_at_block: "पुराने ब्लॉक के हिसाब से पढ़ना: बनाने वाले के पैच से ठीक पहले भरोसा सूची में 8 सदस्य थे और बाद में 9, और वर्कर 2 का हटाया गया दिन हटने से एक ब्लॉक पहले तक अब भी पढ़ा जा सकता है, इसलिए कोई भी दिखा सकता है कि किसी समय रिकॉर्ड पर क्या था",
+  worker_verdict: "वर्कर की बात जवाब की जाँच करती है: डेमो भरोसा सूची चलाने वाला पे-कट की एक रिपोर्ट को सुलझा हुआ कहता है, और रिपोर्ट करने वाला वर्कर उसी वॉलेट से जवाब देता है कि मामला नहीं सुलझा; घटनाएँ पेज इसे विवादित गिनता है",
   ownership_lock: "ओनरशिप बदलने वाला executeBatch: वर्कर 6 ID बंद होने की रिपोर्ट करता है और उसी ट्रांज़ैक्शन में एंट्री 0x…dEaD को सौंप देता है, ताकि कोई भी (वर्कर 6 खुद भी) उसे समय से पहले डिलीट न कर सके",
 };
 
