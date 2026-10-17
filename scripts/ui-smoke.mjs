@@ -166,6 +166,16 @@ try {
   await js(`[...document.querySelectorAll(".card.pending button")].find(b => b.textContent.startsWith("Discard"))?.click()`);
   await sleep(300);
   check("a saved entry can be discarded before it is sent", await js(`!document.querySelector(".card.pending") && !localStorage.getItem("nexora.pending")`));
+  // A wallet per month: the day is queued for that month's own wallet, whose key is kept for backups.
+  await js(`document.querySelector("label.check.monthly input")?.click()`);
+  await sleep(300);
+  await js(`[...document.querySelectorAll("button")].find(b => b.textContent.includes("Publish to Arkiv"))?.click()`);
+  await sleep(1200);
+  const monthly = await js(`(() => { const item = JSON.parse(localStorage.getItem("nexora.pending") ?? "[]")[0]; const period = item?.entry?.attributes?.period?.value; return { help: document.querySelector("main")?.innerText.includes("that month only"), month: item?.month, period }; })()`);
+  check("earnings can use a new wallet each month: the day waits for that month's wallet", monthly?.help && Number.isInteger(monthly.month) && monthly.month === monthly.period, JSON.stringify(monthly));
+  await js(`[...document.querySelectorAll(".card.pending button")].find(b => b.textContent.startsWith("Discard"))?.click()`);
+  await js(`document.querySelector("label.check.monthly input")?.click()`);
+  await sleep(300);
   await send("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   await js(`[...document.querySelectorAll(".tabs button")].find(b => b.textContent.includes("Something happened"))?.click()`);
   await sleep(300);

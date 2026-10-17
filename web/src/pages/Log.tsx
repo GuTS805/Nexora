@@ -84,10 +84,13 @@ function PublishPanel(props: {
   entry: (sealed: Awaited<ReturnType<typeof seal>> | undefined) => FormEntry;
   sealedContent: () => Parameters<typeof seal>[0];
   defaultOneOff?: boolean;
+  /** Earnings only: offer a wallet per month, so days cannot be followed across months. */
+  offerMonthly?: boolean;
 }) {
-  const { reader, wallet, ensureGas, bump, createOneOff } = useArkiv();
+  const { reader, wallet, ensureGas, bump, createOneOff, monthWallet } = useArkiv();
   const { t } = useI18n();
   const [oneOff, setOneOff] = useState(props.defaultOneOff ?? false);
+  const [monthly, setMonthly] = useState(false);
   const [lock, setLock] = useState(false);
   const [later, setLater] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -102,21 +105,23 @@ function PublishPanel(props: {
     setReceipt(null);
     setQueued(null);
     try {
-      if (!wallet && !oneOff) throw new Error(t("connectFirst"));
+      const perMonth = Boolean(props.offerMonthly && monthly && !oneOff);
+      if (!wallet && !oneOff && !perMonth) throw new Error(t("connectFirst"));
       if (sealing && props.passphrase.length < MIN_PASSPHRASE_LENGTH) throw new Error(t("passTooShort", { n: MIN_PASSPHRASE_LENGTH }));
       // Sealing is local, so it works offline too; the passphrase is never part of what is saved.
       const entry = props.entry(sealing ? await seal(props.sealedContent(), props.passphrase) : undefined);
       const params = formParams(entry);
+      const month = perMonth && entry.kind === "shift" ? entry.input.period : undefined;
       // Held back to a random moment: kept on the phone, exactly as it will be published, until then.
       if (later || isOffline()) {
         const notBefore = later ? randomSendTime() : undefined;
-        enqueue(entry, { oneOff, lock, notBefore });
+        enqueue(entry, { oneOff, lock, notBefore, month });
         setQueued(notBefore ?? "offline");
         props.setPassphrase("");
         return;
       }
       // A one-time wallet is created only now, after validation, so failed forms leave no stray keys.
-      const publisher = oneOff ? createOneOff() : wallet!;
+      const publisher = oneOff ? createOneOff() : month !== undefined ? monthWallet(month) : wallet!;
       await ensureGas(publisher.address);
       // Locked: created and handed to 0x…dEaD in one transaction, so nobody can delete it early.
       const result = lock ? await createLocked(reader, publisher.client, publisher.address, params) : await publisher.client.createEntity(params);
@@ -162,6 +167,12 @@ function PublishPanel(props: {
         <input type="checkbox" checked={oneOff} onChange={(e) => setOneOff(e.target.checked)} /> {t("oneOffLabel")}
       </label>
       {oneOff && <p className="small muted">{t("oneOffHelp")}</p>}
+      {props.offerMonthly && !oneOff && (
+        <label className="check monthly">
+          <input type="checkbox" checked={monthly} onChange={(e) => setMonthly(e.target.checked)} /> {t("monthlyLabel")}
+        </label>
+      )}
+      {props.offerMonthly && !oneOff && monthly && <p className="small muted">{t("monthlyHelp")}</p>}
       <label className="check">
         <input type="checkbox" checked={lock} onChange={(e) => setLock(e.target.checked)} /> {t("lockLabel")}
       </label>
@@ -170,7 +181,7 @@ function PublishPanel(props: {
         <input type="checkbox" checked={later} onChange={(e) => setLater(e.target.checked)} /> {t("laterLabel")}
       </label>
       {later && <p className="small muted">{t("laterHelp")}</p>}
-      <button disabled={(!wallet && !oneOff) || !props.valid || busy} onClick={publish}>{busy ? t("publishing") : t("publish")}</button>
+      <button disabled={(!wallet && !oneOff && !(props.offerMonthly && monthly)) || !props.valid || busy} onClick={publish}>{busy ? t("publishing") : t("publish")}</button>
       {queued === "offline" && <p className="card success" role="status">{t("offlineSaved")}</p>}
       {typeof queued === "number" && <p className="card success" role="status">{t("laterSaved", { time: new Date(queued).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) })}</p>}
       <PublishResult receipt={receipt} error={error} />
@@ -244,6 +255,7 @@ function ShiftForm({ profile, setProfile }: { profile: Profile; setProfile: (p: 
         setExpiresInDays={setExpiresInDays}
         valid={valid}
         entry={(sealed) => ({ kind: "shift", input: { ...input, sealed } })}
+        offerMonthly
         sealedContent={() => ({ grossInr: g, costsInr: c, hours: h, orders: orders ? Number(orders) : undefined, note: note || undefined })}
       />
       <CsvImport />

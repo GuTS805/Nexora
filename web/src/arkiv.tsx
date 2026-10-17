@@ -5,6 +5,7 @@ import { TIRAMISU_RPC, arkivHttp, readClient } from "nexora-ledger";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { custom, formatEther, parseEther, type Address, type EIP1193Provider } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { monthKey } from "./months.ts";
 import { store } from "./storage.ts";
 
 declare global {
@@ -33,6 +34,8 @@ type ArkivState = {
    */
   oneOffWallets: () => Connected[];
   createOneOff: () => Connected;
+  /** The wallet for one month's earnings (yyyymm), created the first time that month is published. */
+  monthWallet: (period: number) => Connected;
   /** The locally held wallet that owns `address`, if any (connected, burner or one-time). */
   walletFor: (address: Address) => Connected | null;
   /** Bumped after every write so pages re-query. */
@@ -154,6 +157,7 @@ export function ArkivProvider({ children }: { children: ReactNode }) {
       store.set("oneoff", JSON.stringify([...readOneOffKeys(), key]));
       return keyClient(key, "burner");
     },
+    monthWallet: (period) => keyClient(monthKey(period), "burner"),
     walletFor: (address) => {
       const target = address.toLowerCase();
       if (wallet?.address.toLowerCase() === target) return wallet;

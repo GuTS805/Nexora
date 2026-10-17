@@ -40,6 +40,8 @@ export type Pending = {
   entry: QueuedEntry;
   /** Publish from a fresh one-time wallet, as the worker chose in the form. */
   oneOff: boolean;
+  /** Publish from the wallet for this month (yyyymm), as the worker chose for an earnings entry. */
+  month?: number;
   /** Hand to 0x…dEaD in the same transaction. */
   lock: boolean;
   /** Not sent before this time (ms since epoch): a random delay the worker chose, to hide when they wrote it. */
@@ -106,6 +108,7 @@ export function pendingEntries(): Pending[] {
       if (!item || typeof item !== "object" || typeof item.id !== "string" || typeof item.savedAt !== "number") return false;
       if (typeof item.oneOff !== "boolean" || typeof item.lock !== "boolean" || !item.entry || typeof item.entry !== "object") return false;
       if (item.notBefore !== undefined && typeof item.notBefore !== "number") return false;
+      if (item.month !== undefined && !(Number.isInteger(item.month) && /^\d{6}$/.test(String(item.month)))) return false;
       try {
         paramsFor(item.entry);
         return true;
@@ -123,11 +126,11 @@ function save(items: Pending[]): void {
   dispatchEvent(new Event(QUEUE_EVENT));
 }
 
-export function enqueue(form: FormEntry, options: { oneOff: boolean; lock: boolean; notBefore?: number }): Pending {
+export function enqueue(form: FormEntry, options: { oneOff: boolean; lock: boolean; notBefore?: number; month?: number }): Pending {
   const entry = toQueued(form);
   paramsFor(entry);
-  const { notBefore, ...rest } = options;
-  const item: Pending = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`, savedAt: Date.now(), entry, ...rest, ...(notBefore !== undefined && { notBefore }) };
+  const { notBefore, month, ...rest } = options;
+  const item: Pending = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`, savedAt: Date.now(), entry, ...rest, ...(notBefore !== undefined && { notBefore }), ...(month !== undefined && { month }) };
   save([...pendingEntries(), item]);
   return item;
 }

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useArkiv } from "../arkiv.tsx";
 import { EntryCard, ErrorNote, QueryBox, WalletBar, useAsync } from "../components.tsx";
 import { useI18n } from "../i18n.tsx";
+import { monthKeys, rememberMonthKeys } from "../months.ts";
 import { store } from "../storage.ts";
 
 export function Mine() {
@@ -15,8 +16,8 @@ export function Mine() {
   const [showKey, setShowKey] = useState(false);
   const [importKey, setImportKey] = useState("");
 
-  // Backup format: one key per line, "main 0x…" for the test wallet and "one-time 0x…" for the rest.
-  // A single bare key restores as the main test wallet.
+  // Backup format: one key per line, "main 0x…" for the test wallet, "month-yyyymm 0x…" for a month's
+  // earnings wallet and "one-time 0x…" for the rest. A single bare key restores as the main test wallet.
   const oneOffKeys = (): string[] => {
     try {
       return JSON.parse(store.get("oneoff") ?? "[]") as string[];
@@ -24,17 +25,21 @@ export function Mine() {
       return [];
     }
   };
-  const backupText = () =>
-    [store.get("burner") ? `main ${store.get("burner")}` : "", ...oneOffKeys().map((k) => `one-time ${k}`)].filter(Boolean).join("\n");
+  const backupText = () => {
+    const months = Object.entries(monthKeys());
+    const monthly = new Set<string>(months.map(([, k]) => k));
+    return [store.get("burner") ? `main ${store.get("burner")}` : "", ...months.map(([period, k]) => `month-${period} ${k}`), ...oneOffKeys().filter((k) => !monthly.has(k)).map((k) => `one-time ${k}`)].filter(Boolean).join("\n");
+  };
   const parseBackup = (text: string) => {
-    const lines = [...text.matchAll(/(main|one-time)?\s*(0x[0-9a-fA-F]{64})/g)];
-    return lines.map((m) => ({ main: m[1] === "main" || (lines.length === 1 && !m[1]), key: m[2]! }));
+    const lines = [...text.matchAll(/(main|one-time|month-(\d{6}))?\s*(0x[0-9a-fA-F]{64})/g)];
+    return lines.map((m) => ({ main: m[1] === "main" || (lines.length === 1 && !m[1]), month: m[2], key: m[3]! }));
   };
   function restore() {
     const keys = parseBackup(importKey);
     const main = keys.find((k) => k.main);
     const extra = keys.filter((k) => !k.main).map((k) => k.key);
     if (extra.length) store.set("oneoff", JSON.stringify([...new Set([...oneOffKeys(), ...extra])]));
+    rememberMonthKeys(Object.fromEntries(keys.filter((k) => k.month).map((k) => [k.month!, k.key])));
     if (main) {
       store.set("burner", main.key);
       connectBurner();

@@ -12,7 +12,7 @@ import { QUEUE_EVENT, dequeue, isDue, isOffline, paramsFor, pendingEntries, type
  * taps "Publish now"), from the wallet the worker chose in the form.
  */
 export function PendingQueue() {
-  const { reader, wallet, ensureGas, bump, createOneOff } = useArkiv();
+  const { reader, wallet, ensureGas, bump, createOneOff, monthWallet } = useArkiv();
   const { t } = useI18n();
   const [items, setItems] = useState<Pending[]>(pendingEntries);
   const [busy, setBusy] = useState(false);
@@ -40,9 +40,9 @@ export function PendingQueue() {
     try {
       for (const item of pendingEntries()) {
         // Entries meant for the connected wallet wait until one is connected.
-        if (!item.oneOff && !wallet) continue;
+        if (!item.oneOff && item.month === undefined && !wallet) continue;
         if (!force && !isDue(item)) continue;
-        const publisher = item.oneOff ? createOneOff() : wallet!;
+        const publisher = item.oneOff ? createOneOff() : item.month !== undefined ? monthWallet(item.month) : wallet!;
         await ensureGas(publisher.address);
         const params = paramsFor(item.entry);
         const result = item.lock ? await createLocked(reader, publisher.client, publisher.address, params) : await publisher.client.createEntity(params);
@@ -59,7 +59,7 @@ export function PendingQueue() {
         bump();
       }
     }
-  }, [reader, wallet, ensureGas, bump, createOneOff]);
+  }, [reader, wallet, ensureGas, bump, createOneOff, monthWallet]);
 
   // Back online: send what was saved.
   useEffect(() => {
@@ -79,7 +79,7 @@ export function PendingQueue() {
   }, [flush]);
 
   if (items.length === 0 && sent.length === 0) return null;
-  const waitingForWallet = !wallet && items.some((item) => !item.oneOff);
+  const waitingForWallet = !wallet && items.some((item) => !item.oneOff && item.month === undefined);
   const time = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   return (
