@@ -43,12 +43,12 @@
   "dependencies": {
     "@arkiv-network/sdk": "0.8.1",
     "ajv": "^8.20.0",
-    "viem": "^2.57.4"
+    "viem": "^2.57.11"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
     "tsx": "^4.23.15",
     "typescript": "^5.9.2",
-    "vitest": "^5.0.4"
+    "vitest": "^5.0.5"
   }
 }
